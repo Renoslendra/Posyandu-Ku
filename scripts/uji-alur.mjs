@@ -177,6 +177,30 @@ async function main() {
     periksa("tidak dapat mengakses anak lain meski id diketahui", !bocor);
   }
 
+  /*
+   * Membersihkan pengukuran yang disisipkan uji ini.
+   *
+   * Tanpa pembersihan, jalan kedua akan gagal karena batasan
+   * `pengukuran_satu_per_tanggal`: baris bertanggal hari ini sudah ada dari
+   * jalan sebelumnya.
+   *
+   * Sebelum batasan itu ada, setiap jalan justru menambah satu baris baru
+   * karena klien_ref selalu berbeda. Data demo perlahan menyimpang dari
+   * skenario yang tertulis di DEMO.md tanpa ada yang menyadarinya. Batasan
+   * unik itulah yang memunculkan kelalaian ini.
+   *
+   * Memakai kunci layanan karena kader sengaja tidak diberi wewenang menghapus.
+   */
+  const admin = createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+  const { error: galatBersih } = await admin
+    .from("pengukuran")
+    .delete()
+    .like("klien_ref", "ujialur-%");
+
+  periksa("data uji berhasil dibersihkan", !galatBersih, galatBersih?.message);
+
   console.log(`\n${lolos} lolos, ${gagal} gagal`);
   if (gagal > 0) process.exit(1);
   console.log("\nSeluruh alur peran berjalan sesuai rancangan.\n");
