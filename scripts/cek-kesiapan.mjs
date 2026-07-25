@@ -155,6 +155,49 @@ async function main() {
     }
   }
 
+  // --- Toleransi zona waktu pada batasan tanggal --------------------------
+  //
+  // Batasan tanggal semula dievaluasi memakai tanggal basis data, yang berjalan
+  // pada UTC. Antara tengah malam dan pukul tujuh pagi Waktu Indonesia Barat,
+  // tanggal UTC masih menunjuk hari sebelumnya, sehingga tanggal hari ini yang
+  // diisi formulir ditolak dan catatan kader dapat hilang dari antrean luring.
+  //
+  // Diperiksa dengan menyisipkan baris bertanggal esok hari, lalu menghapusnya.
+  // Migrasi 0008 memberi toleransi satu hari, jadi baris itu harus diterima.
+  console.log("\nToleransi zona waktu (migrasi 0008):");
+
+  const { data: posyanduAda } = await admin.from("posyandu").select("id").limit(1);
+
+  if (!posyanduAda || posyanduAda.length === 0) {
+    console.log("  CATATAN belum ada posyandu, pemeriksaan dilewati.");
+  } else {
+    const esok = new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const namaProbe = "ZZZ Uji Zona Waktu";
+
+    const { error: galatProbe } = await admin.from("anak").insert({
+      posyandu_id: posyanduAda[0].id,
+      nama: namaProbe,
+      tanggal_lahir: esok,
+      jenis_kelamin: "L",
+      nama_orang_tua: "Uji",
+    });
+
+    if (!galatProbe) {
+      lolos("batasan tanggal memberi toleransi satu hari");
+    } else if (galatProbe.code === "23514") {
+      gagal(
+        "batasan tanggal masih memakai tanggal basis data",
+        "jalankan supabase/migrations/0008_tanggal_zona_waktu.sql",
+      );
+    } else {
+      gagal(`tidak dapat memeriksa batasan tanggal: ${galatProbe.message}`);
+    }
+
+    await admin.from("anak").delete().eq("nama", namaProbe);
+  }
+
   // --- Isi data ----------------------------------------------------------
   console.log("\nData:");
 
