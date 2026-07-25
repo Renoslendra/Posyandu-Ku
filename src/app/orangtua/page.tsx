@@ -73,18 +73,30 @@ export default async function HalamanOrangTua() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <LogoLengkap />
+    <>
+      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
+        <div className="mx-auto max-w-2xl px-4 py-3.5">
+          <LogoLengkap />
+        </div>
+      </header>
 
-      <h1 className="mt-8 text-2xl font-bold text-dasar-900">Perkembangan anak Anda</h1>
+      <main id="isi-utama" className="mx-auto max-w-2xl px-4 pb-16">
+        <div className="pt-8">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
+            Halaman orang tua
+          </p>
+          <h1 className="mt-1 text-2xl font-extrabold text-dasar-900 sm:text-3xl">
+            Perkembangan anak Anda
+          </h1>
+        </div>
 
       {daftar.length === 0 ? (
-        <p className="mt-6 kartu p-5 text-base text-dasar-700">
+        <p className="pesan-netral mt-6">
           Belum ada anak yang tertaut pada akun Anda. Hubungi kader posyandu untuk
           menautkan data anak Anda.
         </p>
       ) : (
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-6 space-y-4">
           {daftar.map((a) => {
             const terakhir = terakhirPerAnak.get(a.id);
             const pemantauan = statusPemantauan(
@@ -92,11 +104,26 @@ export default async function HalamanOrangTua() {
             );
 
             return (
-              <li key={a.id} className="kartu p-5">
+              <li
+                key={a.id}
+                /*
+                  Garis di sisi kiri senada status, agar orang tua yang membuka
+                  halaman ini tahu keadaan anaknya sebelum membaca satu kata pun.
+                */
+                className={`kartu-naik border-l-4 p-5 ${
+                  terakhir?.status === "berat"
+                    ? "border-l-status-berat"
+                    : terakhir?.status === "risiko"
+                      ? "border-l-status-risiko"
+                      : terakhir?.status === "normal"
+                        ? "border-l-status-normal"
+                        : "border-l-dasar-300"
+                }`}
+              >
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={`/anak/${a.id}`}
-                    className="text-lg font-semibold text-brand-700 underline"
+                    className="text-lg font-bold text-brand-700 underline decoration-brand-300 decoration-2 underline-offset-2 hover:text-brand-800"
                   >
                     {a.nama}
                   </Link>
@@ -110,37 +137,47 @@ export default async function HalamanOrangTua() {
                 </p>
 
                 {terakhir?.status === "normal" && (
-                  <p className="mt-2 text-base text-dasar-700">
+                  <p className="mt-3 text-base text-dasar-700">
                     Pertumbuhan anak Anda dalam rentang normal. Tetap timbang setiap
                     bulan di posyandu.
                   </p>
                 )}
 
                 {(terakhir?.status === "risiko" || terakhir?.status === "berat") && (
-                  <p className="mt-2 rounded-lg bg-amber-50 p-3 text-base text-amber-900">
+                  <p className="pesan-peringatan mt-3">
                     Mohon bawa anak Anda ke bidan atau puskesmas untuk diperiksa lebih
                     lanjut. Semakin cepat diperiksa, semakin mudah ditangani.
                   </p>
                 )}
 
                 {pemantauan.hilang && (
-                  <p className="mt-2 rounded-lg bg-dasar-100 p-3 text-base text-dasar-800">
+                  <p className="pesan-netral mt-3">
                     Sudah lama tidak menimbang. Mohon datang ke posyandu pada jadwal
                     berikutnya.
                   </p>
                 )}
+
+                <Link
+                  href={`/anak/${a.id}`}
+                  className="mt-4 inline-flex items-center gap-1.5 text-base font-semibold text-brand-700"
+                >
+                  Lihat grafik pertumbuhan
+                  <span aria-hidden="true">&rarr;</span>
+                </Link>
               </li>
             );
           })}
         </ul>
       )}
 
-      <footer className="mt-10 space-y-2 border-t border-dasar-200 pt-5 text-sm text-dasar-600">
-        <p>
+      </main>
+
+      <footer className="mt-12 border-t border-dasar-200 bg-white">
+        <div className="mx-auto max-w-2xl px-4 py-8 text-sm text-dasar-600">
           Ini adalah alat bantu, bukan alat diagnosis. Untuk pemeriksaan resmi,
           silakan ke bidan atau puskesmas terdekat.
-        </p>
+        </div>
       </footer>
-    </main>
+    </>
   );
 }

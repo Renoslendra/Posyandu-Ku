@@ -106,43 +106,53 @@ export default async function HalamanAnak({
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <LogoLengkap />
-        <Link href="/bidan" className="text-sm font-medium text-brand-700 underline">
-          Kembali ke dashboard
-        </Link>
+    <>
+      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+          <LogoLengkap />
+          <Link href="/bidan" className="tautan text-sm">
+            Kembali ke dashboard
+          </Link>
+        </div>
       </header>
 
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-dasar-900">{anak.nama}</h1>
-        <LencanaStatus status={(terakhir?.status as StatusGizi) ?? null} ukuran="besar" />
-      </div>
+      <main id="isi-utama" className="mx-auto max-w-3xl px-4 pb-16">
+        {/*
+          Kepala halaman memakai latar bergradasi lembut agar identitas anak
+          terpisah tegas dari data di bawahnya. Nama dan status adalah dua hal
+          pertama yang dicari bidan saat membuka halaman ini.
+        */}
+        <div className="mt-6 rounded-2xl border border-brand-100 bg-merek-lembut p-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-extrabold text-dasar-900 sm:text-3xl">
+              {anak.nama}
+            </h1>
+            <LencanaStatus
+              status={(terakhir?.status as StatusGizi) ?? null}
+              ukuran="besar"
+            />
+          </div>
 
-      <dl className="mt-3 grid gap-x-6 gap-y-1 text-base text-dasar-700 sm:grid-cols-2">
-        <div className="flex gap-2">
-          <dt className="text-dasar-600">Usia:</dt>
-          <dd>{terakhir ? `${terakhir.usia_bulan} bulan` : "belum diukur"}</dd>
+          <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Usia", terakhir ? `${terakhir.usia_bulan} bulan` : "belum diukur"],
+              ["Jenis kelamin", jk === "L" ? "Laki-laki" : "Perempuan"],
+              ["Orang tua", anak.nama_orang_tua],
+              ["Pemantauan", pemantauan.pesan],
+            ].map(([label, nilai]) => (
+              <div key={label}>
+                <dt className="text-sm font-medium text-brand-700">{label}</dt>
+                <dd className="mt-0.5 text-base font-semibold text-dasar-900">
+                  {nilai}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        <div className="flex gap-2">
-          <dt className="text-dasar-600">Jenis kelamin:</dt>
-          <dd>{jk === "L" ? "Laki-laki" : "Perempuan"}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="text-dasar-600">Orang tua:</dt>
-          <dd>{anak.nama_orang_tua}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="text-dasar-600">Pemantauan:</dt>
-          <dd>{pemantauan.pesan}</dd>
-        </div>
-      </dl>
 
-      {pola.perluPerhatian && (
-        <p className="mt-5 rounded-xl border-2 border-status-risiko bg-amber-50 p-4 text-base text-amber-900">
-          {pola.pesan}
-        </p>
-      )}
+        {pola.perluPerhatian && (
+          <p className="pesan-peringatan mt-5">{pola.pesan}</p>
+        )}
 
       <section className="mt-8 space-y-5">
         <GrafikPertumbuhan
@@ -227,10 +237,14 @@ export default async function HalamanAnak({
         )}
       </section>
 
-      <footer className="mt-10 border-t border-dasar-200 pt-5 text-sm text-dasar-600">
-        Ini adalah alat bantu, bukan alat diagnosis. Untuk diagnosis resmi, silakan
-        konsultasi ke bidan atau puskesmas terdekat.
+      </main>
+
+      <footer className="mt-12 border-t border-dasar-200 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-dasar-600">
+          Ini adalah alat bantu, bukan alat diagnosis. Untuk diagnosis resmi, silakan
+          konsultasi ke bidan atau puskesmas terdekat.
+        </div>
       </footer>
-    </main>
+    </>
   );
 }
