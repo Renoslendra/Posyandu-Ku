@@ -131,7 +131,37 @@ node scripts/seed.mjs
 
 Membuat satu posyandu dan enam anak dengan skenario berbeda: sehat, pendek berat, berat stagnan, berhenti menimbang, risiko, dan belum pernah menimbang. Seluruhnya data sintetis.
 
-Selanjutnya buat akun kader dan bidan melalui Supabase Auth, lalu tambahkan barisnya di tabel `profil` memakai `posyandu_id` dan `wilayah_id` yang dicetak skrip seed.
+Selanjutnya buat akun demo:
+
+```bash
+node scripts/buat-akun-demo.mjs
+```
+
+### Bagaimana akun disediakan
+
+Aplikasi ini **tidak memiliki halaman pendaftaran**, dan itu disengaja. Kader dan bidan
+adalah petugas dengan penugasan resmi; bila pendaftaran mandiri dibuka, siapa pun dapat
+mendaftar sebagai kader lalu melihat data kesehatan seluruh anak di satu posyandu.
+Alasan lengkapnya ada pada KP-29 di [DECISIONS.md](DECISIONS.md).
+
+Akun karena itu dibuat pengelola, memakai service role key. Skrip di atas mengerjakan dua
+hal sekaligus untuk setiap akun: membuat pengguna di Supabase Auth, lalu menuliskan
+barisnya di tabel `profil` beserta peran dan penugasannya.
+
+Keduanya wajib ada. Membuat pengguna lewat dashboard Supabase Auth saja **tidak cukup**:
+belum ada trigger `handle_new_user` pada tabel ini, sehingga pengguna tersebut memperoleh
+akun tanpa baris `profil`. Ia dapat masuk, tetapi setiap kebijakan RLS akan menolaknya dan
+halaman tampak kosong tanpa penjelasan. Bila akun perlu dibuat manual, tambahkan barisnya
+di `profil` dengan `posyandu_id` untuk kader atau `wilayah_id` untuk bidan, memakai nilai
+yang dicetak skrip seed.
+
+Peran menentukan cakupan data, dan penugasannya diwajibkan di tingkat basis data:
+
+| Peran | Penugasan wajib | Cakupan |
+| --- | --- | --- |
+| `kader` | `posyandu_id` | Anak di posyandunya. Satu-satunya peran yang dapat mencatat |
+| `bidan` | `wilayah_id` | Anak di seluruh posyandu wilayahnya, hanya membaca |
+| `orang_tua` | tidak ada | Hanya anak yang tertaut melalui `anak.orang_tua_id` |
 
 ### 5. Jalankan
 

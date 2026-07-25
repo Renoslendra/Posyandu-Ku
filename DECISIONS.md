@@ -341,3 +341,31 @@ Dua pilihan rancangan yang menyertainya:
 Setiap baris diproses sendiri-sendiri, bukan sebagai satu transaksi. Kader yang sudah memfoto dan memeriksa sepuluh baris tidak boleh kehilangan sembilan yang benar karena satu yang salah. Baris yang berhasil hilang dari layar, yang gagal ditinggalkan beserta alasannya agar dapat diperbaiki tanpa memfoto ulang.
 
 Z-score dihitung ulang di server memakai fungsi yang sama dengan pencatatan manual. Angka apa pun dari klien tidak dipercaya sebagai hasil perhitungan, sejalan dengan KP-03.
+
+## KP-29: Tidak ada pendaftaran mandiri, akun disediakan pengelola
+
+**Keputusan.** Aplikasi tidak menyediakan halaman pendaftaran. Tidak ada `signUp` di seluruh kode aplikasi; satu-satunya jalur autentikasi adalah `signInWithPassword`. Akun dibuat pengelola posyandu memakai service role, lewat `scripts/buat-akun-demo.mjs` pada lingkungan demo.
+
+**Alasan.** Kader dan bidan adalah petugas dengan penugasan resmi, bukan pengguna yang mendaftar atas kemauan sendiri. Bila pendaftaran mandiri dibuka, siapa pun dapat mendaftar sebagai kader lalu melihat data kesehatan seluruh anak di satu posyandu, sebab peran itulah yang menentukan cakupan bacanya pada RLS. Tidak ada cara memverifikasi penugasan seseorang dari dalam aplikasi.
+
+Penolakannya ditegakkan berlapis, bukan hanya disembunyikan di antarmuka:
+
+Tabel `profil` tidak memiliki policy INSERT sama sekali, dan GRANT-nya hanya `select, update` untuk peran `authenticated`. Pengguna tidak dapat membuat profilnya sendiri walaupun memanggil API secara langsung. Hanya service role yang dapat menulisnya.
+
+Pembuatan anak baru diperiksa di tiga tempat: formulirnya hanya dirender di halaman kader, `/api/anak` menolak dengan 403 bila peran bukan kader, dan policy `anak_tulis_kader` mensyaratkan `auth_peran() = 'kader'`. Orang tua tidak dapat mendaftarkan anak, termasuk anaknya sendiri. Bidan juga tidak.
+
+`posyandu_id` diambil dari profil kader yang sedang masuk, bukan dari badan permintaan, sehingga kader tidak dapat menyisipkan anak ke posyandu lain.
+
+**Yang belum ada, dan diakui.** Tidak ada trigger `handle_new_user` pada `auth.users`. Akibatnya, pengguna yang dibuat lewat dashboard Supabase Auth memperoleh akun tetapi tidak memperoleh baris `profil`, sehingga dapat masuk namun setiap policy RLS menolaknya dan halaman tampak kosong tanpa penjelasan. Pada lingkungan demo ini tidak menjadi masalah karena akun selalu dibuat lewat skrip yang menuliskan kedua baris sekaligus. Untuk penerapan nyata, trigger tersebut perlu ditambahkan dengan peran bawaan paling sempit, yaitu `orang_tua`, agar salah konfigurasi tidak pernah menghasilkan akses yang lebih luas daripada yang dimaksud.
+
+## KP-30: Pendaftaran anak dipisahkan dari penimbangan
+
+**Keputusan.** Mendaftarkan anak dan mencatat pengukuran adalah dua alur terpisah dengan endpoint berbeda, `/api/anak` dan `/api/pengukuran`. Anak dapat didaftarkan tanpa satu pun catatan penimbangan.
+
+**Alasan.** Meja posyandu adalah tempat yang sibuk dengan antrian yang tidak boleh bertambah panjang. Mengetik identitas lengkap anak baru, yaitu nama, tanggal lahir, jenis kelamin, nama orang tua, nomor telepon, dan alamat, sambil orang lain menunggu akan memperlambat seluruh proses penimbangan.
+
+Pemisahan ini memungkinkan kader mendata anak lebih dahulu, misalnya saat kunjungan rumah atau sebelum hari posyandu, sehingga pada hari pelaksanaan cukup memilih nama dari daftar dan memasukkan dua angka. Halaman orang tua menangani keadaan "belum ada catatan penimbangan" secara eksplisit, bukan menganggapnya galat.
+
+**Yang belum ada, dan diakui.** Cara orang tua ditautkan ke anaknya di lapangan belum dirancang. Penautan dilakukan lewat kolom `anak.orang_tua_id`, dan pada lingkungan demo diisi skrip. Siapa yang berwenang menautkan, serta bagaimana memastikan akun yang ditautkan benar-benar milik orang tua anak tersebut, belum dijawab. Ini bertalian dengan mekanisme persetujuan orang tua yang juga sudah diakui belum ada pada MVP.
+
+Nama yang mirip diperingatkan tetapi tidak ditolak saat pendaftaran. Dua anak bernama sama di satu posyandu adalah kejadian wajar, sehingga penolakan otomatis akan menghalangi pencatatan yang sah. Keputusannya diserahkan kepada kader, yang mengenal warganya.
