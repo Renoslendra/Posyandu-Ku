@@ -102,6 +102,40 @@ export const hasilEkstraksiSchema = z.object({
 
 export type BarisEkstraksi = z.infer<typeof barisEkstraksiSchema>;
 
+/**
+ * Skema baris hasil pembacaan foto yang sudah diperiksa kader dan siap disimpan.
+ *
+ * Berbeda dari `barisEkstraksiSchema` yang mengizinkan nilai kosong: pada tahap
+ * penyimpanan, berat, tinggi, dan tanggal wajib terisi. Baris yang angkanya
+ * tidak terbaca tidak boleh ikut disimpan sebagai nilai kosong, karena nilai
+ * kosong pada rekam pertumbuhan tidak dapat dibedakan dari anak yang memang
+ * tidak ditimbang.
+ *
+ * Batas kewajaran nilainya tidak ditegakkan di sini melainkan oleh penjaga
+ * kualitas data, agar aturannya hanya ada di satu tempat.
+ */
+export const barisImportSiapSchema = z.object({
+  nama: z.string().trim().min(1, "Nama anak wajib terisi").max(100),
+  beratKg: z.number({ invalid_type_error: "Berat wajib berupa angka" }).positive(),
+  tinggiCm: z.number({ invalid_type_error: "Tinggi wajib berupa angka" }).positive(),
+  tanggal: tanggalTidakDiMasaDepan,
+  diukurTelentang: z.boolean().optional(),
+  /**
+   * Pilihan anak dari kader, dipakai ketika pencocokan nama tidak menghasilkan
+   * satu jawaban. Bila terisi, pilihan kader selalu diutamakan.
+   */
+  anakId: z.string().uuid().optional(),
+});
+
+export const barisImportSchema = z.object({
+  baris: z
+    .array(barisImportSiapSchema)
+    .min(1, "Tidak ada baris yang siap disimpan")
+    .max(50, "Maksimal 50 baris sekali simpan"),
+});
+
+export type BarisImportSiap = z.infer<typeof barisImportSiapSchema>;
+
 /** Menyusun pesan galat pertama menjadi teks yang dapat ditampilkan. */
 export function pesanGalatPertama(galat: z.ZodError): string {
   return galat.errors[0]?.message ?? "Data yang dikirim tidak valid";

@@ -105,7 +105,7 @@ export default async function HalamanKader() {
       </div>
 
       <div className="mt-10">
-        <ImportFoto />
+        <ImportFoto daftarAnak={daftarAnak} />
       </div>
 
       <footer className="mt-10 border-t border-slate-200 pt-5 text-sm text-slate-600">
