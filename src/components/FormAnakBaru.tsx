@@ -43,6 +43,7 @@ export function FormAnakBaru() {
   const [namaOrangTua, setNamaOrangTua] = useState("");
   const [telepon, setTelepon] = useState("");
   const [alamat, setAlamat] = useState("");
+  const [alergi, setAlergi] = useState("");
 
   function kosongkan() {
     setNama("");
@@ -51,6 +52,7 @@ export function FormAnakBaru() {
     setNamaOrangTua("");
     setTelepon("");
     setAlamat("");
+    setAlergi("");
   }
 
   async function kirim(e: React.FormEvent) {
@@ -71,6 +73,7 @@ export function FormAnakBaru() {
           namaOrangTua,
           telepon,
           alamat,
+          alergi,
         }),
       });
       const isi = await respons.json();
@@ -255,6 +258,36 @@ export function FormAnakBaru() {
             onChange={(e) => setAlamat(e.target.value)}
             className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
+        </div>
+
+        {/*
+          Catatan alergi dipakai menyaring saran menu, bukan sekadar disimpan.
+
+          Kolomnya teks bebas dengan pemisah koma, bukan daftar pilihan tertutup.
+          Alergi yang mungkin dicatat kader tidak terbatas pada daftar yang dapat
+          disusun sekarang, dan pilihan yang terlalu sempit akan membuat kader
+          tidak menuliskannya sama sekali. Itu keadaan yang paling berbahaya,
+          sebab menu tetap akan menganjurkan bahan yang perlu dihindari.
+        */}
+        <div>
+          <label
+            htmlFor="alergi"
+            className="block text-base font-semibold text-dasar-900"
+          >
+            Alergi makanan{" "}
+            <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
+          </label>
+          <input
+            id="alergi"
+            value={alergi}
+            onChange={(e) => setAlergi(e.target.value)}
+            placeholder="Contoh: telur, ikan teri"
+            aria-describedby="bantuan-alergi"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
+          />
+          <p id="bantuan-alergi" className="mt-1 text-sm text-dasar-700">
+            Pisahkan dengan koma. Bahan ini tidak akan muncul pada saran menu anak.
+          </p>
         </div>
       </div>
 

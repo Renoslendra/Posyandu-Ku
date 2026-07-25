@@ -23,7 +23,7 @@ function ringkasan(pilihan: Partial<RingkasanDashboard> = {}): RingkasanDashboar
   return {
     totalAnak: 3,
     sudahDiukur: 2,
-    distribusi: { normal: 1, risiko: 1, berat: 0 },
+    distribusi: { normal: 1, risiko: 1, berat: 0, lebih: 0, obesitas: 0 },
     belumDinilai: 1,
     tidakDapatDinilai: 0,
     prioritas: [],
@@ -83,7 +83,7 @@ describe("susunLaporanCsv — keterangan dan rekapitulasi", () => {
         totalAnak: 10,
         sudahDiukur: 8,
         belumDinilai: 2,
-        distribusi: { normal: 5, risiko: 2, berat: 1 },
+        distribusi: { normal: 5, risiko: 2, berat: 1, lebih: 0, obesitas: 0 },
       }),
       KONTEKS,
     );

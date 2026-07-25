@@ -14,7 +14,7 @@ function data(ubah: Partial<RingkasanDashboard> = {}): RingkasanDashboard {
   return {
     totalAnak: 20,
     sudahDiukur: 18,
-    distribusi: { normal: 14, risiko: 3, berat: 1 },
+    distribusi: { normal: 14, risiko: 3, berat: 1, lebih: 0, obesitas: 0 },
     belumDinilai: 2,
     tidakDapatDinilai: 0,
     prioritas: [],
@@ -114,7 +114,7 @@ describe("ringkasanTemplate", () => {
         totalAnak: 0,
         sudahDiukur: 0,
         belumDinilai: 0,
-        distribusi: { normal: 0, risiko: 0, berat: 0 },
+        distribusi: { normal: 0, risiko: 0, berat: 0, lebih: 0, obesitas: 0 },
       }),
     );
     expect(teks.length).toBeGreaterThan(0);
@@ -128,7 +128,7 @@ describe("ringkasanTemplate", () => {
         totalAnak: 7,
         sudahDiukur: 7,
         belumDinilai: 0,
-        distribusi: { normal: 7, risiko: 0, berat: 0 },
+        distribusi: { normal: 7, risiko: 0, berat: 0, lebih: 0, obesitas: 0 },
       }),
     );
     const angka = teks.match(/\d+/g) ?? [];

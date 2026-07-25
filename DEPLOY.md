@@ -21,13 +21,13 @@ Vercel mengenali Next.js secara otomatis. Pengaturan build tidak perlu diubah.
 
 Sebelum menekan Deploy, buka bagian **Environment Variables** dan isi kelima nilai berikut. Nilainya ada di berkas `.env.local` pada komputer Anda.
 
-| Nama | Sumber nilai |
-|------|--------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` |
+| Nama                            | Sumber nilai |
+| ---------------------------------| --------------|
+| `NEXT_PUBLIC_SUPABASE_URL`      | `.env.local` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `.env.local` |
-| `LLM_API_KEY` | `.env.local` |
-| `LLM_BASE_URL` | `.env.local` |
+| `SUPABASE_SERVICE_ROLE_KEY`     | `.env.local` |
+| `LLM_API_KEY`                   | `.env.local` |
+| `LLM_BASE_URL`                  | `.env.local` |
 
 Bila memakai model selain bawaan, sertakan juga `LLM_MODEL_TEXT` dan `LLM_MODEL_VISION`.
 

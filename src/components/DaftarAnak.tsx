@@ -14,11 +14,21 @@ import { saringAnak, type AnakPrioritas, type SaringStatus } from "@/lib/dashboa
  * lambat pada koneksi desa.
  */
 
+/*
+ * Urutan pilihan mengikuti urutan kepentingan bagi bidan, bukan urutan Z-score.
+ *
+ * Kekurangan gizi lebih dahulu karena itu yang paling banyak di posyandu desa
+ * dan paling cepat memburuk. Kelebihan gizi diletakkan sesudah normal, sebagai
+ * satu pilihan yang menggabungkan kedua tingkatnya: jumlahnya masih sedikit,
+ * sehingga memisahkannya menjadi dua tombol hanya menambah tombol bernilai nol.
+ */
 const PILIHAN: { nilai: SaringStatus; label: string }[] = [
   { nilai: "semua", label: "Semua" },
   { nilai: "berat", label: "Perlu segera" },
   { nilai: "risiko", label: "Perlu perhatian" },
   { nilai: "normal", label: "Normal" },
+  { nilai: "lebih", label: "Berat berlebih" },
+  { nilai: "obesitas", label: "Sangat berlebih" },
   { nilai: "belum", label: "Belum ditimbang" },
 ];
 

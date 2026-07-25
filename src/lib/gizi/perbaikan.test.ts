@@ -138,9 +138,9 @@ describe("nilai bukan angka tidak boleh menjadi status normal", () => {
   });
 
   it("mengembalikan null pada klasifikasi nilai bukan angka", () => {
-    expect(klasifikasi(NaN)).toBeNull();
-    expect(klasifikasi(Infinity)).toBeNull();
-    expect(klasifikasi(-Infinity)).toBeNull();
+    expect(klasifikasi(NaN, "bb_u")).toBeNull();
+    expect(klasifikasi(Infinity, "bb_u")).toBeNull();
+    expect(klasifikasi(-Infinity, "bb_u")).toBeNull();
   });
 
   it("melaporkan indikator sebagai tidak terhitung, bukan normal", () => {

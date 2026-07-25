@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { anakBaruSchema, pesanGalatPertama } from "@/lib/validasi";
+import { anakBaruSchema, pecahAlergi, pesanGalatPertama } from "@/lib/validasi";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /**
@@ -84,6 +84,7 @@ export async function POST(permintaan: Request) {
       nama_orang_tua: data.namaOrangTua,
       telepon: data.telepon || null,
       alamat: data.alamat || null,
+      alergi: pecahAlergi(data.alergi),
     })
     .select("id, nama")
     .single();
@@ -192,6 +193,7 @@ export async function PATCH(permintaan: Request) {
       nama_orang_tua: data.namaOrangTua,
       telepon: data.telepon || null,
       alamat: data.alamat || null,
+      alergi: pecahAlergi(data.alergi),
     })
     .eq("id", isi.id)
     .select("id, nama")

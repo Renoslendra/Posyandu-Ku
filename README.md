@@ -105,11 +105,14 @@ supabase/migrations/0005_batas_panggilan.sql
 supabase/migrations/0006_pengukuran_unik.sql
 supabase/migrations/0007_grant_batas_panggilan.sql
 supabase/migrations/0008_tanggal_zona_waktu.sql
+supabase/migrations/0009_status_gizi_lebih.sql
+supabase/migrations/0010_alergi_anak.sql
 ```
 
 Urutannya penting. Migrasi `0003` wajib dijalankan bila setelan **Automatically expose new tables** dimatikan pada proyek Anda, karena hak akses tabel diberikan secara eksplisit di sana.
 
 Migrasi `0008` juga tidak boleh dilewati. Batasan tanggal semula dievaluasi memakai tanggal basis data, yang berjalan pada UTC, sehingga penimbangan yang dicatat sebelum pukul tujuh pagi ditolak dan catatannya dapat hilang dari antrean luring.
+Migrasi `0009` dan `0010` menambahkan status gizi lebih beserta catatan alergi. Tanpa keduanya, saran menu berhenti menyaring bahan yang perlu dihindari dan status kelebihan gizi gagal disimpan. `npm run cek` memeriksa penerapan ketiga migrasi terakhir dan menyebutkan berkas yang perlu dijalankan bila ada yang terlewat.
 
 ### 3. Isi environment variable
 

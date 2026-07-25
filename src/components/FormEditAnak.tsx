@@ -26,6 +26,7 @@ interface Props {
     nama_orang_tua: string;
     telepon?: string | null;
     alamat?: string | null;
+  alergi?: string[] | null;
   };
   adaRiwayat: boolean;
 }
@@ -55,6 +56,16 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
   const [namaOrangTua, setNamaOrangTua] = useState(anak.nama_orang_tua);
   const [telepon, setTelepon] = useState(anak.telepon ?? "");
   const [alamat, setAlamat] = useState(anak.alamat ?? "");
+  /*
+   * Catatan alergi ditampilkan sebagai teks dengan pemisah koma, bentuk yang
+   * sama seperti saat diketik kader.
+   *
+   * Kolom ini wajib ada di sini. Pembaruan data anak mengirim seluruh medan
+   * sekaligus, sehingga tanpa kolomnya, setiap perbaikan nama atau nomor telepon
+   * akan menghapus catatan alerginya, dan penghapusan itu tidak terlihat sampai
+   * saran menu kembali menganjurkan bahan yang seharusnya dihindari.
+   */
+  const [alergi, setAlergi] = useState((anak.alergi ?? []).join(", "));
 
   const tanggalBerubah = tanggalLahir !== anak.tanggal_lahir;
 
@@ -75,6 +86,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
           namaOrangTua,
           telepon,
           alamat,
+          alergi,
         }),
       });
       const isi = await respons.json();
@@ -248,6 +260,27 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             onChange={(e) => setAlamat(e.target.value)}
             className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
+        </div>
+
+        <div>
+          <label
+            htmlFor="e-alergi"
+            className="block text-base font-semibold text-dasar-900"
+          >
+            Alergi makanan{" "}
+            <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
+          </label>
+          <input
+            id="e-alergi"
+            value={alergi}
+            onChange={(e) => setAlergi(e.target.value)}
+            placeholder="Contoh: telur, ikan teri"
+            aria-describedby="bantuan-e-alergi"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
+          />
+          <p id="bantuan-e-alergi" className="mt-1 text-sm text-dasar-700">
+            Pisahkan dengan koma. Bahan ini tidak akan muncul pada saran menu anak.
+          </p>
         </div>
       </div>
 

@@ -123,28 +123,28 @@ describe("ambilLMS — interpolasi tabel", () => {
 
 describe("klasifikasi status gizi", () => {
   it("menempatkan Z >= -2 sebagai normal", () => {
-    expect(klasifikasi(0)).toBe("normal");
-    expect(klasifikasi(1.5)).toBe("normal");
-    expect(klasifikasi(-1.99)).toBe("normal");
-    expect(klasifikasi(-2)).toBe("normal");
+    expect(klasifikasi(0, "bb_u")).toBe("normal");
+    expect(klasifikasi(1.5, "bb_u")).toBe("normal");
+    expect(klasifikasi(-1.99, "bb_u")).toBe("normal");
+    expect(klasifikasi(-2, "bb_u")).toBe("normal");
   });
 
   it("menempatkan -3 <= Z < -2 sebagai risiko", () => {
-    expect(klasifikasi(-2.01)).toBe("risiko");
-    expect(klasifikasi(-2.5)).toBe("risiko");
-    expect(klasifikasi(-3)).toBe("risiko");
+    expect(klasifikasi(-2.01, "bb_u")).toBe("risiko");
+    expect(klasifikasi(-2.5, "bb_u")).toBe("risiko");
+    expect(klasifikasi(-3, "bb_u")).toBe("risiko");
   });
 
   it("menempatkan Z < -3 sebagai berat", () => {
-    expect(klasifikasi(-3.01)).toBe("berat");
-    expect(klasifikasi(-4)).toBe("berat");
+    expect(klasifikasi(-3.01, "bb_u")).toBe("berat");
+    expect(klasifikasi(-4, "bb_u")).toBe("berat");
   });
 
   it("memperlakukan ambang tepat sebagai batas inklusif ke arah lebih baik", () => {
     // Anak dengan Z tepat -2 belum dikategorikan risiko. Batas dibuat
     // eksplisit agar klasifikasi tidak berubah karena galat pembulatan.
-    expect(klasifikasi(-2)).toBe("normal");
-    expect(klasifikasi(-3)).toBe("risiko");
+    expect(klasifikasi(-2, "bb_u")).toBe("normal");
+    expect(klasifikasi(-3, "bb_u")).toBe("risiko");
   });
 });
 
@@ -195,7 +195,7 @@ describe("bulatkanZ", () => {
   it("tidak mengubah klasifikasi di sekitar ambang", () => {
     // Pembulatan hanya untuk penyimpanan dan tampilan. Klasifikasi tetap
     // memakai nilai Z penuh agar hasilnya tidak bergeser karena pembulatan.
-    expect(klasifikasi(-2.004)).toBe("risiko");
+    expect(klasifikasi(-2.004, "bb_u")).toBe("risiko");
     expect(bulatkanZ(-2.004)).toBe(-2);
     // Nilai tersimpan tampak -2 (normal bila diklasifikasi ulang), sehingga
     // klasifikasi wajib dihitung dari nilai penuh, bukan dari nilai bulat.

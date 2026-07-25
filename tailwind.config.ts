@@ -61,6 +61,24 @@ const config: Config = {
           berat: "#b91c1c",
           "berat-lembut": "#fef2f2",
           "berat-garis": "#fecaca",
+          /*
+           * Kelebihan gizi memakai keluarga warna ungu, terpisah dari merah dan
+           * jingga yang sudah dipakai kekurangan gizi.
+           *
+           * Pemisahan ini bukan soal selera. Bila kelebihan dan kekurangan gizi
+           * berwarna sama, kader yang membaca cepat akan menyimpulkan anak perlu
+           * ditambah makannya, padahal yang dibutuhkan justru sebaliknya. Ungu
+           * juga tetap terbedakan dari hijau bagi penyandang buta warna merah
+           * hijau, sama seperti seluruh warna status lain di sini.
+           *
+           * Kedua nilai gelap ini memenuhi kontras 4,5:1 terhadap putih.
+           */
+          lebih: "#7e22ce",
+          "lebih-lembut": "#faf5ff",
+          "lebih-garis": "#e9d5ff",
+          obesitas: "#6b21a8",
+          "obesitas-lembut": "#f5f3ff",
+          "obesitas-garis": "#ddd6fe",
         },
 
         "surface-dim": "#d7dbd9",

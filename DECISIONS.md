@@ -490,3 +490,37 @@ Batas pengaman seratus halaman mencegah kekeliruan pada kueri berubah menjadi pe
 **Yang sengaja tidak diubah.** Halaman orang tua tetap satu permintaan. RLS membatasinya pada anak yang tertaut ke orang tua yang sedang masuk, biasanya satu sampai tiga anak, sedangkan seorang anak paling banyak memiliki enam puluh satu penimbangan sepanjang lima tahun layanan posyandu. Jumlahnya tidak akan mendekati batas.
 
 **Alternatif yang tidak dipilih.** Memindahkan agregasi ke basis data lewat view atau fungsi. Cara itu lebih hemat, sebab yang berpindah ke Node hanya hasil akhirnya, bukan seluruh riwayat. Tidak dipilih sekarang karena berarti memindahkan logika penilaian gizi ke SQL, tempat ia tidak dapat diuji dengan perangkat uji yang sama, dan perhitungan itu bagian paling penting untuk dijaga kebenarannya. Pengambilan bertahap menutup cacatnya tanpa memindahkan apa pun yang berisiko.
+
+## KP-35: Menutup keempat kekurangan yang sebelumnya dinyatakan terbuka
+
+**Keputusan.** Mengerjakan keempat hal yang KP-32 dan KP-33 nyatakan belum diperbaiki, alih-alih membiarkannya sebagai catatan.
+
+**Alasan.** Menyatakan kekurangan secara terbuka lebih baik daripada menyembunyikannya, tetapi itu bukan pengganti perbaikan. Keempat hal di bawah semuanya menyentuh ketepatan penilaian gizi, dan penilaian yang tidak tepat pada alat penapisan berarti anak yang perlu dirujuk tidak dirujuk.
+
+**Usia kini dihitung beserta pecahan bulan.** Usia dibulatkan ke bawah, sehingga bayi berusia 27 hari dinilai terhadap referensi usia nol bulan. Pada bulan pertama, pertumbuhan paling cepat, dan selisih Z-score antara dua titik bulan berdekatan mencapai 2,2 SD pada panjang menurut umur. Diukur langsung pada kasus nyata: bayi 27 hari dengan berat 3,6 kg dan panjang 52 cm sebelumnya menghasilkan panjang menurut umur +1,12 SD, sedangkan dengan usia tepat menjadi -1,08 SD. Biasnya selalu searah, membuat anak tampak lebih baik daripada keadaan sebenarnya.
+
+Tabel tidak perlu diganti, sebab interpolasi sudah mendukung nilai antar titik. Usia bulat tetap dipakai untuk mencatat, menampilkan, dan memilih tabel yang berlaku, sedangkan usia bertepatan hari dipakai mencari titik referensi.
+
+Pengerjaan ini menemukan cacat kedua yang tidak terduga. Fungsi usia lama memeriksa kepenuhan bulan dengan membandingkan angka tanggal, dan itu keliru bagi anak yang lahir pada tanggal 29, 30, atau 31: anak yang lahir 31 Januari dan diukur 28 Februari dihitung berusia nol bulan, sebab 28 lebih kecil daripada 31. Padahal Februari tidak memiliki tanggal 31, sehingga hari ulang bulannya memang 28 Februari. Kepenuhan bulan kini diperiksa terhadap hari ulang bulan yang sebenarnya, dan invariannya diuji menyeluruh atas lebih dari dua puluh ribu pasangan tanggal.
+
+**Kelebihan gizi kini dinilai.** Hanya sisi bawah distribusi yang diklasifikasikan, sehingga anak dengan berat menurut tinggi badan pada +4 SD dilaporkan sebagai normal. Sisi atas kini ditambahkan pada dua tingkat: gizi lebih di atas +2 SD dan obesitas di atas +3 SD.
+
+Hanya berlaku pada indikator berat menurut panjang atau tinggi badan. Berat menurut umur sengaja tidak dipakai menilai kelebihan, sebab anak yang tinggi untuk usianya akan berat pula untuk usianya tanpa kelebihan lemak apa pun, dan panjang menurut umur juga tidak: anak yang tinggi bukan persoalan gizi.
+
+Yang paling merugikan bukan status yang salah itu sendiri, melainkan yang mengikutinya. Cabang terakhir penyusun menu adalah menu berkalori tertinggi untuk anak kekurangan gizi berat, sehingga anak kelebihan berat akan menerima anjuran porsi kecil tetapi sering lima sampai enam kali sehari dengan santan tambahan. Menu tersendiri karena itu ditambahkan, dengan prinsip mengganti sumber kalori alih-alih mengurangi jumlah makan: balita masih tumbuh, dan membatasi asupannya berisiko menghambat pertumbuhan tinggi badan tanpa menyelesaikan persoalan beratnya.
+
+Kekurangan gizi berat tetap ditempatkan di atas obesitas pada daftar tindak lanjut. Keduanya menuntut pemeriksaan, namun kekurangan gizi berat dapat memburuk dalam hitungan minggu sedangkan obesitas ditangani dalam hitungan bulan.
+
+**Koreksi WHO di luar tiga simpangan baku kini diterapkan.** Rumus LMS mengandaikan distribusi yang tepat, dan andaian itu tidak bertahan di ekor: di bagian terluar, rumus tersebut meregang jauh melampaui keadaan sebenarnya. Anak berberat 4 kg pada usia dua tahun sebelumnya menghasilkan Z sekitar -9,8, sedangkan dengan koreksi menjadi -7,5.
+
+Koreksi ini tidak menggeser satu pun ambang penapisan, dan hal itu diverifikasi langsung: pada setiap ambang, yaitu -3, -2, +2, dan +3, selisihnya berada pada orde sepuluh pangkat minus empat belas. Kedua rumus berpotongan tepat di Z bernilai tiga, sehingga tidak ada lompatan pada angka yang dilaporkan. Yang berubah hanyalah angka bagi anak paling ekstrem, dan perubahan itu membuatnya sebanding dengan keluaran perangkat resmi WHO. Koreksi dijalankan di dalam rumus, bukan sebagai langkah terpisah, sebab koreksi yang dapat terlupakan sama saja dengan koreksi yang tidak ada.
+
+**Catatan alergi kini disimpan dan menyaring saran menu.** Setiap menu memuat telur dan hampir semuanya memuat ikan, dua pemicu alergi pangan tersering pada anak, sementara aplikasi tidak menyimpan riwayat alergi sama sekali. Catatan umum yang sebelumnya ditambahkan memang perlu, tetapi mengalihkan tanggung jawab kepada orang tua atas hal yang sudah tercatat di buku posyandu.
+
+Disimpan sebagai daftar teks bebas, bukan pilihan tertutup, sebab kemungkinannya tidak terbatas pada daftar yang dapat disusun sekarang, dan pilihan yang terlalu sempit membuat kader tidak menuliskannya sama sekali.
+
+Bahan yang dihindari diganti, tidak sekadar dibuang. Telur dan ikan teri adalah sumber protein utama pada menu ini, dan menu penambah berat yang kehilangan sumber proteinnya tidak lagi menjalankan tugasnya meski tampak aman.
+
+Pengerjaan ini menemukan bahwa penyaringan yang hanya menyentuh daftar bahan tidak cukup, dan ketidakcukupan itu berbahaya justru karena menimbulkan rasa aman. Nama hidangan adalah teks tetap: "Bubur beras dengan telur" tetap tertulis meski telur sudah hilang dari daftar belanjanya, dan orang tua memasak sesuai nama hidangannya. Hal yang sama pada catatan gizi, yang menyatakan santan menambah kalori pada menu yang justru tidak lagi memakai santan. Nama hidangan kini ditulis ulang dan catatan yang menyebut bahan terbuang ikut dibuang. Satu kalimat pada menu juga diubah, sebab "hari lain ganti tempe" menembus penyaringan dengan cara yang sama; anjuran itu dipindahkan ke catatan.
+
+**Cara menegakkannya.** Lima puluh empat pengujian baru pada empat berkas terpisah, masing-masing menegakkan satu perbaikan. Yang paling penting di antaranya bukan yang memeriksa perilaku baru, melainkan yang memeriksa bahwa perilaku lama tidak bergeser: bahwa koreksi ekor tidak menyentuh apa pun di dalam rentang tiga simpangan baku, dan bahwa penambahan sisi atas tidak mengubah satu pun ambang sisi bawah.

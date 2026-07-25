@@ -198,6 +198,61 @@ async function main() {
     await admin.from("anak").delete().eq("nama", namaProbe);
   }
 
+  // --- Kolom dan nilai enum yang ditambahkan migrasi kemudian --------------
+  //
+  // Keduanya tidak dapat dipastikan dari kode, sebab yang menentukan adalah
+  // keadaan basis data. Bila terlewat, kegagalannya tidak menyatakan diri:
+  // saran menu berhenti menyaring bahan yang perlu dihindari, dan status
+  // kelebihan gizi gagal disimpan pada saat penyimpanan pengukuran.
+  console.log("\nMigrasi lanjutan:");
+
+  const { error: galatAlergi } = await admin.from("anak").select("alergi").limit(1);
+
+  if (!galatAlergi) {
+    lolos("kolom alergi tersedia pada tabel anak");
+  } else {
+    gagal(
+      "kolom alergi belum ada",
+      "jalankan supabase/migrations/0010_alergi_anak.sql",
+    );
+  }
+
+  const { data: anakUji } = await admin.from("anak").select("id").limit(1);
+
+  if (!anakUji || anakUji.length === 0) {
+    console.log("  CATATAN belum ada anak, pemeriksaan status gizi dilewati.");
+  } else {
+    const TANGGAL_UJI = "2020-01-01";
+
+    const { error: galatEnum } = await admin.from("pengukuran").insert({
+      anak_id: anakUji[0].id,
+      tanggal: TANGGAL_UJI,
+      berat_kg: 10,
+      tinggi_cm: 80,
+      usia_bulan: 24,
+      status: "lebih",
+      dikonfirmasi: false,
+      sumber: "manual",
+    });
+
+    if (!galatEnum) {
+      lolos("status gizi lebih dan obesitas dikenali basis data");
+    } else if (galatEnum.code === "22P02") {
+      gagal(
+        "status gizi lebih belum dikenali",
+        "jalankan supabase/migrations/0009_status_gizi_lebih.sql",
+      );
+    } else {
+      gagal(`tidak dapat memeriksa status gizi: ${galatEnum.message}`);
+    }
+
+    await admin
+      .from("pengukuran")
+      .delete()
+      .eq("anak_id", anakUji[0].id)
+      .eq("tanggal", TANGGAL_UJI);
+  }
+
   // --- Isi data ----------------------------------------------------------
   console.log("\nData:");
 

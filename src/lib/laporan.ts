@@ -147,6 +147,8 @@ export function susunLaporanCsv(
   larik.push(baris(["Status normal", ringkasan.distribusi.normal]));
   larik.push(baris(["Status perlu perhatian", ringkasan.distribusi.risiko]));
   larik.push(baris(["Status perlu segera diperiksa", ringkasan.distribusi.berat]));
+  larik.push(baris(["Berat badan berlebih", ringkasan.distribusi.lebih]));
+  larik.push(baris(["Berat badan sangat berlebih", ringkasan.distribusi.obesitas]));
   larik.push(baris(["Perlu ditindaklanjuti", ringkasan.prioritas.length]));
   larik.push(
     baris(["Berhenti datang menimbang", ringkasan.hilangDariPemantauan.length]),

@@ -47,7 +47,13 @@ describe("susunRingkasan — hitungan dasar", () => {
       ],
       SEKARANG,
     );
-    expect(r.distribusi).toEqual({ normal: 1, risiko: 1, berat: 0 });
+    expect(r.distribusi).toEqual({
+      normal: 1,
+      risiko: 1,
+      berat: 0,
+      lebih: 0,
+      obesitas: 0,
+    });
   });
 
   it("mengabaikan pengukuran yang belum dikonfirmasi", () => {

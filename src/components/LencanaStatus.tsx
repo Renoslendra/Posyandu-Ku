@@ -50,6 +50,44 @@ function Ikon({ status }: { status: StatusGizi }) {
     );
   }
 
+  /*
+   * Panah ke atas di dalam lingkaran: berat berlebih.
+   *
+   * Arahnya sengaja dibuat berlawanan dengan penanda kekurangan. Kader yang
+   * membaca cepat perlu langsung melihat bahwa persoalannya ke atas, bukan ke
+   * bawah, sebab kedua keadaan itu menuntut tindakan yang berlawanan.
+   */
+  if (status === "lebih") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="2" />
+        <path
+          d="M10 13.5v-7M7 9l3-3 3 3"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  // Panah ganda ke atas: berat sangat berlebih, setingkat lebih mendesak.
+  if (status === "obesitas") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="2" />
+        <path
+          d="M7 13l3-3 3 3M7 9l3-3 3 3"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   // Segi delapan: perlu segera. Bentuk rambu berhenti.
   return (
     <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
@@ -69,6 +107,8 @@ const KELAS: Record<StatusGizi, string> = {
   normal: "bg-status-normal text-white",
   risiko: "bg-status-risiko text-white",
   berat: "bg-status-berat text-white",
+  lebih: "bg-status-lebih text-white",
+  obesitas: "bg-status-obesitas text-white",
 };
 
 export function LencanaStatus({
@@ -120,6 +160,8 @@ export function KartuStatus({
     normal: "border-status-normal-garis bg-status-normal-lembut text-green-900",
     risiko: "border-status-risiko-garis bg-status-risiko-lembut text-amber-900",
     berat: "border-status-berat-garis bg-status-berat-lembut text-red-900",
+    lebih: "border-status-lebih-garis bg-status-lebih-lembut text-purple-900",
+    obesitas: "border-status-obesitas-garis bg-status-obesitas-lembut text-violet-900",
   };
 
   if (!status) {

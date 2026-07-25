@@ -73,7 +73,34 @@ export const anakBaruSchema = z.object({
     .optional()
     .or(z.literal("")),
   alamat: z.string().trim().max(200).optional().or(z.literal("")),
+  /**
+   * Catatan alergi makanan, ditulis kader dengan pemisah koma.
+   *
+   * Diterima sebagai teks, bukan sebagai senarai, sebab itulah bentuk yang
+   * diketik kader. Pemecahannya menjadi daftar dilakukan di satu tempat pada
+   * `pecahAlergi`, agar bentuk yang tersimpan tidak bergantung pada cara kader
+   * menuliskan spasi.
+   */
+  alergi: z.string().trim().max(200).optional().or(z.literal("")),
 });
+
+/**
+ * Memecah catatan alergi menjadi daftar bahan.
+ *
+ * Entri kosong dibuang, dan panjang tiap entri dibatasi agar satu kalimat
+ * panjang yang salah tempat tidak berubah menjadi penyaring yang membuang
+ * banyak bahan sekaligus. Menu yang menyusut tanpa alasan akan kekurangan zat
+ * gizi, sehingga penyaring yang terlalu longgar juga merugikan.
+ */
+export function pecahAlergi(teks: string | undefined): string[] {
+  if (!teks) return [];
+
+  return teks
+    .split(",")
+    .map((bagian) => bagian.trim())
+    .filter((bagian) => bagian.length > 0 && bagian.length <= 40)
+    .slice(0, 10);
+}
 
 export type AnakBaru = z.infer<typeof anakBaruSchema>;
 

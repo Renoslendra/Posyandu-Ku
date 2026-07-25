@@ -14,22 +14,42 @@
 /**
  * Klasifikasi status gizi berdasarkan Z-score (standar WHO).
  *
- * Hanya sisi bawah distribusi yang diklasifikasikan: kurang gizi, pendek, dan
- * kurus. Sisi atas, yaitu gizi lebih pada Z di atas +2 dan obesitas pada Z di
- * atas +3, **belum ditangani**. Anak dengan berat menurut tinggi badan pada
- * +4 SD saat ini dilaporkan sebagai normal.
+ * Kedua sisi distribusi diklasifikasikan. Sisi bawah menandai kurang gizi,
+ * pendek, dan kurus; sisi atas menandai gizi lebih dan obesitas.
  *
- * Ini kelalaian, bukan keputusan. Grafik pertumbuhan pada aplikasi ini sudah
- * menggambar garis +2 SD, sehingga bidan dapat melihat anak berada di atasnya
- * sementara status yang tertulis tetap normal. Dicatat pada KP-32 beserta
- * alasan mengapa belum dikerjakan.
+ * Sisi atas sebelumnya tidak ada sama sekali, sehingga anak dengan berat menurut
+ * tinggi badan pada +4 SD dilaporkan sebagai normal. Itu kelalaian yang cukup
+ * tampak: grafik pertumbuhan pada aplikasi ini sudah menggambar garis +2 SD,
+ * sehingga bidan dapat melihat anak berada jauh di atasnya sementara status yang
+ * tertulis di sebelahnya tetap normal.
+ *
+ * Ambang sisi atas hanya berlaku pada indikator berat menurut panjang atau
+ * tinggi badan, dan pada indeks massa tubuh menurut umur bila kelak ditambahkan.
+ * Berat menurut umur sengaja tidak dipakai untuk menilai gizi lebih, sebab anak
+ * yang tinggi untuk usianya akan berat pula untuk usianya tanpa kelebihan lemak
+ * apa pun. Panjang menurut umur juga tidak: anak yang tinggi bukan persoalan
+ * gizi.
  */
 export const AMBANG_Z = {
-  /** Z >= -2 dianggap normal. */
+  /** Z >= -2 dan Z <= +2 dianggap normal. */
   normal: -2,
   /** -3 <= Z < -2 dianggap risiko/kurang. */
   risiko: -3,
+  /** +2 < Z <= +3 dianggap gizi lebih. */
+  lebih: 2,
+  /** Z > +3 dianggap obesitas. */
+  obesitas: 3,
 } as const;
+
+/**
+ * Indikator yang dipakai menilai kelebihan gizi.
+ *
+ * Dibatasi pada berat menurut panjang dan berat menurut tinggi badan. Keduanya
+ * membandingkan berat terhadap ukuran tubuh, sehingga kelebihannya memang
+ * menunjukkan kelebihan lemak. Berat menurut umur tidak dapat membedakan anak
+ * gemuk dari anak yang sekadar tinggi.
+ */
+export const INDIKATOR_GIZI_LEBIH = ["bb_pb", "bb_tb"] as const;
 
 /** Batas kewajaran nilai pengukuran. Di luar rentang ini nilai ditolak. */
 export const BATAS_WAJAR = {

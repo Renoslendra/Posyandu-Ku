@@ -129,6 +129,26 @@ export default async function HalamanBidan() {
     },
   ];
 
+  /*
+   * Kartu berat berlebih hanya ditambahkan bila memang ada anaknya.
+   *
+   * Kelebihan gizi masih jarang di posyandu desa, dan kartu bernilai nol yang
+   * selalu terpampang akan mengencerkan perhatian terhadap empat kartu pertama
+   * yang justru menuntut tindakan. Ketika angkanya muncul, ia muncul karena ada
+   * yang perlu dilihat.
+   */
+  const jumlahBerlebih = ringkasan.distribusi.lebih + ringkasan.distribusi.obesitas;
+
+  if (jumlahBerlebih > 0) {
+    kartu.push({
+      label: "Berat berlebih",
+      nilai: jumlahBerlebih,
+      warna: "text-status-lebih",
+      gaya: "border-status-lebih-garis bg-status-lebih-lembut",
+      Ikon: IkonTimbangan,
+    });
+  }
+
   return (
     <>
       <BilahNavigasi />

@@ -128,7 +128,13 @@ export function susunRingkasan(
     daftar.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
   }
 
-  const distribusi: Record<StatusGizi, number> = { normal: 0, risiko: 0, berat: 0 };
+  const distribusi: Record<StatusGizi, number> = {
+    normal: 0,
+    risiko: 0,
+    berat: 0,
+    lebih: 0,
+    obesitas: 0,
+  };
   let belumDinilai = 0;
   let tidakDapatDinilai = 0;
   let sudahDiukur = 0;
@@ -174,6 +180,19 @@ export function susunRingkasan(
     const alasan: string[] = [];
     if (terakhir?.status === "berat") alasan.push("Status gizi perlu segera diperiksa");
     if (terakhir?.status === "risiko") alasan.push("Status gizi perlu perhatian");
+    /*
+     * Kelebihan gizi juga masuk daftar tindak lanjut.
+     *
+     * Kalimatnya sengaja menyebut arah persoalannya, sebab daftar ini dibaca cepat
+     * dan seluruh baris lain berbicara tentang kekurangan. Tanpa penyebutan arah,
+     * bidan dapat menindaklanjutinya dengan anjuran yang berlawanan.
+     */
+    if (terakhir?.status === "obesitas") {
+      alasan.push("Berat badan sangat berlebih, perlu diperiksa");
+    }
+    if (terakhir?.status === "lebih") {
+      alasan.push("Berat badan berlebih, perlu perhatian");
+    }
     if (pola.perluPerhatian) alasan.push(pola.pesan);
     if (pemantauan.hilang) alasan.push(pemantauan.pesan);
 
@@ -199,8 +218,20 @@ export function susunRingkasan(
    * Status yang tidak dapat dihitung diberi bobot di atas normal. Nilai di luar
    * rentang tabel rujukan adalah petunjuk yang perlu diperiksa, bukan pertanda
    * baik, dan sebelumnya anak semacam itu diperlakukan setara anak sehat.
+   *
+   * Kekurangan gizi berat ditempatkan di atas obesitas. Keduanya menuntut
+   * pemeriksaan, namun kekurangan gizi berat pada balita dapat memburuk dalam
+   * hitungan minggu, sedangkan obesitas ditangani dalam hitungan bulan. Bidan
+   * yang berhenti membaca di baris kelima harus melihat yang paling mendesak
+   * lebih dahulu.
    */
-  const bobot: Record<string, number> = { berat: 4, risiko: 3, normal: 1 };
+  const bobot: Record<string, number> = {
+    berat: 5,
+    obesitas: 4,
+    risiko: 3,
+    lebih: 3,
+    normal: 1,
+  };
   const nilaiBobot = (status: StatusGizi | null) => bobot[status ?? "tidak_dinilai"] ?? 2;
 
   prioritas.sort((a, b) => {

@@ -69,7 +69,7 @@ export async function POST(permintaan: Request) {
   // RLS menyaring baris ini. Anak di luar wewenang tidak akan ditemukan.
   const { data: anak } = await supabase
     .from("anak")
-    .select("id, nama")
+    .select("id, nama, alergi")
     .eq("id", muatan.anakId)
     .maybeSingle();
 
@@ -100,9 +100,17 @@ export async function POST(permintaan: Request) {
     );
   }
 
+  /*
+   * Catatan alergi diteruskan agar bahan yang perlu dihindari tidak muncul pada
+   * saran. Kolomnya baru, sehingga baris lama dapat bernilai null; diperlakukan
+   * sebagai tanpa catatan.
+   */
+  const alergi = Array.isArray(anak.alergi) ? (anak.alergi as string[]) : [];
+
   const saran = await susunSaranMenu(
     terakhir.status as StatusGizi,
     terakhir.usia_bulan,
+    alergi,
   );
 
   if (!saran) {

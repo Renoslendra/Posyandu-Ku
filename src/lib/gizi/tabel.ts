@@ -38,7 +38,23 @@ export function ambilTabel(
 
 export interface MasukanPenilaian {
   jenisKelamin: JenisKelamin;
+  /**
+   * Usia dalam bulan penuh, sebagaimana dicatat dan ditampilkan.
+   *
+   * Dipakai untuk memilih tabel yang berlaku dan memeriksa rentang layanan, dua
+   * keputusan yang memang bekerja pada satuan bulan bulat.
+   */
   usiaBulan: number;
+  /**
+   * Usia beserta pecahan bulan, untuk mencari titik referensi WHO.
+   *
+   * Bila tidak diberikan, `usiaBulan` yang dipakai. Perbedaannya besar pada bayi:
+   * memakai bulan bulat berarti bayi berusia 27 hari dinilai terhadap referensi
+   * usia nol bulan, dan pada bulan pertama selisih antar titik bulan mencapai
+   * 2,5 SD. Biasnya searah, membuat anak tampak lebih baik daripada keadaannya,
+   * sehingga kasus di ambang batas terlewat.
+   */
+  usiaBulanTepat?: number;
   beratKg: number;
   tinggiCm: number;
   /** true bila diukur telentang (panjang badan). Menentukan tabel BB/PB. */
@@ -61,10 +77,23 @@ export interface HasilPenilaian {
   tidakTerhitung: Indikator[];
 }
 
+/**
+ * Urutan keparahan untuk memilih status akhir di antara beberapa indikator.
+ *
+ * Kekurangan gizi ditempatkan di atas kelebihan pada tingkat yang setara.
+ * Alasannya bukan bahwa kelebihan gizi tidak penting, melainkan bahwa keduanya
+ * hampir tidak mungkin muncul bersamaan pada satu anak: berat menurut tinggi
+ * tidak dapat sekaligus di bawah -2 dan di atas +2. Ketika perbandingan ini
+ * terpakai, yang dibandingkan adalah indikator berbeda, dan pada keadaan itu
+ * kekurangan gizi yang perlu tampil lebih dahulu karena dapat memburuk jauh
+ * lebih cepat.
+ */
 const URUTAN_KEPARAHAN: Record<StatusGizi, number> = {
   normal: 0,
-  risiko: 1,
-  berat: 2,
+  lebih: 1,
+  obesitas: 2,
+  risiko: 3,
+  berat: 4,
 };
 
 /**
@@ -80,6 +109,16 @@ const URUTAN_KEPARAHAN: Record<StatusGizi, number> = {
 export function nilaiPengukuran(masukan: MasukanPenilaian): HasilPenilaian {
   const { jenisKelamin, usiaBulan, beratKg, tinggiCm, diukurTelentang } = masukan;
 
+  /*
+   * Pemilihan tabel memakai usia bulan penuh, pencarian titik memakai usia tepat.
+   *
+   * Pembedaan ini disengaja. Batas dua tahun antara tabel PB/U dan TB/U adalah
+   * keputusan tentang cara ukur yang lazim, dan itu bekerja pada satuan bulan
+   * bulat sebagaimana kader mencatatnya. Sedangkan pencarian titik referensi
+   * adalah perhitungan, dan di situ pecahan bulan menentukan.
+   */
+  const usiaCari = masukan.usiaBulanTepat ?? usiaBulan;
+
   const indikatorBT = pilihIndikatorBeratTinggi(usiaBulan, diukurTelentang);
   const indikatorPU = pilihIndikatorPanjangUsia(usiaBulan);
 
@@ -94,8 +133,8 @@ export function nilaiPengukuran(masukan: MasukanPenilaian): HasilPenilaian {
    */
   const tinggiSetara = setarakanPanjangTinggi(tinggiCm, usiaBulan, diukurTelentang);
 
-  const zBU = hitungZ(ambilTabel("bb_u", jenisKelamin), usiaBulan, beratKg);
-  const zTU = hitungZ(ambilTabel(indikatorPU, jenisKelamin), usiaBulan, tinggiSetara);
+  const zBU = hitungZ(ambilTabel("bb_u", jenisKelamin), usiaCari, beratKg);
+  const zTU = hitungZ(ambilTabel(indikatorPU, jenisKelamin), usiaCari, tinggiSetara);
 
   /*
    * Pada BB/PB dan BB/TB, pembandingnya panjang atau tinggi badan, bukan usia,
@@ -122,7 +161,7 @@ export function nilaiPengukuran(masukan: MasukanPenilaian): HasilPenilaian {
   let penentuStatus: Indikator | null = null;
 
   for (const { indikator, z } of terhitung) {
-    const s = klasifikasi(z);
+    const s = klasifikasi(z, indikator);
 
     /*
      * Z-score yang tidak dapat diklasifikasikan diperlakukan sebagai tidak
