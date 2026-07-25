@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  /* Font minimal 16px sesuai NFR-02.2 */
+  font-size: 1rem;
+}
+
+/* Fokus terlihat jelas untuk navigasi keyboard */
+:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 2px;
+}
