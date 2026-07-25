@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { tanggalHariIni } from "@/lib/tanggal";
 
 /**
  * Formulir pendaftaran anak baru.
@@ -20,6 +21,21 @@ export function FormAnakBaru() {
   const [galat, setGalat] = useState<string | null>(null);
   const [berhasil, setBerhasil] = useState<string | null>(null);
   const [peringatan, setPeringatan] = useState<string | null>(null);
+
+  /*
+   * Batas tanggal lahir diisi setelah pemasangan memakai waktu lokal.
+   *
+   * Menghitungnya saat render dengan toISOString membuat batasnya bergeser
+   * sehari bagi pengguna di Indonesia sebelum jam tujuh pagi, sebab toISOString
+   * selalu mengembalikan UTC. Akibatnya bayi yang lahir hari itu tidak dapat
+   * didaftarkan. Nilai kosong berarti tanpa batas, dan itu aman karena server
+   * beserta check constraint basis data tetap menolak tanggal di masa depan.
+   */
+  const [batasTanggal, setBatasTanggal] = useState("");
+
+  useEffect(() => {
+    setBatasTanggal(tanggalHariIni());
+  }, []);
 
   const [nama, setNama] = useState("");
   const [tanggalLahir, setTanggalLahir] = useState("");
@@ -65,12 +81,29 @@ export function FormAnakBaru() {
       }
 
       setBerhasil(`${isi.nama} berhasil didaftarkan.`);
+      kosongkan();
+
       if (isi.peringatanNamaSerupa) {
+        /*
+         * Formulir dibiarkan terbuka bila ada nama serupa, agar peringatannya
+         * terbaca. Kader perlu memastikan ini bukan anak yang sama sebelum
+         * beralih ke pekerjaan berikutnya.
+         */
         setPeringatan(
           `Sudah ada anak bernama ${isi.peringatanNamaSerupa} di posyandu ini. Mohon pastikan ini bukan anak yang sama.`,
         );
+      } else {
+        /*
+         * Formulir ditutup supaya pesan keberhasilan terlihat.
+         *
+         * Sebelumnya pesan ini hanya dirender pada tampilan tertutup, sedangkan
+         * formulir tetap terbuka setelah penyimpanan berhasil. Akibatnya kader
+         * tidak pernah melihat konfirmasi apa pun: yang tampak hanyalah semua
+         * kolom mengosong, dan itu tanda yang sama persis dengan formulir yang
+         * terhapus karena kegagalan.
+         */
+        setTerbuka(false);
       }
-      kosongkan();
       // Menyegarkan halaman agar anak baru muncul di daftar pilihan.
       router.refresh();
     } catch {
@@ -137,7 +170,7 @@ export function FormAnakBaru() {
             type="date"
             value={tanggalLahir}
             onChange={(e) => setTanggalLahir(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
+                      max={batasTanggal}
             required
             className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />

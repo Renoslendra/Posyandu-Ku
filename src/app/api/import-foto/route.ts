@@ -31,8 +31,16 @@ Aturan:
 - Sertakan hanya baris yang memuat nama anak.
 - Maksimal 50 baris.`;
 
-/** Batas ukuran gambar. Menjaga biaya dan waktu proses tetap terkendali. */
-const MAKS_BYTE_GAMBAR = 6 * 1024 * 1024;
+/**
+ * Batas panjang teks data URL gambar, bukan ukuran berkas aslinya.
+ *
+ * Pengodean base64 menambah sekitar sepertiga, sehingga batas enam mebibita di
+ * sini setara berkas gambar sekitar 4,5 megabita. Nilai itu sengaja dipertahankan
+ * karena mendekati batas ukuran permintaan pada platform tempat aplikasi ini
+ * dijalankan, sehingga penolakan terjadi dengan pesan yang dapat dibaca kader
+ * alih-alih galat platform.
+ */
+const MAKS_PANJANG_DATA_URL = 6 * 1024 * 1024;
 
 export async function POST(permintaan: Request) {
   const supabase = await klienServer();
@@ -64,6 +72,28 @@ export async function POST(permintaan: Request) {
     );
   }
 
+  /*
+   * Ukuran diperiksa dari kepala permintaan, sebelum badannya dibaca.
+   *
+   * Sebelumnya pemeriksaan dilakukan setelah `permintaan.json()`, yang berarti
+   * seluruh badan permintaan sudah dibaca ke memori dan diurai sebagai JSON lebih
+   * dahulu. Foto lima puluh megabita menghabiskan memori dan waktu prosesor
+   * sepenuhnya, baru kemudian ditolak. Beberapa permintaan semacam itu secara
+   * bersamaan cukup untuk menghabiskan memori proses.
+   *
+   * Kepala permintaan dapat dipalsukan, sehingga pemeriksaan panjang teks di
+   * bawah tetap dipertahankan sebagai penjaga sesungguhnya. Yang ini hanya
+   * menolak lebih awal pada kasus yang jujur, dan itulah kasus yang sebenarnya
+   * terjadi: kader dengan ponsel berkamera resolusi tinggi.
+   */
+  const panjangDinyatakan = Number(permintaan.headers.get("content-length") ?? "0");
+  if (Number.isFinite(panjangDinyatakan) && panjangDinyatakan > MAKS_PANJANG_DATA_URL) {
+    return NextResponse.json(
+      { galat: "Ukuran foto terlalu besar. Mohon foto ulang dengan resolusi lebih kecil." },
+      { status: 413 },
+    );
+  }
+
   let muatan: { gambar?: string };
   try {
     muatan = await permintaan.json();
@@ -78,7 +108,26 @@ export async function POST(permintaan: Request) {
       { status: 400 },
     );
   }
-  if (gambar.length > MAKS_BYTE_GAMBAR) {
+
+  /*
+   * Jenis gambar dibatasi pada format bitmap yang lazim dihasilkan kamera.
+   *
+   * Sebelumnya awalan `data:image/` apa pun diterima, termasuk `data:image/svg+xml`
+   * yang isinya adalah dokumen berisi skrip. Berkas itu tidak pernah dirender di
+   * aplikasi ini sehingga tidak berbahaya di sini, namun meneruskannya ke penyedia
+   * model adalah hal yang tidak perlu dilakukan.
+   */
+  if (!/^data:image\/(jpeg|jpg|png|webp|heic|heif);base64,/i.test(gambar)) {
+    return NextResponse.json(
+      {
+        galat:
+          "Format foto tidak didukung. Mohon pakai foto dari kamera, bukan berkas gambar lain.",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (gambar.length > MAKS_PANJANG_DATA_URL) {
     return NextResponse.json(
       { galat: "Ukuran foto terlalu besar. Mohon foto ulang dengan resolusi lebih kecil." },
       { status: 413 },

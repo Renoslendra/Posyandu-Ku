@@ -18,6 +18,7 @@ import {
   klasifikasi,
   pilihIndikatorBeratTinggi,
   pilihIndikatorPanjangUsia,
+  setarakanPanjangTinggi,
   type Indikator,
   type JenisKelamin,
   type StatusGizi,
@@ -80,11 +81,29 @@ export function nilaiPengukuran(masukan: MasukanPenilaian): HasilPenilaian {
   const { jenisKelamin, usiaBulan, beratKg, tinggiCm, diukurTelentang } = masukan;
 
   const indikatorBT = pilihIndikatorBeratTinggi(usiaBulan, diukurTelentang);
-  const indikatorPU = pilihIndikatorPanjangUsia(usiaBulan, diukurTelentang);
+  const indikatorPU = pilihIndikatorPanjangUsia(usiaBulan);
+
+  /*
+   * Nilai disetarakan dengan tabel yang dipakai.
+   *
+   * Tabel panjang/tinggi menurut umur ditentukan usia, sehingga anak yang
+   * diukur dengan cara tidak lazim bagi usianya perlu disesuaikan 0,7 cm
+   * mengikuti ketentuan WHO. Tanpa itu, anak berusia dua tahun lebih yang
+   * diukur telentang akan tampak lebih tinggi daripada kenyataannya, dan
+   * stunting-nya terlewat.
+   */
+  const tinggiSetara = setarakanPanjangTinggi(tinggiCm, usiaBulan, diukurTelentang);
 
   const zBU = hitungZ(ambilTabel("bb_u", jenisKelamin), usiaBulan, beratKg);
-  const zTU = hitungZ(ambilTabel(indikatorPU, jenisKelamin), usiaBulan, tinggiCm);
-  // Pada BB/PB dan BB/TB, pembandingnya panjang/tinggi badan, bukan usia.
+  const zTU = hitungZ(ambilTabel(indikatorPU, jenisKelamin), usiaBulan, tinggiSetara);
+
+  /*
+   * Pada BB/PB dan BB/TB, pembandingnya panjang atau tinggi badan, bukan usia,
+   * dan tabelnya dipilih menurut cara ukur. Karena kedua tabel WHO itu sendiri
+   * sudah bergeser 0,7 cm satu terhadap lainnya, memakai tabel yang sesuai cara
+   * ukur setara dengan menyetarakan nilai lalu memakai tabel yang lain.
+   * Karena itu nilai asli yang dipakai di sini, bukan nilai setara.
+   */
   const zBT = hitungZ(ambilTabel(indikatorBT, jenisKelamin), tinggiCm, beratKg);
 
   const terhitung: Array<{ indikator: Indikator; z: number }> = [];
@@ -104,6 +123,18 @@ export function nilaiPengukuran(masukan: MasukanPenilaian): HasilPenilaian {
 
   for (const { indikator, z } of terhitung) {
     const s = klasifikasi(z);
+
+    /*
+     * Z-score yang tidak dapat diklasifikasikan diperlakukan sebagai tidak
+     * terhitung, bukan diabaikan. Keadaan ini seharusnya tidak terjadi karena
+     * `hitungZ` sudah menolak nilai bukan angka, namun bila terjadi, hasilnya
+     * harus muncul sebagai ketiadaan data dan bukan sebagai status normal.
+     */
+    if (s === null) {
+      tidakTerhitung.push(indikator);
+      continue;
+    }
+
     if (status === null || URUTAN_KEPARAHAN[s] > URUTAN_KEPARAHAN[status]) {
       status = s;
       penentuStatus = indikator;

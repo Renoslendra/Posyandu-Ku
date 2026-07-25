@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { tanggalHariIni } from "@/lib/tanggal";
 
 /**
  * Perbaikan data anak oleh kader (FR-04.6).
@@ -35,6 +36,18 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
   const [memuat, setMemuat] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [berhasil, setBerhasil] = useState<string | null>(null);
+
+  /*
+   * Batas tanggal lahir diisi setelah pemasangan memakai waktu lokal, dengan
+   * alasan yang sama seperti pada formulir pendaftaran anak: toISOString selalu
+   * mengembalikan UTC, sehingga batasnya bergeser sehari bagi pengguna di
+   * Indonesia sebelum jam tujuh pagi.
+   */
+  const [batasTanggal, setBatasTanggal] = useState("");
+
+  useEffect(() => {
+    setBatasTanggal(tanggalHariIni());
+  }, []);
 
   const [nama, setNama] = useState(anak.nama);
   const [tanggalLahir, setTanggalLahir] = useState(anak.tanggal_lahir);
@@ -138,7 +151,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             type="date"
             value={tanggalLahir}
             onChange={(e) => setTanggalLahir(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
+                      max={batasTanggal}
             required
             className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />

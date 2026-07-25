@@ -46,8 +46,24 @@ export interface TitikLMS {
  * distribusi tidak memerlukan transformasi Box-Cox.
  */
 export function hitungZDariLMS(nilai: number, lms: Omit<TitikLMS, "x">): number {
+  /*
+   * Nilai bukan bilangan berhingga ditolak lebih dahulu, bukan dibiarkan
+   * mengalir melalui perbandingan di bawahnya.
+   *
+   * Perbandingan `nilai <= 0` bernilai false untuk NaN, sehingga NaN pernah
+   * lolos ke perhitungan dan menghasilkan Z-score NaN. Akibatnya berbahaya:
+   * `klasifikasi(NaN)` mengembalikan "normal", sebab NaN juga tidak lebih kecil
+   * daripada -2 maupun -3. Masukan yang tidak terbaca berubah menjadi kabar
+   * baik yang keliru.
+   */
+  if (!Number.isFinite(nilai)) {
+    throw new Error("Nilai pengukuran harus berupa angka");
+  }
   if (nilai <= 0) {
     throw new Error("Nilai pengukuran harus lebih besar dari nol");
+  }
+  if (!Number.isFinite(lms.m) || !Number.isFinite(lms.s) || !Number.isFinite(lms.l)) {
+    throw new Error("Parameter LMS harus berupa angka");
   }
   if (lms.m <= 0 || lms.s <= 0) {
     throw new Error("Parameter M dan S harus lebih besar dari nol");
@@ -55,7 +71,15 @@ export function hitungZDariLMS(nilai: number, lms: Omit<TitikLMS, "x">): number 
 
   const rasio = nilai / lms.m;
 
-  if (lms.l === 0) {
+  /*
+   * L dibandingkan terhadap ambang kecil, bukan terhadap nol persis.
+   *
+   * L pada tabel WHO berganti tanda di beberapa titik, dan karena parameter
+   * diinterpolasi antar titik tabel, hasilnya dapat berupa bilangan sangat kecil
+   * yang bukan nol. Membaginya menghasilkan angka yang tidak stabil, sedangkan
+   * bentuk limit logaritmik justru tepat di daerah itu.
+   */
+  if (Math.abs(lms.l) < 1e-7) {
     return Math.log(rasio) / lms.s;
   }
   return (Math.pow(rasio, lms.l) - 1) / (lms.l * lms.s);
@@ -111,15 +135,37 @@ export function ambilLMS(tabel: TitikLMS[], x: number): Omit<TitikLMS, "x"> | nu
   };
 }
 
-/** Menghitung Z-score terhadap sebuah tabel referensi. */
+/**
+ * Menghitung Z-score terhadap sebuah tabel referensi.
+ *
+ * Mengembalikan null bila nilai berada di luar rentang tabel, dan juga bila
+ * nilainya sendiri tidak dapat dihitung.
+ *
+ * Pilihan mengembalikan null alih-alih melempar dibuat karena fungsi ini
+ * dipanggil dari peramban pada jalur tanpa sinyal, di tempat yang tidak
+ * menangkap pengecualian. Pengecualian di sana akan menghentikan render dan
+ * menghapus formulir yang sedang diisi kader, sedangkan null diteruskan sebagai
+ * "tidak terhitung" yang memang sudah ditangani pemanggilnya.
+ *
+ * Yang penting adalah tidak pernah mengembalikan angka yang salah. Ketiadaan
+ * hasil ditampilkan sebagai ketiadaan hasil, bukan sebagai status normal.
+ */
 export function hitungZ(
   tabel: TitikLMS[],
   x: number,
   nilai: number,
 ): number | null {
+  if (!Number.isFinite(x) || !Number.isFinite(nilai)) return null;
+
   const lms = ambilLMS(tabel, x);
   if (!lms) return null;
-  return hitungZDariLMS(nilai, lms);
+
+  try {
+    const z = hitungZDariLMS(nilai, lms);
+    return Number.isFinite(z) ? z : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -128,7 +174,17 @@ export function hitungZ(
  * Ambang mengikuti WHO: -2 SD memisahkan normal dari risiko, -3 SD memisahkan
  * risiko dari kondisi berat.
  */
-export function klasifikasi(z: number): StatusGizi {
+export function klasifikasi(z: number): StatusGizi | null {
+  /*
+   * Nilai bukan angka mengembalikan null, bukan "normal".
+   *
+   * Ketiga perbandingan di bawah bernilai false untuk NaN, sehingga fungsi ini
+   * pernah menjatuhkan NaN ke cabang terakhir dan melaporkannya sebagai normal.
+   * Ketiadaan hasil bukan pertanda baik, dan mengembalikan null memaksa
+   * pemanggil menanganinya secara sadar.
+   */
+  if (!Number.isFinite(z)) return null;
+
   if (z < AMBANG_Z.risiko) return "berat";
   if (z < AMBANG_Z.normal) return "risiko";
   return "normal";
@@ -153,18 +209,67 @@ export function pilihIndikatorBeratTinggi(
 /**
  * Menentukan tabel panjang/tinggi menurut umur yang berlaku.
  *
- * Sama seperti berat menurut panjang/tinggi, WHO memakai dua tabel: PB/U untuk
- * pengukuran telentang dan TB/U untuk pengukuran berdiri. Selisih keduanya
- * sekitar 0,7 cm pada usia yang sama, sehingga pemilihannya tidak boleh
- * disamakan.
+ * WHO memakai dua tabel: PB/U untuk panjang badan telentang, dan TB/U untuk
+ * tinggi badan berdiri. Selisih keduanya sekitar 0,7 cm pada usia yang sama,
+ * sehingga pemilihannya tidak boleh disamakan.
+ *
+ * Tabel yang berlaku ditentukan **usia**, bukan cara ukur. Alasannya teknis dan
+ * penting: tabel PB/U hanya mencakup 0 sampai 24 bulan, sedangkan TB/U mencakup
+ * 24 sampai 60 bulan. Bila cara ukur yang menentukan, anak berusia 30 bulan yang
+ * diukur telentang akan dinilai dengan tabel PB/U yang tidak memuat usianya,
+ * sehingga Z-score panjang badannya tidak terhitung sama sekali.
+ *
+ * Kesalahan itu pernah ada di sini, dan akibatnya paling buruk pada kasus yang
+ * justru ingin ditemukan: anak berusia di atas dua tahun yang pendek namun
+ * beratnya proporsional akan keluar sebagai normal, karena satu-satunya
+ * indikator yang dapat melihat stunting-nya tidak dihitung. Balita yang belum
+ * mau berdiri tegak rutin diukur telentang di posyandu, dan formulir memang
+ * menyediakan pilihannya.
+ *
+ * Ketidaksesuaian cara ukur ditangani dengan penyetaraan nilai pada
+ * `setarakanPanjangTinggi`, bukan dengan berpindah tabel.
  */
 export function pilihIndikatorPanjangUsia(
   usiaBulan: number,
-  diukurTelentang: boolean,
 ): "pb_u" | "tb_u" {
-  if (diukurTelentang) return "pb_u";
   if (usiaBulan < BATAS_USIA_PANJANG_BADAN_BULAN) return "pb_u";
   return "tb_u";
+}
+
+/**
+ * Selisih baku antara panjang badan telentang dan tinggi badan berdiri.
+ *
+ * WHO menetapkan 0,7 cm. Pengukuran telentang selalu menghasilkan angka lebih
+ * besar karena tulang belakang tidak tertekan bobot tubuh.
+ */
+export const SELISIH_TELENTANG_BERDIRI_CM = 0.7;
+
+/**
+ * Menyetarakan nilai ukur dengan tabel yang akan dipakai.
+ *
+ * WHO mensyaratkan penyesuaian bila cara ukur tidak sesuai usia anak:
+ * kurangi 0,7 cm bila anak berusia dua tahun atau lebih namun diukur telentang,
+ * dan tambahkan 0,7 cm bila anak di bawah dua tahun namun diukur berdiri.
+ *
+ * Tanpa penyesuaian ini, anak yang diukur dengan cara yang tidak lazim bagi
+ * usianya akan dinilai terhadap referensi yang salah. Arah galatnya tidak
+ * simetris: anak besar yang diukur telentang tampak lebih tinggi daripada
+ * kenyataannya, sehingga stunting terlewat. Itu kesalahan yang berbahaya.
+ *
+ * Mengembalikan nilai apa adanya bila cara ukurnya sudah sesuai usia.
+ */
+export function setarakanPanjangTinggi(
+  nilaiCm: number,
+  usiaBulan: number,
+  diukurTelentang: boolean,
+): number {
+  const seharusnyaTelentang = usiaBulan < BATAS_USIA_PANJANG_BADAN_BULAN;
+
+  if (diukurTelentang === seharusnyaTelentang) return nilaiCm;
+
+  return diukurTelentang
+    ? nilaiCm - SELISIH_TELENTANG_BERDIRI_CM
+    : nilaiCm + SELISIH_TELENTANG_BERDIRI_CM;
 }
 
 /**
@@ -172,14 +277,28 @@ export function pilihIndikatorPanjangUsia(
  *
  * Memakai selisih kalender, bukan pembagian hari, agar sejalan dengan cara
  * usia dicatat di posyandu ("umur 13 bulan", bukan "13,4 bulan").
+ *
+ * Komponen tanggal dibaca dengan getter UTC, bukan getter waktu lokal.
+ *
+ * Ini bukan pilihan gaya. Sepanjang aplikasi, tanggal dibentuk dari teks
+ * `YYYY-MM-DD` dengan menambahkan penanda UTC, misalnya `2025-03-01T00:00:00Z`.
+ * Bila komponennya kemudian dibaca dengan getter waktu lokal, hasilnya bergantung
+ * pada zona waktu proses yang menjalankannya: pada zona waktu di sebelah barat
+ * Greenwich, tanggal bergeser ke hari sebelumnya dan usia yang dihitung berbeda
+ * satu bulan. Perbedaan satu bulan menggeser titik referensi WHO, dan pada bayi
+ * pergeseran itu cukup untuk mengubah status gizinya.
+ *
+ * Sebelumnya kebenaran fungsi ini bergantung pada kebetulan bahwa server berjalan
+ * di UTC dan penggunanya berada di zona waktu positif. Dengan getter UTC,
+ * hasilnya sama di mana pun kode ini dijalankan.
  */
 export function usiaBulan(tanggalLahir: Date, tanggalUkur: Date): number {
   let bulan =
-    (tanggalUkur.getFullYear() - tanggalLahir.getFullYear()) * 12 +
-    (tanggalUkur.getMonth() - tanggalLahir.getMonth());
+    (tanggalUkur.getUTCFullYear() - tanggalLahir.getUTCFullYear()) * 12 +
+    (tanggalUkur.getUTCMonth() - tanggalLahir.getUTCMonth());
 
   // Bulan belum penuh bila tanggal ukur belum melewati tanggal lahir.
-  if (tanggalUkur.getDate() < tanggalLahir.getDate()) {
+  if (tanggalUkur.getUTCDate() < tanggalLahir.getUTCDate()) {
     bulan -= 1;
   }
   return bulan;

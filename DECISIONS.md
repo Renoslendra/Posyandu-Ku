@@ -186,7 +186,13 @@ Ini menjadikan digitalisasi bukan sekadar memindahkan catatan, tetapi memunculka
 
 **Alasan.** Usia di posyandu dicatat dalam bulan penuh, sehingga titik harian tidak pernah terpakai. Ukuran berkas penting karena aplikasi harus ringan pada koneksi lambat dan tabelnya perlu tersimpan di perangkat untuk mode offline.
 
-**Konsekuensi.** Interpolasi antar bulan memakai nilai bulan terdekat, dengan galat di bawah 0,01 SD — tidak mengubah keputusan penapisan.
+**Konsekuensi.** Pemadatan tabelnya sendiri hampir tidak menimbulkan galat: titik bulan bulat diinterpolasi dari titik harian, dan selisihnya di bawah 0,01 SD.
+
+**Koreksi atas catatan sebelumnya.** Catatan ini semula menyatakan galat di bawah 0,01 SD tanpa membedakan dua hal yang berbeda, dan pernyataan itu menyesatkan. Angka tersebut hanya berlaku untuk pemadatan tabel. Yang tidak disebut adalah akibat dari pembulatan usia anak ke bawah, dan galatnya jauh lebih besar.
+
+Usia dihitung dalam bulan penuh, sehingga bayi berusia 27 hari dinilai terhadap referensi usia nol bulan. Pada bulan pertama, selisih Z-score antara dua titik bulan berdekatan mencapai 2,1 SD pada berat menurut umur dan 2,5 SD pada panjang menurut umur. Bias itu selalu searah: anak yang diukur menjelang akhir bulan usianya tampak lebih baik daripada keadaan sebenarnya, sehingga kasus di ambang batas dapat terlewat. Pengaruhnya menyusut setelah usia dua tahun, menjadi di bawah 0,25 SD.
+
+Perbaikannya tidak menuntut penggantian tabel, sebab interpolasi sudah mendukung nilai antar titik: usia perlu dihitung sebagai bilangan desimal untuk keperluan perhitungan, sementara tampilan kepada kader tetap dalam bulan penuh. Belum dikerjakan, dan dinyatakan di sini agar tidak tersembunyi.
 
 ---
 
@@ -397,3 +403,32 @@ Galat dari `signOut` tidak diteruskan sebagai kegagalan. Bila token sudah kedalu
 Pengguna yang memiliki sesi tetapi tidak memiliki baris `profil` tidak dialihkan ke mana pun. Tidak ada halaman peran yang dapat menerimanya, sehingga pengalihan hanya akan memantulkannya berulang kali. Keadaan ini nyata, sebagaimana dicatat pada KP-29.
 
 Pembantu yang tidak membutuhkan konteks permintaan dipisahkan ke `lib/peran.ts`, terpisah dari `lib/sesi.ts` yang menarik `next/headers`. Pemisahan itu membuat aturan siapa boleh membuka apa dapat diuji langsung, dan 17 pengujian baru menegakkannya, termasuk satu yang menangkap keadaan mustahil berupa peran yang dialihkan ke halaman yang justru akan memantulkannya kembali.
+
+## KP-32: Pemeriksaan menyeluruh dan cacat yang ditemukannya
+
+**Keputusan.** Melakukan pemeriksaan menyeluruh atas seluruh proyek sebelum penerapan, lalu memperbaiki cacat yang ditemukan dan menyatakan terbuka yang belum diperbaiki.
+
+**Alasan.** Menjelang tenggat, godaan terbesar adalah menganggap yang sudah berjalan berarti sudah benar. Pengujian yang ada lolos seluruhnya, namun pengujian hanya menegakkan hal yang terpikirkan saat menulisnya. Pemeriksaan ini mencari hal yang tidak terpikirkan.
+
+**Empat cacat paling berbahaya, ketiganya menghasilkan kabar baik yang keliru.**
+
+Stunting tidak dihitung sama sekali untuk anak berusia dua tahun atau lebih yang diukur telentang. Tabel panjang menurut umur dipilih berdasarkan cara ukur, padahal tabel itu hanya memuat usia nol sampai 24 bulan. Anak 30 bulan yang diukur telentang diarahkan ke tabel yang tidak memuat usianya, sehingga Z-score panjang badannya kosong. Anak pendek yang beratnya proporsional keluar sebagai normal, karena satu-satunya indikator yang dapat melihat stunting-nya tidak dihitung. Balita yang belum mau berdiri tegak rutin diukur telentang, dan formulir memang menyediakan pilihannya. Diperbaiki dengan memilih tabel menurut usia dan menyetarakan nilai 0,7 cm sesuai ketentuan WHO.
+
+Nilai bukan angka dilaporkan sebagai normal. Perbandingan penolakan memakai bentuk 
+ilai <= 0, yang bernilai salah untuk NaN, sehingga NaN lolos ke perhitungan. Pada klasifikasi, ketiga perbandingan juga bernilai salah untuk NaN, sehingga jatuh ke cabang terakhir yaitu normal. Jalurnya nyata: kader tanpa sinyal mengetik angka yang tidak terbaca, dan perhitungan dilakukan di perangkat tanpa melewati penjaga data di server.
+
+Koreksi angka pada import foto menghasilkan nilai sepuluh kali lebih besar. Kolom menyimpan angka, bukan teks, sehingga koma yang baru diketik selalu hilang: mengetik 12, lalu koma, lalu 5 menghasilkan 125. Pada berat, 125 kg tertangkap sebagai tidak wajar. Pada tinggi, 125 cm adalah nilai yang sah bagi balita, sehingga angka keliru masuk basis data tanpa ada yang menolaknya, lalu menghasilkan status gizi yang salah.
+
+Antrean tanpa sinyal kehilangan data secara diam-diam, di tiga tempat sekaligus. Kegagalan penyimpanan diabaikan sehingga keterangan "tersimpan di perangkat ini" tetap tampil padahal tidak ada yang tersimpan. Entri yang ditolak server dibuang permanen tanpa satu pun pemberitahuan. Entri yang gagal karena sebab yang tidak akan pernah berhasil, misalnya sesi kedaluwarsa, dicoba berulang tanpa batas sehingga antrean menetap selamanya.
+
+**Yang juga diperbaiki.** Usia dihitung dengan getter waktu lokal atas tanggal yang dibentuk sebagai UTC, sehingga kebenarannya bergantung pada zona waktu proses. Tanggal hari ini diisi memakai UTC, sehingga kader yang membuka formulir sebelum jam tujuh pagi mendapat tanggal hari sebelumnya. Nama anak masuk perintah model tanpa pembatas, sehingga narasi ringkasan dapat digiring meski angkanya tidak. Nama anak masuk laporan CSV tanpa penetralan karakter rumus. Batas ukuran foto diperiksa setelah seluruh badan permintaan dibaca ke memori. Wewenang pada dua endpoint hanya ditegakkan basis data, sehingga penolakan muncul sebagai galat server. Tombol keluar tidak melaporkan kegagalan, sehingga pengguna dapat mengira dirinya sudah keluar padahal sesinya masih hidup.
+
+**Yang diakui belum diperbaiki.**
+
+Klasifikasi gizi lebih dan obesitas belum ada. Hanya sisi bawah distribusi yang dinilai, sehingga anak dengan berat menurut tinggi badan pada +4 SD dilaporkan normal. Grafik sudah menggambar garis +2 SD, sehingga bidan dapat melihat anak berada di atasnya sementara status yang tertulis tetap normal. Belum dikerjakan karena menambah indikator berarti mengubah ambang, label, urutan keparahan, dan seluruh pengujiannya, dan perubahan seluas itu menjelang tenggat lebih berisiko daripada kekurangan yang dinyatakan terbuka.
+
+Usia masih dibulatkan ke bawah ke bulan penuh. Akibatnya dijelaskan pada koreksi KP-15.
+
+Koreksi WHO untuk Z di luar rentang tiga simpangan baku belum diterapkan. Ini tidak menggeser ambang penapisan, sebab rumus koreksi dan rumus dasar berpotongan tepat di Z bernilai tiga. Yang menyimpang adalah angka yang dilaporkan untuk anak paling ekstrem, hingga sekitar 2,3 SD, sehingga tidak sebanding dengan keluaran perangkat resmi WHO.
+
+**Cara menegakkannya.** Setiap cacat perhitungan yang diperbaiki disertai pengujian yang menangkapnya, terkumpul pada gizi/perbaikan.test.ts agar dapat dibaca sebagai catatan satu per satu cacat.

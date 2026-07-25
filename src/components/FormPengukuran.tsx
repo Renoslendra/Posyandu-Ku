@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StatusKoneksi } from "@/components/StatusKoneksi";
+import { tanggalHariIni } from "@/lib/tanggal";
 import {
   IkonBahaya,
   IkonCentang,
@@ -48,7 +49,19 @@ interface HasilSimpan {
 
 export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
   const [anakId, setAnakId] = useState("");
-  const [tanggal, setTanggal] = useState(() => new Date().toISOString().slice(0, 10));
+
+  /*
+   * Tanggal diisi di dalam useEffect, bukan sebagai nilai awal.
+   *
+   * Nilai awal dihitung dua kali, yaitu saat server merender dan saat peramban
+   * menghidrasi, sehingga jam perangkat yang menyimpang menghasilkan atribut
+   * yang berbeda. Mengisinya setelah pemasangan menghapus kemungkinan itu.
+   */
+  const [tanggal, setTanggal] = useState("");
+
+  useEffect(() => {
+    setTanggal(tanggalHariIni());
+  }, []);
   const [berat, setBerat] = useState("");
   const [tinggi, setTinggi] = useState("");
   const [telentang, setTelentang] = useState(false);
@@ -72,7 +85,19 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       return;
     }
 
-    tambahKeAntrean({
+    /*
+     * Kegagalan penyimpanan diberitahukan, bukan diabaikan.
+     *
+     * Sebelumnya `tambahKeAntrean` tidak mengembalikan apa pun, sehingga saat
+     * penyimpanan peramban penuh atau dibatasi, keterangan "tersimpan di
+     * perangkat ini" tetap ditampilkan padahal tidak ada yang tersimpan. Kader
+     * tidak punya cara mengetahui catatannya lenyap.
+     *
+     * Anjuran mencatat di buku disebutkan secara eksplisit. Pada keadaan ini
+     * buku tulis memang satu-satunya cadangan yang tersedia, dan menyarankannya
+     * lebih berguna daripada meminta kader mencoba lagi.
+     */
+    const tersimpan = tambahKeAntrean({
       klienRef: buatKlienRef(),
       anakId,
       tanggal,
@@ -81,6 +106,13 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       diukurTelentang: telentang,
       abaikanPenanda: true,
     });
+
+    if (!tersimpan) {
+      setGalat(
+        "Penyimpanan perangkat penuh, catatan ini belum tersimpan. Mohon catat di buku lebih dahulu, lalu kirimkan setelah ada sinyal.",
+      );
+      return;
+    }
 
     const usia = usiaBulan(
       new Date(`${anak.tanggalLahir}T00:00:00Z`),
@@ -113,8 +145,29 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
     setGalat(null);
     if (!abaikanPenanda) setPerluKonfirmasi(null);
 
-    const beratAngka = Number(berat.replace(",", "."));
-    const tinggiAngka = Number(tinggi.replace(",", "."));
+    /*
+     * Seluruh koma diganti, bukan hanya yang pertama.
+     *
+     * Salah ketik seperti "12,5," wajar terjadi di layar sentuh. Dengan
+     * penggantian tunggal, masukan itu menjadi "12.5," yang bukan angka, dan
+     * pada jalur tanpa sinyal nilai tak terbaca itu ikut masuk antrean lalu
+     * ditolak server berulang kali.
+     */
+    const beratAngka = Number(berat.trim().replace(/,/g, "."));
+    const tinggiAngka = Number(tinggi.trim().replace(/,/g, "."));
+
+    /*
+     * Masukan yang tidak terbaca dihentikan di sini, sebelum menyentuh antrean
+     * maupun jaringan. Pemeriksaan `siap` hanya memastikan kolom tidak kosong,
+     * sehingga teks yang bukan angka pernah lolos sampai ke penyimpanan.
+     */
+    if (!Number.isFinite(beratAngka) || !Number.isFinite(tinggiAngka)) {
+      setGalat(
+        "Berat dan tinggi harus berupa angka. Contoh: 12,5 untuk dua belas setengah.",
+      );
+      setMemuat(false);
+      return;
+    }
 
     // Tanpa sinyal, tidak perlu mencoba jaringan lebih dahulu. Menyimpan
     // langsung ke antrean membuat pencatatan terasa seketika bagi kader.

@@ -17,14 +17,56 @@ import { LABEL_STATUS } from "./proses-pengukuran";
 import type { AnakPrioritas, RingkasanDashboard } from "./dashboard";
 
 /**
+ * Karakter yang membuat Excel dan LibreOffice memperlakukan bidang sebagai
+ * rumus, bukan sebagai teks.
+ */
+const AWALAN_RUMUS = ["=", "+", "-", "@", "\t", "\r"];
+
+/**
  * Membungkus satu nilai agar aman sebagai bidang CSV.
  *
- * Nama anak di Indonesia dapat memuat koma pada gelar atau sebutan, dan tanpa
- * pengutipan bidangnya akan bergeser sehingga seluruh baris salah terbaca.
+ * Dua hal ditangani sekaligus.
+ *
+ * Pertama, pemisah bidang. Nama anak di Indonesia dapat memuat koma pada gelar
+ * atau sebutan, dan tanpa pengutipan bidangnya akan bergeser sehingga seluruh
+ * baris salah terbaca.
+ *
+ * Kedua, penyisipan rumus. Bidang yang dimulai dengan tanda sama dengan, tambah,
+ * kurang, atau at akan dievaluasi Excel sebagai rumus saat berkas dibuka.
+ * Pengutipan dengan tanda petik tidak menolongnya; Excel tetap mengevaluasi isi
+ * bidang berkutip.
+ *
+ * Jalur seranganya melewati batas kepercayaan, dan itu sebabnya ini penting:
+ * kader di satu posyandu mendaftarkan anak dengan nama yang memuat rumus,
+ * kemudian bidan di wilayah yang sama mengunduh laporan dan membukanya di Excel.
+ * Berkas itu lalu berpindah tangan ke staf dinas kesehatan. Nama anak diterima
+ * apa adanya sepanjang panjangnya wajar, sebab menolak karakter tertentu akan
+ * menghalangi pencatatan nama yang sah.
+ *
+ * Nilai berbahaya diawali kutip tunggal, cara baku yang dikenali Excel sebagai
+ * penanda "perlakukan sebagai teks". Nilainya tetap terbaca utuh oleh manusia.
  */
 export function bidangCsv(nilai: string | number | null): string {
   if (nilai === null || nilai === undefined) return "";
-  const teks = String(nilai);
+
+  let teks = String(nilai);
+
+  /*
+   * Bilangan dilewati tanpa penetralan.
+   *
+   * Z-score bernilai negatif adalah angka yang sah dan justru inti laporan ini,
+   * misalnya -2,5. Menetralkannya akan mengubahnya menjadi teks di Excel,
+   * sehingga kolomnya tidak dapat diurutkan maupun dijumlahkan, dan laporan
+   * kehilangan gunanya. Bilangan tidak dapat memuat rumus, sehingga tidak ada
+   * yang perlu dinetralkan.
+   */
+  const perluDinetralkan =
+    typeof nilai === "string" && AWALAN_RUMUS.some((a) => teks.startsWith(a));
+
+  if (perluDinetralkan) {
+    teks = `'${teks}`;
+  }
+
   if (/[",\r\n]/.test(teks)) {
     return `"${teks.replace(/"/g, '""')}"`;
   }

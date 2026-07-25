@@ -40,6 +40,38 @@ export async function POST(permintaan: Request) {
     return NextResponse.json({ galat: "Silakan masuk terlebih dahulu" }, { status: 401 });
   }
 
+  /*
+   * Peran diperiksa di sini, bukan hanya diserahkan pada RLS.
+   *
+   * RLS memang menahannya: kebijakan `pengukuran_tulis_kader` mensyaratkan peran
+   * kader, sehingga bidan maupun orang tua tidak dapat menyimpan pengukuran.
+   * Namun penolakannya terjadi di baris terakhir, saat penyimpanan, dan muncul
+   * sebagai galat 500 "Gagal menyimpan pengukuran". Galat wewenang yang menyamar
+   * sebagai galat server mempersulit penelusuran dan menyembunyikan percobaan
+   * penyalahgunaan dari catatan.
+   *
+   * Pemeriksaan dini juga menghentikan pekerjaan yang sia-sia. Tanpa ini,
+   * siapa pun yang memiliki sesi dapat memicu dua kueri basis data dan seluruh
+   * perhitungan Z-score, lalu menerima balasan 409 yang bahkan memuat pratinjau
+   * status untuk data yang tidak akan pernah tersimpan.
+   *
+   * RLS tetap menjadi penjaga sesungguhnya. Lapisan ini menambah kejelasan dan
+   * menutup satu keadaan yang sebelumnya rapuh: bila migrasi kebijakan belum
+   * dijalankan pada suatu lingkungan, endpoint ini tidak lagi terbuka penuh.
+   */
+  const { data: profil } = await supabase
+    .from("profil")
+    .select("peran")
+    .eq("id", pengguna.user.id)
+    .maybeSingle();
+
+  if (profil?.peran !== "kader") {
+    return NextResponse.json(
+      { galat: "Hanya kader posyandu yang dapat mencatat pengukuran" },
+      { status: 403 },
+    );
+  }
+
   // RLS menyaring baris ini: kader di posyandu lain tidak akan menemukannya.
   const { data: anak, error: galatAnak } = await supabase
     .from("anak")

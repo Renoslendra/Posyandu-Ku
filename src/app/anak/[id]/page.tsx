@@ -9,7 +9,11 @@ import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { SaranMenu } from "@/components/SaranMenu";
 import { wajibPeran } from "@/lib/sesi";
 import { analisisPola, statusPemantauan } from "@/lib/gizi/pola";
-import { pilihIndikatorPanjangUsia, type JenisKelamin } from "@/lib/gizi/zscore";
+import {
+  pilihIndikatorPanjangUsia,
+  setarakanPanjangTinggi,
+  type JenisKelamin,
+} from "@/lib/gizi/zscore";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import type { StatusGizi } from "@/lib/gizi/zscore";
 
@@ -104,7 +108,13 @@ export default async function HalamanAnak({
   const jk = anak.jenis_kelamin as JenisKelamin;
   const telentangTerakhir = Boolean(terakhir?.diukur_telentang);
   const usiaTerakhir = terakhir?.usia_bulan ?? 0;
-  const indPanjang = pilihIndikatorPanjangUsia(usiaTerakhir, telentangTerakhir);
+  /*
+   * Tabel yang digambar ditentukan usia, bukan cara ukur, sama seperti pada
+   * perhitungan Z-score. Grafik dan angka wajib memakai referensi yang sama;
+   * bila berbeda, titik anak akan tampak menyimpang dari garis rujukan tanpa
+   * sebab yang dapat dijelaskan.
+   */
+  const indPanjang = pilihIndikatorPanjangUsia(usiaTerakhir);
 
   const pola = analisisPola(
     terkonfirmasi.map((p) => ({
@@ -194,7 +204,20 @@ export default async function HalamanAnak({
           satuan="cm"
           data={terkonfirmasi.map((p) => ({
             usiaBulan: p.usia_bulan,
-            nilai: Number(p.tinggi_cm),
+            /*
+             * Nilai disetarakan per baris mengikuti ketentuan 0,7 cm WHO,
+             * memakai cara ukur dan usia pada kunjungan itu sendiri.
+             *
+             * Perhitungannya harus sama dengan yang dipakai `nilaiPengukuran`.
+             * Bila grafik menggambar nilai mentah sementara Z-score dihitung
+             * dari nilai setara, titik anak akan tampak menyimpang dari garis
+             * rujukan tanpa sebab yang dapat dijelaskan kepada bidan.
+             */
+            nilai: setarakanPanjangTinggi(
+              Number(p.tinggi_cm),
+              p.usia_bulan,
+              Boolean(p.diukur_telentang),
+            ),
           }))}
         />
       </section>

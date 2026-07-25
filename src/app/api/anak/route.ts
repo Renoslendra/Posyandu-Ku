@@ -114,8 +114,32 @@ export async function PATCH(permintaan: Request) {
     return NextResponse.json({ galat: "Silakan masuk terlebih dahulu" }, { status: 401 });
   }
 
-  // RLS pada kebijakan update memastikan hanya kader di posyandu yang sama
-  // dapat mengubah baris ini. Tidak perlu memeriksa wewenang secara manual.
+  /*
+   * Peran diperiksa lebih dahulu, sejalan dengan POST di berkas yang sama.
+   *
+   * Kebijakan `anak_ubah_kader` pada RLS sudah memastikan hanya kader di posyandu
+   * yang sama dapat mengubah baris ini, sehingga tidak ada lubang wewenang.
+   * Namun tanpa pemeriksaan ini, bidan yang mencoba menyunting menerima balasan
+   * 404 "tidak ditemukan", padahal datanya ada dan yang kurang adalah haknya.
+   * Pesan yang keliru menyesatkan pengguna sekaligus menyulitkan penelusuran.
+   */
+  const { data: profil } = await supabase
+    .from("profil")
+    .select("peran")
+    .eq("id", pengguna.user.id)
+    .maybeSingle();
+
+  if (profil?.peran !== "kader") {
+    return NextResponse.json(
+      { galat: "Hanya kader posyandu yang dapat memperbaiki data anak" },
+      { status: 403 },
+    );
+  }
+
+  /*
+   * `posyandu_id` sengaja tidak ikut diperbarui, sehingga baris tidak dapat
+   * dipindahkan ke posyandu lain lewat permintaan ini.
+   */
   const { data: diperbarui, error } = await supabase
     .from("anak")
     .update({

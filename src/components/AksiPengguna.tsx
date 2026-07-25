@@ -17,35 +17,70 @@ import { useState } from "react";
 export function TombolKeluar({ ringkas = false }: { ringkas?: boolean }) {
   const router = useRouter();
   const [memuat, setMemuat] = useState(false);
+  const [gagal, setGagal] = useState(false);
 
   async function keluar() {
     setMemuat(true);
+    setGagal(false);
+
     try {
-      await fetch("/api/keluar", { method: "POST" });
+      const respons = await fetch("/api/keluar", { method: "POST" });
+
+      /*
+       * Kegagalan diberitahukan, tidak dibiarkan diam.
+       *
+       * Sebelumnya blok ini hanya memiliki `finally` tanpa `catch`, sehingga
+       * kegagalan jaringan menghasilkan penolakan yang tidak tertangani dan
+       * tombol sekadar berkedip lalu kembali normal. Pengguna menyimpulkan
+       * dirinya sudah keluar padahal sesinya masih hidup.
+       *
+       * Pada perangkat yang dipakai bergantian antar kader di satu meja
+       * posyandu, kekeliruan itu berarti kader berikutnya membuka data anak
+       * dengan sesi orang sebelumnya.
+       */
+      if (!respons.ok) {
+        setGagal(true);
+        return;
+      }
+
       router.push("/");
       router.refresh();
+    } catch {
+      setGagal(true);
     } finally {
-      /*
-       * Keadaan memuat tetap dikembalikan meski permintaan gagal, agar tombol
-       * tidak terkunci selamanya bila jaringan mati di tengah jalan.
-       */
       setMemuat(false);
     }
   }
 
   return (
-    <button
-      type="button"
-      onClick={keluar}
-      disabled={memuat}
-      className={
-        ringkas
-          ? "min-h-touch w-full rounded-xl border-2 border-dasar-300 px-4 text-base font-semibold text-dasar-700 transition-colors hover:border-status-berat hover:text-status-berat disabled:opacity-60"
-          : "inline-flex min-h-[2.75rem] items-center rounded-xl border-2 border-dasar-300 px-4 text-sm font-semibold text-dasar-700 transition-colors hover:border-status-berat hover:text-status-berat disabled:opacity-60"
-      }
-    >
-      {memuat ? "Keluar..." : "Keluar"}
-    </button>
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={keluar}
+        disabled={memuat}
+        className={
+          ringkas
+            ? "min-h-touch w-full rounded-xl border-2 border-dasar-300 px-4 text-base font-semibold text-dasar-700 transition-colors hover:border-status-berat hover:text-status-berat disabled:opacity-60"
+            : "inline-flex min-h-[2.75rem] items-center rounded-xl border-2 border-dasar-300 px-4 text-sm font-semibold text-dasar-700 transition-colors hover:border-status-berat hover:text-status-berat disabled:opacity-60"
+        }
+      >
+        {memuat ? "Keluar..." : "Keluar"}
+      </button>
+
+      {/*
+        Pesan kegagalan menegaskan bahwa pengguna masih masuk. Menyatakannya
+        secara eksplisit lebih penting daripada sekadar mengatakan gagal, sebab
+        kesimpulan keliru "saya sudah keluar" itulah yang berbahaya.
+      */}
+      {gagal && (
+        <span
+          role="alert"
+          className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border-2 border-status-berat-garis bg-status-berat-lembut p-3 text-sm text-dasar-800 shadow-naik"
+        >
+          Gagal keluar, Anda masih masuk. Periksa koneksi lalu coba lagi.
+        </span>
+      )}
+    </span>
   );
 }
 

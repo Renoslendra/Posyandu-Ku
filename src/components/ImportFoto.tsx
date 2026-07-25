@@ -21,12 +21,49 @@ import { IkonGambar, IkonKamera, IkonPindaiDokumen } from "@/components/Ikon";
 
 interface BarisHasil {
   nama: string;
-  beratKg: number | null;
-  tinggiCm: number | null;
+  /*
+   * Berat dan tinggi disimpan sebagai teks apa adanya, bukan sebagai angka.
+   *
+   * Sebelumnya keduanya bertipe number, dan setiap ketukan diubah dengan
+   * `Number()`. Akibatnya koma yang baru diketik selalu hilang: mengetik "12",
+   * lalu koma, menghasilkan `Number("12.")` yaitu 12, yang dirender kembali
+   * sebagai "12" tanpa koma. Angka berikutnya menempel, sehingga kader yang
+   * mengoreksi menjadi 12,5 justru menyimpan 125.
+   *
+   * Pada berat, nilai 125 tertangkap penjaga data sebagai tidak wajar. Pada
+   * tinggi, 125 cm adalah nilai yang sah bagi balita, sehingga angka keliru
+   * masuk basis data tanpa ada yang menolaknya, lalu menghasilkan Z-score dan
+   * status gizi yang salah. Tidak ada apa pun pada alur ini yang dapat
+   * mendeteksinya.
+   *
+   * Menyimpan teks mentah dan mengonversi hanya saat pengiriman menghapus
+   * seluruh kelas kesalahan itu, dan mengikuti pola yang sudah dipakai
+   * FormPengukuran.
+   */
+  beratKg: string;
+  tinggiCm: string;
   tanggal: string | null;
   catatan: string[];
   /** Pilihan anak dari kader, bila nama tidak dapat dicocokkan otomatis. */
   anakId?: string;
+}
+
+/**
+ * Mengubah masukan kader menjadi angka.
+ *
+ * Menerima koma sebagai pemisah desimal, sebagaimana lazim ditulis di Indonesia.
+ * Seluruh koma diganti, bukan hanya yang pertama, agar salah ketik seperti
+ * "12,5," tidak diam-diam menjadi bilangan yang tidak berhingga.
+ *
+ * Mengembalikan null bila hasilnya bukan bilangan berhingga, sehingga nilai yang
+ * tidak dapat dibaca tidak pernah menjadi angka yang tampak meyakinkan.
+ */
+function keAngka(teks: string): number | null {
+  const bersih = teks.trim().replace(/,/g, ".");
+  if (bersih === "") return null;
+
+  const angka = Number(bersih);
+  return Number.isFinite(angka) ? angka : null;
 }
 
 interface HasilSimpanBaris {
@@ -92,7 +129,33 @@ export function ImportFoto({
         return;
       }
 
-      setBaris(isi.baris);
+      /*
+       * Angka dari server diubah menjadi teks saat diterima.
+       *
+       * Server mengirim number atau null, sedangkan kolom masukan menyimpan
+       * teks. Konversi dilakukan sekali di sini alih-alih di setiap tempat
+       * pemakaian, sehingga tidak ada kolom yang menerima nilai bertipe salah.
+       */
+      type BarisDariServer = {
+        nama?: unknown;
+        beratKg?: unknown;
+        tinggiCm?: unknown;
+        tanggal?: unknown;
+        catatan?: unknown;
+      };
+
+      const keTeks = (n: unknown): string =>
+        typeof n === "number" && Number.isFinite(n) ? String(n) : "";
+
+      setBaris(
+        (isi.baris as BarisDariServer[]).map((b) => ({
+          nama: typeof b.nama === "string" ? b.nama : "",
+          beratKg: keTeks(b.beratKg),
+          tinggiCm: keTeks(b.tinggiCm),
+          tanggal: typeof b.tanggal === "string" ? b.tanggal : null,
+          catatan: Array.isArray(b.catatan) ? (b.catatan as string[]) : [],
+        })),
+      );
     } catch {
       setGalat("Tidak dapat mengirim foto. Periksa koneksi Anda.");
     } finally {
@@ -112,14 +175,20 @@ export function ImportFoto({
     setBaris((lama) => (lama ? lama.filter((_, i) => i !== indeks) : lama));
   }
 
-  /** Baris dianggap siap bila ketiga nilai wajibnya terisi. */
+  /**
+   * Baris dianggap siap bila ketiga nilai wajibnya terisi dan terbaca sebagai
+   * angka.
+   *
+   * Pemeriksaan angka dilakukan di sini, bukan hanya saat mengirim, agar baris
+   * yang isinya tidak dapat dibaca tidak ikut terhitung pada "N baris siap
+   * disimpan". Menampilkan hitungan yang lebih besar daripada yang benar-benar
+   * terkirim membuat kader mengira ada data yang hilang.
+   */
   function siapDisimpan(b: BarisHasil): boolean {
     return (
       b.nama.trim().length > 0 &&
-      b.beratKg !== null &&
-      Number.isFinite(b.beratKg) &&
-      b.tinggiCm !== null &&
-      Number.isFinite(b.tinggiCm) &&
+      keAngka(b.beratKg) !== null &&
+      keAngka(b.tinggiCm) !== null &&
       Boolean(b.tanggal)
     );
   }
@@ -142,10 +211,17 @@ export function ImportFoto({
       .map((b, urutanAsli) => ({ b, urutanAsli }))
       .filter(({ b }) => siapDisimpan(b));
 
+    /*
+     * Konversi ke angka terjadi di sini, satu kali, bukan pada setiap ketukan.
+     *
+     * Nilai non-null dijamin oleh `siapDisimpan` yang sudah memanggil `keAngka`
+     * atas baris yang sama, sehingga penegasan tipe di bawah aman. Server tetap
+     * memvalidasi ulang seluruhnya dan menghitung sendiri Z-score-nya.
+     */
     const siap = dikirim.map(({ b }) => ({
       nama: b.nama.trim(),
-      beratKg: b.beratKg as number,
-      tinggiCm: b.tinggiCm as number,
+      beratKg: keAngka(b.beratKg) as number,
+      tinggiCm: keAngka(b.tinggiCm) as number,
       tanggal: b.tanggal as string,
       ...(b.anakId ? { anakId: b.anakId } : {}),
     }));
@@ -215,7 +291,7 @@ export function ImportFoto({
             {memuat ? "Membaca foto..." : "Ambil Foto"}
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               capture="environment"
               onChange={pilihBerkas}
               disabled={memuat}
@@ -229,7 +305,7 @@ export function ImportFoto({
             Pilih Galeri
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               onChange={pilihBerkas}
               disabled={memuat}
               className="sr-only"
@@ -310,18 +386,16 @@ export function ImportFoto({
                     <span className="text-sm font-medium text-dasar-700">
                       Berat (kg)
                     </span>
+                    {/*
+                      Nilai disimpan sebagai teks apa adanya. Konversi hanya
+                      terjadi saat pengiriman, sehingga koma yang sedang diketik
+                      tidak pernah hilang di tengah jalan.
+                    */}
                     <input
                       inputMode="decimal"
-                      value={b.beratKg ?? ""}
+                      value={b.beratKg}
                       placeholder="belum terbaca"
-                      onChange={(e) =>
-                        ubahBaris(i, {
-                          beratKg:
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value.replace(",", ".")),
-                        })
-                      }
+                      onChange={(e) => ubahBaris(i, { beratKg: e.target.value })}
                       className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
@@ -332,16 +406,9 @@ export function ImportFoto({
                     </span>
                     <input
                       inputMode="decimal"
-                      value={b.tinggiCm ?? ""}
+                      value={b.tinggiCm}
                       placeholder="belum terbaca"
-                      onChange={(e) =>
-                        ubahBaris(i, {
-                          tinggiCm:
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value.replace(",", ".")),
-                        })
-                      }
+                      onChange={(e) => ubahBaris(i, { tinggiCm: e.target.value })}
                       className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
