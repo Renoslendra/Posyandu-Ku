@@ -2,17 +2,186 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Lapisan dasar.
+ *
+ * Antarmuka ini dipakai kader posyandu di desa, sering di luar ruangan dengan
+ * ponsel murah. Setiap keputusan di bawah tunduk pada keterbacaan, bukan gaya.
+ */
+
 :root {
   color-scheme: light;
+
+  /* Warna teks. Tidak ada abu-abu di bawah rasio kontras 4,5:1. */
+  --teks-utama: #1c1917;
+  --teks-kedua: #44403c;
+  --teks-pendukung: #57534e;
+}
+
+* {
+  /* Mencegah geseran tata letak akibat bilah gulir yang muncul hilang. */
+  scrollbar-gutter: stable;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Mencegah iOS memperbesar teks sendiri saat perangkat diputar. */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   /* Font minimal 16px sesuai NFR-02.2 */
   font-size: 1rem;
+  color: var(--teks-utama);
+  background-color: #fafaf9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Angka bertabulasi agar kolom berat dan tinggi sejajar rapi. */
+  font-variant-numeric: tabular-nums;
 }
 
-/* Fokus terlihat jelas untuk navigasi keyboard */
+/*
+ * Fokus terlihat jelas untuk navigasi papan tombol.
+ *
+ * Tidak pernah dihilangkan. Sebagian kader memakai perangkat dengan layar
+ * sentuh yang mulai tidak responsif dan beralih ke papan tombol.
+ */
 :focus-visible {
   outline: 3px solid #0f766e;
   outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/*
+ * Menghormati permintaan pengurangan gerak dari setelan sistem.
+ *
+ * Bukan sekadar kepatuhan: gerak dapat memicu rasa mual pada sebagian orang,
+ * dan aplikasi kesehatan adalah tempat terakhir yang boleh mengabaikannya.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  /*
+   * Kartu.
+   *
+   * Latar putih di atas dasar hangat, dengan garis tepi tipis. Garisnya
+   * dipertahankan meski sudah ada bayangan, karena bayangan hampir tidak
+   * terlihat pada layar murah di bawah sinar matahari.
+   */
+  .kartu {
+    @apply rounded-2xl border border-dasar-200 bg-white shadow-kartu;
+  }
+
+  .kartu-naik {
+    @apply rounded-2xl border border-dasar-200 bg-white shadow-naik transition-shadow duration-200;
+  }
+
+  .kartu-naik:hover {
+    @apply shadow-tinggi;
+  }
+
+  /* Tombol utama. Satu per layar, untuk tindakan yang paling diharapkan. */
+  .tombol-utama {
+    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
+           bg-brand-500 px-6 text-base font-semibold text-white
+           shadow-merek transition-all duration-150
+           hover:bg-brand-600 active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:bg-dasar-300 disabled:text-dasar-500
+           disabled:shadow-none disabled:active:scale-100;
+  }
+
+  /* Tombol kedua. Untuk tindakan yang setara namun bukan yang utama. */
+  .tombol-kedua {
+    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
+           border-2 border-brand-500 bg-white px-6 text-base font-semibold
+           text-brand-700 transition-all duration-150
+           hover:bg-brand-50 active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:border-dasar-300 disabled:text-dasar-400
+           disabled:active:scale-100;
+  }
+
+  /* Tombol netral. Untuk membatalkan atau menutup. */
+  .tombol-netral {
+    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
+           border-2 border-dasar-300 bg-white px-6 text-base font-semibold
+           text-dasar-700 transition-all duration-150
+           hover:bg-dasar-100 active:scale-[0.98];
+  }
+
+  /*
+   * Kolom masukan.
+   *
+   * Garis tepi 2px, bukan 1px. Pada ponsel murah garis 1px kadang hilang
+   * sama sekali, dan kolom yang tidak terlihat batasnya membuat kader ragu
+   * di mana harus mengetik.
+   */
+  .kolom {
+    @apply min-h-touch w-full rounded-xl border-2 border-dasar-300 bg-white px-3.5
+           text-base text-dasar-900 transition-colors duration-150
+           placeholder:text-dasar-400
+           hover:border-dasar-400
+           focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15;
+  }
+
+  .label {
+    @apply block text-base font-semibold text-dasar-900;
+  }
+
+  .label-pendukung {
+    @apply text-sm font-normal text-dasar-500;
+  }
+
+  /* Kotak pesan. Warna latar lembut, garis tepi pekat, teks kontras tinggi. */
+  .pesan-galat {
+    @apply rounded-xl border-2 border-status-berat-garis bg-status-berat-lembut
+           p-3.5 text-base text-red-900;
+  }
+
+  .pesan-peringatan {
+    @apply rounded-xl border-2 border-status-risiko-garis bg-status-risiko-lembut
+           p-3.5 text-base text-amber-900;
+  }
+
+  .pesan-berhasil {
+    @apply rounded-xl border-2 border-status-normal-garis bg-status-normal-lembut
+           p-3.5 text-base text-green-900;
+  }
+
+  .pesan-netral {
+    @apply rounded-xl border border-dasar-200 bg-dasar-100 p-3.5 text-base text-dasar-700;
+  }
+
+  /*
+   * Kerangka pemuatan.
+   *
+   * Menyatakan bahwa sesuatu sedang datang, dan kira-kira berbentuk apa.
+   * Lebih menenangkan daripada layar kosong bagi pengguna dengan koneksi
+   * lambat, yang tidak tahu apakah aplikasinya sedang bekerja atau rusak.
+   */
+  .kerangka {
+    @apply rounded-lg bg-dasar-200;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.65) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-kilau;
+  }
+
+  /* Tautan dalam teks berjalan. Selalu bergaris bawah, bukan hanya berwarna. */
+  .tautan {
+    @apply font-medium text-brand-700 underline decoration-brand-300 decoration-2
+           underline-offset-2 transition-colors hover:text-brand-800 hover:decoration-brand-500;
+  }
 }

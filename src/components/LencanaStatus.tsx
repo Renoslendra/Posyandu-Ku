@@ -1,13 +1,76 @@
 import type { StatusGizi } from "@/lib/gizi/zscore";
-import { KELAS_STATUS, LABEL_STATUS } from "@/lib/proses-pengukuran";
+import { LABEL_STATUS } from "@/lib/proses-pengukuran";
 
 /**
  * Lencana status gizi.
  *
- * Warna tidak menjadi satu-satunya pembeda: setiap lencana selalu memuat teks.
- * Ini penting bagi pengguna dengan keterbatasan membedakan warna, dan juga
- * saat layar terlihat di bawah sinar matahari langsung di halaman posyandu.
+ * Tiga lapis pembeda, bukan hanya warna:
+ *   1. rona  — hijau, kuning, merah
+ *   2. bentuk — ikon berbeda untuk tiap status
+ *   3. teks  — selalu ada, tidak pernah hanya ikon
+ *
+ * Berlapisnya penting karena dua sebab. Pengguna yang sulit membedakan merah
+ * dan hijau tetap dapat mengenali bentuknya. Dan di halaman posyandu, layar
+ * murah di bawah sinar matahari sering membuat warna nyaris hilang, sementara
+ * bentuk dan teks tetap terbaca.
  */
+
+/** Ikon per status. Bentuknya berbeda tegas, bukan variasi lingkaran. */
+function Ikon({ status }: { status: StatusGizi }) {
+  const dasar = "h-4 w-4 shrink-0";
+
+  // Centang: kondisi baik.
+  if (status === "normal") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
+        <path
+          d="M4.5 10.5l3.5 3.5 7.5-8"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  // Segitiga: perlu perhatian. Bentuk yang secara universal berarti waspada.
+  if (status === "risiko") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
+        <path
+          d="M10 3l7 13H3l7-13z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path d="M10 8.5v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="10" cy="14" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  // Segi delapan: perlu segera. Bentuk rambu berhenti.
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={dasar} aria-hidden="true">
+      <path
+        d="M7 2.5h6l4.5 4.5v6L13 17.5H7L2.5 13V7L7 2.5z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M10 6.5v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="10" cy="13.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+const KELAS: Record<StatusGizi, string> = {
+  normal: "bg-status-normal text-white",
+  risiko: "bg-status-risiko text-white",
+  berat: "bg-status-berat text-white",
+};
+
 export function LencanaStatus({
   status,
   ukuran = "normal",
@@ -17,20 +80,61 @@ export function LencanaStatus({
 }) {
   if (!status) {
     return (
-      <span className="inline-flex items-center rounded-full bg-slate-200 px-3 py-1 text-sm font-medium text-slate-700">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-dasar-300 bg-dasar-100 px-3 py-1 text-sm font-medium text-dasar-700">
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-dasar-400" />
         Belum dinilai
       </span>
     );
   }
 
   const kelasUkuran =
-    ukuran === "besar" ? "px-5 py-2 text-lg font-bold" : "px-3 py-1 text-sm font-semibold";
+    ukuran === "besar"
+      ? "gap-2 px-5 py-2.5 text-lg font-bold"
+      : "gap-1.5 px-3 py-1 text-sm font-semibold";
 
   return (
     <span
-      className={`inline-flex items-center rounded-full ${KELAS_STATUS[status]} ${kelasUkuran}`}
+      className={`inline-flex items-center rounded-full shadow-halus ${KELAS[status]} ${kelasUkuran}`}
     >
+      <Ikon status={status} />
       {LABEL_STATUS[status]}
     </span>
+  );
+}
+
+/**
+ * Kartu status besar untuk halaman anak dan hasil pencatatan.
+ *
+ * Dipakai ketika status adalah informasi utama di layar, bukan penanda kecil
+ * di samping nama. Memakai latar lembut dengan garis tepi pekat, bukan blok
+ * warna penuh, karena blok warna sebesar ini melelahkan mata saat dibaca lama.
+ */
+export function KartuStatus({
+  status,
+  keterangan,
+}: {
+  status: StatusGizi | null;
+  keterangan?: string;
+}) {
+  const gaya: Record<StatusGizi, string> = {
+    normal: "border-status-normal-garis bg-status-normal-lembut text-green-900",
+    risiko: "border-status-risiko-garis bg-status-risiko-lembut text-amber-900",
+    berat: "border-status-berat-garis bg-status-berat-lembut text-red-900",
+  };
+
+  if (!status) {
+    return (
+      <div className="rounded-2xl border-2 border-dasar-300 bg-dasar-100 p-5">
+        <p className="text-lg font-bold text-dasar-800">Belum dinilai</p>
+        {keterangan && <p className="mt-1 text-base text-dasar-700">{keterangan}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-2xl border-2 p-5 ${gaya[status]}`}>
+      <LencanaStatus status={status} ukuran="besar" />
+      {keterangan && <p className="mt-3 text-base">{keterangan}</p>}
+    </div>
   );
 }
