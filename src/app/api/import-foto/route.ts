@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { llmTersedia, panggilVision, uraiJsonLLM } from "@/lib/llm";
 import { hasilEkstraksiSchema, type BarisEkstraksi } from "@/lib/validasi";
 import { klienServer } from "@/lib/supabase";
@@ -49,6 +50,17 @@ export async function POST(permintaan: Request) {
         manualSaja: true,
       },
       { status: 503 },
+    );
+  }
+
+  // Panggilan vision paling mahal di antara ketiga endpoint LLM, sehingga
+  // batasnya ditegakkan sebelum gambar diproses. Batasnya diberi ruang lebih
+  // lapang karena kader memang memfoto beberapa halaman berurutan.
+  const batas = await periksaBatas(supabase, BATAS.importFoto);
+  if (batas.ditolak) {
+    return NextResponse.json(
+      { galat: batas.pesan, manualSaja: true },
+      { status: 429 },
     );
   }
 

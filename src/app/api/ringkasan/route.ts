@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { susunRingkasan, type BarisAnak, type BarisPengukuran } from "@/lib/dashboard";
 import { ringkasanTemplate, susunRingkasanNaratif } from "@/lib/ringkasan";
 import { klienServer } from "@/lib/supabase";
@@ -14,33 +15,6 @@ import { klienServer } from "@/lib/supabase";
  * menimbulkan biaya API dan tidak boleh dipicu oleh prefetch peramban.
  */
 
-/**
- * Pembatasan laju sederhana per pengguna.
- *
- * Disimpan di memori proses, sehingga tidak akurat pada lingkungan serverless
- * yang menjalankan beberapa instans. Cukup untuk mencegah penekanan tombol
- * berulang, yang merupakan pola penyalahgunaan paling mungkin di sini.
- */
-const catatanPanggilan = new Map<string, number[]>();
-const JENDELA_MS = 60_000;
-const MAKS_PER_JENDELA = 5;
-
-function melewatiBatas(idPengguna: string): boolean {
-  const sekarang = Date.now();
-  const sebelumnya = (catatanPanggilan.get(idPengguna) ?? []).filter(
-    (t) => sekarang - t < JENDELA_MS,
-  );
-
-  if (sebelumnya.length >= MAKS_PER_JENDELA) {
-    catatanPanggilan.set(idPengguna, sebelumnya);
-    return true;
-  }
-
-  sebelumnya.push(sekarang);
-  catatanPanggilan.set(idPengguna, sebelumnya);
-  return false;
-}
-
 export async function POST() {
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
@@ -49,11 +23,11 @@ export async function POST() {
     return NextResponse.json({ galat: "Silakan masuk terlebih dahulu" }, { status: 401 });
   }
 
-  if (melewatiBatas(pengguna.user.id)) {
-    return NextResponse.json(
-      { galat: "Terlalu banyak permintaan. Mohon tunggu sebentar." },
-      { status: 429 },
-    );
+  // Penghitungnya ada di basis data, sehingga batas tetap berlaku meski
+  // permintaan dilayani proses serverless yang berbeda.
+  const batas = await periksaBatas(supabase, BATAS.ringkasan);
+  if (batas.ditolak) {
+    return NextResponse.json({ galat: batas.pesan }, { status: 429 });
   }
 
   // RLS membatasi kedua kueri pada wilayah pengguna yang sedang masuk.

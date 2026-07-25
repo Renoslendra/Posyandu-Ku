@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { daftarBelanja, susunSaranMenu } from "@/lib/menu";
 import { klienServer } from "@/lib/supabase";
 import type { StatusGizi } from "@/lib/gizi/zscore";
@@ -14,27 +15,6 @@ import type { StatusGizi } from "@/lib/gizi/zscore";
  * hanya posyandunya.
  */
 
-/** Pembatasan laju sederhana per pengguna, mencegah penekanan tombol berulang. */
-const catatanPanggilan = new Map<string, number[]>();
-const JENDELA_MS = 60_000;
-const MAKS_PER_JENDELA = 8;
-
-function melewatiBatas(idPengguna: string): boolean {
-  const sekarang = Date.now();
-  const riwayat = (catatanPanggilan.get(idPengguna) ?? []).filter(
-    (t) => sekarang - t < JENDELA_MS,
-  );
-
-  if (riwayat.length >= MAKS_PER_JENDELA) {
-    catatanPanggilan.set(idPengguna, riwayat);
-    return true;
-  }
-
-  riwayat.push(sekarang);
-  catatanPanggilan.set(idPengguna, riwayat);
-  return false;
-}
-
 export async function POST(permintaan: Request) {
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
@@ -43,11 +23,9 @@ export async function POST(permintaan: Request) {
     return NextResponse.json({ galat: "Silakan masuk terlebih dahulu" }, { status: 401 });
   }
 
-  if (melewatiBatas(pengguna.user.id)) {
-    return NextResponse.json(
-      { galat: "Terlalu banyak permintaan. Mohon tunggu sebentar." },
-      { status: 429 },
-    );
+  const batas = await periksaBatas(supabase, BATAS.menu);
+  if (batas.ditolak) {
+    return NextResponse.json({ galat: batas.pesan }, { status: 429 });
   }
 
   let muatan: { anakId?: string };
