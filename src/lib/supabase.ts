@@ -1,20 +1,21 @@
 /**
  * Klien Supabase.
  *
- * Tiga varian dengan wewenang berbeda, sengaja dipisah agar tidak mungkin
- * tertukar:
+ * Klien untuk sisi server saja. Berkas ini mengimpor `next/headers`, sehingga
+ * tidak boleh diimpor dari komponen klien. Untuk peramban, pakai
+ * `supabase-browser.ts`.
  *
- *   klienBrowser()  — anon key, tunduk pada RLS. Aman di sisi klien.
- *   klienServer()   — anon key + sesi pengguna, tunduk pada RLS. Untuk route.
- *   klienAdmin()    — service role, MELEWATI RLS. Hanya untuk skrip seed dan
- *                     pengujian RLS. Tidak boleh dipakai menangani permintaan
- *                     pengguna.
+ *   klienServer()  — anon key + sesi pengguna, tunduk pada RLS. Untuk route
+ *                    handler dan server component.
+ *   klienAdmin()   — service role, MELEWATI RLS. Hanya untuk skrip seed dan
+ *                    pengujian RLS. Tidak boleh dipakai menangani permintaan
+ *                    pengguna.
  *
- * Kunci service role hanya dibaca dari environment server. Berkas ini tidak
- * pernah mengekspornya ke klien.
+ * Kunci service role hanya dibaca dari environment server dan tidak pernah
+ * diekspor ke klien.
  */
 
-import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
@@ -30,11 +31,6 @@ function wajib(nama: string): string {
 
 const URL_ENV = "NEXT_PUBLIC_SUPABASE_URL";
 const ANON_ENV = "NEXT_PUBLIC_SUPABASE_ANON_KEY";
-
-/** Klien untuk komponen yang berjalan di peramban. Tunduk pada RLS. */
-export function klienBrowser() {
-  return createBrowserClient(wajib(URL_ENV), wajib(ANON_ENV));
-}
 
 /**
  * Klien untuk route handler dan server component.
