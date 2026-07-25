@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DaftarAnak } from "@/components/DaftarAnak";
 import { LogoLengkap } from "@/components/Logo";
 import { LencanaStatus } from "@/components/LencanaStatus";
 import { TombolRingkasan } from "@/components/TombolRingkasan";
@@ -190,9 +191,11 @@ export default async function HalamanBidan() {
         )}
       </section>
 
-      <div className="mt-10">
-        <TombolRingkasan />
-      </div>
+        <DaftarAnak daftar={ringkasan.semuaAnak} />
+
+        <div className="mt-10">
+          <TombolRingkasan />
+        </div>
 
       <footer className="mt-12 space-y-2 border-t border-slate-200 pt-5 text-sm text-slate-600">
         <p>

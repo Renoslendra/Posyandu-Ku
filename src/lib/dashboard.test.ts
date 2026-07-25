@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { susunRingkasan, type BarisAnak, type BarisPengukuran } from "./dashboard";
+import {
+  saringAnak,
+  susunRingkasan,
+  type AnakPrioritas,
+  type BarisAnak,
+  type BarisPengukuran,
+} from "./dashboard";
 
 const SEKARANG = new Date("2026-07-25T00:00:00Z");
 
@@ -208,5 +214,88 @@ describe("susunRingkasan — ketahanan masukan", () => {
     );
     expect(r.totalAnak).toBe(1);
     expect(r.distribusi.berat).toBe(0);
+  });
+});
+
+describe("susunRingkasan — daftar semua anak", () => {
+  it("memuat seluruh anak, termasuk yang belum pernah diukur", () => {
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi"), anak("c", "Cici")],
+      [ukur("a", "2026-07-01", 11, "normal")],
+      SEKARANG,
+    );
+    expect(r.semuaAnak).toHaveLength(3);
+    expect(r.semuaAnak.filter((x) => x.status === null)).toHaveLength(2);
+  });
+
+  it("mengurutkan menurut nama", () => {
+    const r = susunRingkasan(
+      [anak("c", "Cici"), anak("a", "Ana"), anak("b", "Budi")],
+      [],
+      SEKARANG,
+    );
+    expect(r.semuaAnak.map((x) => x.nama)).toEqual(["Ana", "Budi", "Cici"]);
+  });
+});
+
+describe("saringAnak", () => {
+  function entri(nama: string, status: AnakPrioritas["status"]): AnakPrioritas {
+    return { id: nama, nama, status, alasan: [], jedaHari: 0, tanggalTerakhir: null };
+  }
+
+  const daftar = [
+    entri("Aisyah", "normal"),
+    entri("Bagas", "berat"),
+    entri("Citra", "normal"),
+    entri("Dimas", "risiko"),
+    entri("Fajar", null),
+  ];
+
+  it("mengembalikan semua entri tanpa penyaringan", () => {
+    expect(saringAnak(daftar, "semua", "")).toHaveLength(5);
+  });
+
+  it("menyaring menurut status gizi", () => {
+    expect(saringAnak(daftar, "berat", "").map((a) => a.nama)).toEqual(["Bagas"]);
+    expect(saringAnak(daftar, "normal", "")).toHaveLength(2);
+    expect(saringAnak(daftar, "risiko", "").map((a) => a.nama)).toEqual(["Dimas"]);
+  });
+
+  it("menyaring anak yang belum pernah dinilai", () => {
+    // Anak yang belum pernah ditimbang mudah terlupakan justru karena tidak
+    // muncul pada penyaringan status mana pun.
+    expect(saringAnak(daftar, "belum", "").map((a) => a.nama)).toEqual(["Fajar"]);
+  });
+
+  it("mencari menurut nama tanpa membedakan besar kecil huruf", () => {
+    expect(saringAnak(daftar, "semua", "bagas").map((a) => a.nama)).toEqual(["Bagas"]);
+    expect(saringAnak(daftar, "semua", "BAGAS").map((a) => a.nama)).toEqual(["Bagas"]);
+  });
+
+  it("mencari berdasarkan potongan nama", () => {
+    expect(saringAnak(daftar, "semua", "itr").map((a) => a.nama)).toEqual(["Citra"]);
+  });
+
+  it("mengabaikan spasi di ujung kata pencarian", () => {
+    // Papan tombol ponsel sering menambahkan spasi setelah kata.
+    expect(saringAnak(daftar, "semua", "  Dimas  ").map((a) => a.nama)).toEqual([
+      "Dimas",
+    ]);
+  });
+
+  it("menggabungkan penyaringan status dan pencarian nama", () => {
+    expect(saringAnak(daftar, "normal", "citra").map((a) => a.nama)).toEqual(["Citra"]);
+    // Bagas berstatus berat, sehingga tidak muncul pada saringan normal.
+    expect(saringAnak(daftar, "normal", "bagas")).toHaveLength(0);
+  });
+
+  it("mengembalikan daftar kosong bila tidak ada yang cocok", () => {
+    expect(saringAnak(daftar, "semua", "zzz")).toHaveLength(0);
+  });
+
+  it("tidak mengubah daftar masukan", () => {
+    const salinan = [...daftar];
+    saringAnak(daftar, "berat", "bagas");
+    expect(daftar).toEqual(salinan);
   });
 });

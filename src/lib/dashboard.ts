@@ -45,6 +45,14 @@ export interface RingkasanDashboard {
   /** Anak dengan status berat, pola bermasalah, atau berhenti hadir. */
   prioritas: AnakPrioritas[];
   hilangDariPemantauan: AnakPrioritas[];
+  /**
+   * Seluruh anak, untuk penyaringan status dan pencarian nama (FR-02.4, FR-02.5).
+   *
+   * Dikirim utuh ke klien agar penyaringan berlangsung tanpa perjalanan ke
+   * server. Pada volume satu posyandu jumlahnya ratusan baris, masih ringan.
+   * Bila kelak mencakup ribuan anak, penyaringan perlu dipindah ke kueri.
+   */
+  semuaAnak: AnakPrioritas[];
 }
 
 /**
@@ -75,6 +83,7 @@ export function susunRingkasan(
   let belumDinilai = 0;
   const prioritas: AnakPrioritas[] = [];
   const hilang: AnakPrioritas[] = [];
+  const semua: AnakPrioritas[] = [];
 
   for (const anak of daftarAnak) {
     const riwayat = perAnak.get(anak.id) ?? [];
@@ -113,6 +122,7 @@ export function susunRingkasan(
       tanggalTerakhir: terakhir?.tanggal ?? null,
     };
 
+    semua.push(entri);
     if (pemantauan.hilang) hilang.push(entri);
     if (alasan.length > 0) prioritas.push(entri);
   }
@@ -128,6 +138,10 @@ export function susunRingkasan(
 
   hilang.sort((a, b) => b.jedaHari - a.jedaHari);
 
+  // Daftar lengkap diurutkan menurut nama agar kader dan bidan dapat
+  // menyusurinya seperti membaca buku absen posyandu.
+  semua.sort((a, b) => a.nama.localeCompare(b.nama, "id"));
+
   return {
     totalAnak: daftarAnak.length,
     sudahDiukur: perAnak.size,
@@ -135,7 +149,38 @@ export function susunRingkasan(
     belumDinilai,
     prioritas,
     hilangDariPemantauan: hilang,
+    semuaAnak: semua,
   };
+}
+
+/** Pilihan penyaringan status pada dashboard. */
+export type SaringStatus = "semua" | StatusGizi | "belum";
+
+/**
+ * Menyaring daftar anak menurut status gizi dan pencarian nama (FR-02.4, FR-02.5).
+ *
+ * Dipisahkan dari komponen antarmuka agar dapat diuji tanpa merender React.
+ *
+ * Pencarian mengabaikan besar kecil huruf dan spasi di ujung, karena kader
+ * mengetik di ponsel dan papan tombol sering menambahkan spasi otomatis.
+ */
+export function saringAnak(
+  daftar: AnakPrioritas[],
+  saring: SaringStatus,
+  cari: string,
+): AnakPrioritas[] {
+  const kata = cari.trim().toLowerCase();
+
+  return daftar.filter((a) => {
+    if (saring === "belum") {
+      if (a.status !== null) return false;
+    } else if (saring !== "semua") {
+      if (a.status !== saring) return false;
+    }
+
+    if (kata.length > 0 && !a.nama.toLowerCase().includes(kata)) return false;
+    return true;
+  });
 }
 
 /** Ambang jeda kunjungan yang dipakai, untuk ditampilkan di antarmuka. */
