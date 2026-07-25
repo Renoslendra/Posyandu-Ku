@@ -219,6 +219,28 @@ export default async function HalamanBidan() {
 
         <DaftarAnak daftar={ringkasan.semuaAnak} />
 
+        {/*
+          Tautan biasa, bukan tombol dengan pemanggilan fetch, agar peramban
+          menangani unduhannya sendiri. Ini juga berarti unduhan tetap bekerja
+          tanpa JavaScript.
+        */}
+        <section className="mt-10 rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="text-xl font-bold text-slate-900">Laporan bulanan</h2>
+          <p className="mt-1 text-base text-slate-700">
+            Unduh rekapitulasi dan rincian per anak dalam format CSV, siap dibuka di
+            Excel untuk pelaporan ke dinas kesehatan.
+          </p>
+          <a
+            href="/api/laporan"
+            className="mt-4 inline-flex min-h-touch items-center rounded-lg border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50"
+          >
+            Unduh laporan CSV
+          </a>
+          <p className="mt-3 text-sm text-slate-600">
+            Seluruh angka pada laporan dihitung sistem, bukan disusun AI.
+          </p>
+        </section>
+
         <div className="mt-10">
           <TombolRingkasan />
         </div>
