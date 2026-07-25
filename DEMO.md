@@ -9,12 +9,39 @@ Rekam sebagai cadangan meskipun lingkungan produksi berjalan baik. Bila jaringan
 ## Persiapan Sebelum Merekam
 
 - [ ] Migrasi Supabase sudah dijalankan
-- [ ] `node scripts/seed.mjs` sudah dijalankan
-- [ ] Akun kader dan bidan sudah dibuat, sudah dicoba masuk
+- [ ] Data demo disiapkan dengan satu perintah:
+
+      ```bash
+      npm run demo:reset
+      ```
+
+      Menyisipkan enam anak beserta 13 pengukurannya, lalu membuat tiga akun demo
+      dan menautkan Bagas Pratama ke akun orang tua. Aman dijalankan berulang:
+      data demo sebelumnya dihapus lebih dahulu, sehingga tidak menghasilkan nama
+      ganda pada dashboard. Jalankan ulang bila tampilan sudah kotor karena
+      percobaan sebelum rekaman.
+
+- [ ] Kesiapan diperiksa: `npm run cek` menampilkan "Lingkungan siap"
+- [ ] Ketiga akun sudah dicoba masuk (tombol pengisi cepat ada di halaman masuk)
 - [ ] Satu foto halaman buku tulis (boleh tulisan tangan sendiri, berisi nama dan angka)
 - [ ] Terminal terbuka di direktori proyek, siap menjalankan `npm test`
 - [ ] Jendela peramban dirapikan, bookmark disembunyikan
 - [ ] Perbesar tampilan ke 125% agar teks terbaca di rekaman
+
+Data demo yang tersedia, masing-masing mewakili satu keadaan yang perlu terlihat:
+
+| Anak | Keadaan | Dipakai pada bagian |
+| --- | --- | --- |
+| Aisyah Putri | Sehat, tumbuh konsisten | 2 |
+| Bagas Pratama | Pendek berat, tertaut ke akun orang tua | 2, 4 |
+| Citra Dewi | Status normal, berat berhenti naik tiga bulan | 2, 4 |
+| Dimas Saputra | Berhenti menimbang 150 hari | 4 |
+| Elsa Maharani | Risiko, diukur telentang | — |
+| Fajar Nugroho | Belum pernah menimbang | — |
+
+Angkanya bukan hasil pengacakan. Setiap kunjungan menetapkan Z-score yang
+diinginkan, lalu rumus LMS WHO dibalik menjadi kilogram dan sentimeter, sehingga
+status gizi pada demo dapat dipastikan.
 
 Contoh isi foto buku tulis untuk demo:
 

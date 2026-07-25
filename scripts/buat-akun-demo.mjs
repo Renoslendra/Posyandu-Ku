@@ -55,8 +55,24 @@ const SANDI = "Posyandu2026!";
 const AKUN = [
   { surel: "kader@posyanduku.demo", peran: "kader", nama: "Bu Ani (Kader)" },
   { surel: "bidan@posyanduku.demo", peran: "bidan", nama: "Bu Ratna (Bidan)" },
-  { surel: "ortu@posyanduku.demo", peran: "orang_tua", nama: "Bu Wati (Orang Tua)" },
+  { surel: "ortu@posyanduku.demo", peran: "orang_tua", nama: "Ibu Wati (Orang Tua)" },
 ];
+
+/**
+ * Anak yang ditautkan ke akun orang tua.
+ *
+ * Dipilih menurut nama, bukan menurut urutan, dengan dua alasan.
+ *
+ * Pertama, ketepatan. Akun orang tua bernama Ibu Wati, dan pada data contoh
+ * Ibu Wati adalah orang tua Bagas Pratama. Pemilihan sebelumnya memakai anak
+ * pertama secara alfabetis, yaitu Aisyah Putri, yang orang tuanya Ibu Sari.
+ * Akibatnya akun orang tua menampilkan anak milik orang lain.
+ *
+ * Kedua, kegunaan pada demo. Bagas berstatus pendek berat, sehingga halaman
+ * orang tua menampilkan anjuran memeriksakan anak ke bidan. Aisyah berstatus
+ * normal, sehingga bagian terpenting halaman itu tidak pernah terlihat.
+ */
+const ANAK_TERTAUT = "Bagas Pratama";
 
 async function main() {
   console.log("\nMembuat akun demo...\n");
@@ -118,8 +134,7 @@ async function main() {
     console.log(`  ${akun.peran.padEnd(10)} ${akun.surel}`);
   }
 
-  // Menautkan anak pertama ke akun orang tua agar peran ketiga dapat
-  // ditunjukkan pada demo.
+  // Menautkan anak ke akun orang tua agar peran ketiga dapat ditunjukkan.
   const { data: daftarPengguna } = await db.auth.admin.listUsers();
   const ortu = daftarPengguna?.users?.find((u) => u.email === "ortu@posyanduku.demo");
 
@@ -127,13 +142,27 @@ async function main() {
     const { data: anak } = await db
       .from("anak")
       .select("id, nama")
-      .order("nama")
-      .limit(1)
+      .eq("nama", ANAK_TERTAUT)
       .maybeSingle();
 
     if (anak) {
+      /*
+       * Tautan lama dibersihkan lebih dahulu. Tanpa ini, anak yang pernah
+       * ditautkan pada penjalanan sebelumnya tetap menempel pada profil yang
+       * sudah dihapus, dan akun orang tua baru akan melihat lebih dari satu
+       * anak tanpa alasan yang jelas.
+       */
+      await db
+        .from("anak")
+        .update({ orang_tua_id: null })
+        .not("orang_tua_id", "is", null);
+
       await db.from("anak").update({ orang_tua_id: ortu.id }).eq("id", anak.id);
       console.log(`\n  ${anak.nama} ditautkan ke akun orang tua`);
+    } else {
+      console.error(
+        `\n  ${ANAK_TERTAUT} tidak ditemukan. Jalankan dulu: node scripts/seed.mjs`,
+      );
     }
   }
 

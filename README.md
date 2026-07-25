@@ -126,15 +126,43 @@ cp .env.example .env.local
 ### 4. Isi data contoh
 
 ```bash
-node scripts/seed.mjs
+npm run demo:reset
 ```
 
-Membuat satu posyandu dan enam anak dengan skenario berbeda: sehat, pendek berat, berat stagnan, berhenti menimbang, risiko, dan belum pernah menimbang. Seluruhnya data sintetis.
+Satu perintah untuk dua hal: mengisi data contoh, lalu membuat tiga akun demo.
+Keduanya juga dapat dijalankan terpisah dengan `npm run seed` dan `npm run akun`.
 
-Selanjutnya buat akun demo:
+Yang dibuat adalah satu posyandu dan enam anak dengan keadaan berbeda:
+
+| Anak | Keadaan |
+| --- | --- |
+| Aisyah Putri | Sehat, tumbuh konsisten |
+| Bagas Pratama | Pendek berat. Ditautkan ke akun orang tua |
+| Citra Dewi | Status gizi normal, tetapi berat berhenti naik tiga bulan |
+| Dimas Saputra | Berhenti menimbang 150 hari |
+| Elsa Maharani | Risiko, diukur telentang karena di bawah dua tahun |
+| Fajar Nugroho | Belum pernah menimbang, untuk menguji tampilan kosong |
+
+Seluruhnya data sintetis, bukan data anak sungguhan.
+
+Angkanya tidak diacak. Setiap kunjungan menetapkan Z-score yang diinginkan, lalu
+rumus LMS WHO dibalik menjadi kilogram dan sentimeter. Dengan begitu status gizi
+pada demo dapat dipastikan, bukan kebetulan, dan skenario "berat stagnan" pada
+Citra benar-benar menghasilkan berat yang tidak bergerak selama tiga kunjungan.
+
+Perintah ini aman dijalankan berulang. Anak demo yang ada dihapus lebih dahulu,
+sehingga tidak menghasilkan nama ganda. Wilayah dan posyandu justru dipakai ulang,
+bukan dihapus, karena penghapusannya akan mengosongkan `profil.posyandu_id` melalui
+`on delete set null` dan nilai kosong itu melanggar check constraint
+`kader_wajib_punya_posyandu`. Akun kader yang sudah ada tetap sah setelahnya.
+
+Cakupan penghapusan dibatasi pada anak di posyandu demo, bukan seluruh tabel,
+sehingga data di posyandu lain tidak pernah tersentuh.
+
+Periksa hasilnya:
 
 ```bash
-node scripts/buat-akun-demo.mjs
+npm run cek
 ```
 
 ### Bagaimana akun disediakan
@@ -194,7 +222,8 @@ npm test
 | `validasi.test.ts` | Skema masukan, termasuk tanggal yang tidak ada di kalender |
 | `proses-pengukuran.test.ts` | Alur lengkap dari masukan sampai status gizi |
 
-Selain itu, empat skrip menguji terhadap basis data sungguhan, bukan mock:
+Selain itu, lima skrip menguji terhadap basis data sungguhan, bukan mock. Kelimanya
+dijalankan sekaligus dengan `npm run uji:db`, atau satu per satu:
 
 ```bash
 node scripts/uji-rls.mjs          # isolasi data antar peran

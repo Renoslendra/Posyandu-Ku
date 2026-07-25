@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed": "node scripts/seed.mjs",
+    "akun": "node scripts/buat-akun-demo.mjs",
+    "demo:reset": "node scripts/seed.mjs && node scripts/buat-akun-demo.mjs",
+    "cek": "node scripts/cek-kesiapan.mjs",
+    "uji:db": "node scripts/uji-rls.mjs && node scripts/uji-alur.mjs && node scripts/uji-fitur-baru.mjs && node scripts/uji-import.mjs && node scripts/uji-batas-laju.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",

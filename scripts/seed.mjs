@@ -174,30 +174,114 @@ function klasifikasi(z) {
   return "normal";
 }
 
+const NAMA_WILAYAH = "Desa Sukamakmur";
+const NAMA_POSYANDU = "Posyandu Melati";
+
+/**
+ * Mencari wilayah dan posyandu demo, membuatnya bila belum ada.
+ *
+ * Keduanya sengaja dipakai ulang alih-alih dihapus lalu dibuat kembali, karena
+ * penghapusan posyandu akan mengosongkan `profil.posyandu_id` melalui aturan
+ * `on delete set null`, dan nilai kosong itu melanggar check constraint
+ * `kader_wajib_punya_posyandu`. Penghapusannya akan gagal, dan bila berhasil
+ * akun kader yang sudah dibuat justru menjadi tidak dapat dipakai.
+ *
+ * Memakai ulang keduanya juga berarti akun kader dan bidan tetap sah setelah
+ * seed dijalankan ulang, sehingga tidak perlu membuat akun lagi sebelum demo.
+ */
+async function siapkanWilayahPosyandu() {
+  const { data: wilayahAda } = await db
+    .from("wilayah")
+    .select("id")
+    .eq("nama", NAMA_WILAYAH)
+    .maybeSingle();
+
+  let wilayahId = wilayahAda?.id;
+
+  if (!wilayahId) {
+    const { data, error } = await db
+      .from("wilayah")
+      .insert({ nama: NAMA_WILAYAH, kecamatan: "Cibadak", kabupaten: "Sukabumi" })
+      .select("id")
+      .single();
+    if (error) throw new Error(`Gagal membuat wilayah: ${error.message}`);
+    wilayahId = data.id;
+  }
+
+  const { data: posyanduAda } = await db
+    .from("posyandu")
+    .select("id")
+    .eq("nama", NAMA_POSYANDU)
+    .maybeSingle();
+
+  let posyanduId = posyanduAda?.id;
+
+  if (!posyanduId) {
+    const { data, error } = await db
+      .from("posyandu")
+      .insert({
+        wilayah_id: wilayahId,
+        nama: NAMA_POSYANDU,
+        alamat: "Dusun Melati RT 02 RW 01",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(`Gagal membuat posyandu: ${error.message}`);
+    posyanduId = data.id;
+  }
+
+  return {
+    wilayah: { id: wilayahId },
+    posyandu: { id: posyanduId },
+    dibuatBaru: !posyanduAda?.id,
+  };
+}
+
+/**
+ * Menghapus anak demo beserta pengukurannya.
+ *
+ * Cakupannya dibatasi pada anak di posyandu demo, bukan seluruh tabel, agar
+ * skrip ini tidak pernah menyentuh data di posyandu lain seandainya basis data
+ * yang sama dipakai untuk hal lain.
+ *
+ * Pengukuran terhapus sendiri melalui `on delete cascade` pada `pengukuran`,
+ * demikian pula ringkasan bulanan yang menempel pada posyandu.
+ */
+async function bersihkanAnakDemo(posyanduId) {
+  const { data: lama } = await db
+    .from("anak")
+    .select("id")
+    .eq("posyandu_id", posyanduId);
+
+  if (!lama?.length) return 0;
+
+  const { error } = await db.from("anak").delete().eq("posyandu_id", posyanduId);
+  if (error) throw new Error(`Gagal membersihkan data lama: ${error.message}`);
+
+  return lama.length;
+}
+
 async function main() {
   console.log("Menyiapkan data contoh sintetis...\n");
 
-  const { data: wilayah, error: galatWilayah } = await db
-    .from("wilayah")
-    .insert({ nama: "Desa Sukamakmur", kecamatan: "Cibadak", kabupaten: "Sukabumi" })
-    .select("id")
-    .single();
+  const { wilayah, posyandu, dibuatBaru } = await siapkanWilayahPosyandu();
 
-  if (galatWilayah) throw new Error(`Gagal membuat wilayah: ${galatWilayah.message}`);
+  console.log(
+    dibuatBaru
+      ? `${NAMA_POSYANDU} dibuat (wilayah: ${NAMA_WILAYAH})`
+      : `${NAMA_POSYANDU} sudah ada, dipakai ulang (wilayah: ${NAMA_WILAYAH})`,
+  );
 
-  const { data: posyandu, error: galatPosyandu } = await db
-    .from("posyandu")
-    .insert({
-      wilayah_id: wilayah.id,
-      nama: "Posyandu Melati",
-      alamat: "Dusun Melati RT 02 RW 01",
-    })
-    .select("id")
-    .single();
-
-  if (galatPosyandu) throw new Error(`Gagal membuat posyandu: ${galatPosyandu.message}`);
-
-  console.log(`Posyandu Melati dibuat (wilayah: Desa Sukamakmur)`);
+  /*
+   * Dijalankan sebelum penyisipan agar skrip ini dapat dijalankan berkali-kali
+   * dengan hasil yang sama. Sebelumnya setiap kali dijalankan menambah satu set
+   * anak baru, sehingga dashboard bidan berisi nama ganda dan angka
+   * ringkasannya menyesatkan.
+   */
+  const terhapus = await bersihkanAnakDemo(posyandu.id);
+  if (terhapus > 0) {
+    console.log(`${terhapus} anak demo sebelumnya dihapus beserta pengukurannya\n`);
+  }
 
   let jumlahUkur = 0;
 
@@ -271,10 +355,13 @@ async function main() {
 
   console.log(`\nSelesai. ${SKENARIO.length} anak, ${jumlahUkur} pengukuran.`);
   console.log("\nSeluruh data di atas sintetis, bukan data anak sungguhan.");
-  console.log("\nLangkah berikutnya: buat akun kader dan bidan di Supabase Auth,");
-  console.log("lalu tambahkan barisnya di tabel profil dengan posyandu_id/wilayah_id:");
-  console.log(`  posyandu_id = ${posyandu.id}`);
-  console.log(`  wilayah_id  = ${wilayah.id}`);
+  console.log("\nLangkah berikutnya:");
+  console.log("  node scripts/buat-akun-demo.mjs    membuat tiga akun demo");
+  console.log("\nSkrip itu menuliskan baris profil sekaligus, yang tidak terjadi");
+  console.log("bila akun dibuat lewat dashboard Supabase Auth. Bila perlu manual,");
+  console.log("pakai nilai berikut pada tabel profil:");
+  console.log(`  posyandu_id = ${posyandu.id}   (untuk kader)`);
+  console.log(`  wilayah_id  = ${wilayah.id}   (untuk bidan)`);
 }
 
 function hitungZ(indikator, jk, x, nilai) {
