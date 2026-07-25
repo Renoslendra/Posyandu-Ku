@@ -69,11 +69,11 @@ export default function HalamanMasuk() {
     <main className="mx-auto max-w-md px-4 py-12">
       <LogoLengkap />
 
-      <h1 className="mt-10 text-2xl font-bold text-slate-900">Masuk</h1>
+      <h1 className="mt-10 text-2xl font-bold text-dasar-900">Masuk</h1>
 
       <form onSubmit={masuk} className="mt-6 space-y-5">
         <div>
-          <label htmlFor="surel" className="block text-base font-semibold text-slate-900">
+          <label htmlFor="surel" className="block text-base font-semibold text-dasar-900">
             Surel
           </label>
           <input
@@ -83,12 +83,12 @@ export default function HalamanMasuk() {
             value={surel}
             onChange={(e) => setSurel(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         <div>
-          <label htmlFor="sandi" className="block text-base font-semibold text-slate-900">
+          <label htmlFor="sandi" className="block text-base font-semibold text-dasar-900">
             Kata sandi
           </label>
           <input
@@ -98,14 +98,14 @@ export default function HalamanMasuk() {
             value={sandi}
             onChange={(e) => setSandi(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         {galat && (
           <p
             role="alert"
-            className="rounded-lg border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
+            className="rounded-xl border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
           >
             {galat}
           </p>
@@ -114,13 +114,13 @@ export default function HalamanMasuk() {
         <button
           type="submit"
           disabled={memuat}
-          className="min-h-touch w-full rounded-lg bg-brand-500 px-6 text-lg font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300"
+          className="min-h-touch w-full rounded-lg bg-brand-500 px-6 text-lg font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300"
         >
           {memuat ? "Memproses..." : "Masuk"}
         </button>
       </form>
 
-      <p className="mt-8 text-sm text-slate-600">
+      <p className="mt-8 text-sm text-dasar-600">
         Akun dibuatkan oleh pengelola posyandu. Bila belum memiliki akun, hubungi
         bidan desa atau pengelola posyandu Anda.
       </p>

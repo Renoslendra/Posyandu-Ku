@@ -46,8 +46,8 @@ export default async function HalamanAnak({
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <LogoLengkap />
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
-          <h1 className="text-xl font-bold text-slate-900">Silakan masuk</h1>
+        <div className="mt-8 kartu p-5">
+          <h1 className="text-xl font-bold text-dasar-900">Silakan masuk</h1>
           <Link
             href="/masuk"
             className="mt-4 inline-flex min-h-touch items-center rounded-lg bg-brand-500 px-6 font-semibold text-white"
@@ -115,25 +115,25 @@ export default async function HalamanAnak({
       </header>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">{anak.nama}</h1>
+        <h1 className="text-2xl font-bold text-dasar-900">{anak.nama}</h1>
         <LencanaStatus status={(terakhir?.status as StatusGizi) ?? null} ukuran="besar" />
       </div>
 
-      <dl className="mt-3 grid gap-x-6 gap-y-1 text-base text-slate-700 sm:grid-cols-2">
+      <dl className="mt-3 grid gap-x-6 gap-y-1 text-base text-dasar-700 sm:grid-cols-2">
         <div className="flex gap-2">
-          <dt className="text-slate-600">Usia:</dt>
+          <dt className="text-dasar-600">Usia:</dt>
           <dd>{terakhir ? `${terakhir.usia_bulan} bulan` : "belum diukur"}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-slate-600">Jenis kelamin:</dt>
+          <dt className="text-dasar-600">Jenis kelamin:</dt>
           <dd>{jk === "L" ? "Laki-laki" : "Perempuan"}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-slate-600">Orang tua:</dt>
+          <dt className="text-dasar-600">Orang tua:</dt>
           <dd>{anak.nama_orang_tua}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-slate-600">Pemantauan:</dt>
+          <dt className="text-dasar-600">Pemantauan:</dt>
           <dd>{pemantauan.pesan}</dd>
         </div>
       </dl>
@@ -185,16 +185,16 @@ export default async function HalamanAnak({
       )}
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold text-slate-900">Riwayat penimbangan</h2>
+        <h2 className="text-xl font-bold text-dasar-900">Riwayat penimbangan</h2>
 
         {riwayat.length === 0 ? (
-          <p className="mt-3 rounded-xl border border-slate-200 bg-white p-5 text-base text-slate-700">
+          <p className="mt-3 kartu p-5 text-base text-dasar-700">
             Belum ada catatan penimbangan.
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="mt-3 overflow-x-auto kartu">
             <table className="w-full text-left text-base">
-              <thead className="border-b border-slate-200 text-sm text-slate-600">
+              <thead className="border-b border-dasar-200 text-sm text-dasar-600">
                 <tr>
                   <th className="px-4 py-3 font-medium">Tanggal</th>
                   <th className="px-4 py-3 font-medium">Usia</th>
@@ -205,7 +205,7 @@ export default async function HalamanAnak({
               </thead>
               <tbody>
                 {[...riwayat].reverse().map((p, i) => (
-                  <tr key={i} className="border-b border-slate-100 last:border-0">
+                  <tr key={i} className="border-b border-dasar-200 last:border-0">
                     <td className="px-4 py-3">{p.tanggal}</td>
                     <td className="px-4 py-3">{p.usia_bulan} bln</td>
                     <td className="px-4 py-3">{Number(p.berat_kg)} kg</td>
@@ -227,7 +227,7 @@ export default async function HalamanAnak({
         )}
       </section>
 
-      <footer className="mt-10 border-t border-slate-200 pt-5 text-sm text-slate-600">
+      <footer className="mt-10 border-t border-dasar-200 pt-5 text-sm text-dasar-600">
         Ini adalah alat bantu, bukan alat diagnosis. Untuk diagnosis resmi, silakan
         konsultasi ke bidan atau puskesmas terdekat.
       </footer>

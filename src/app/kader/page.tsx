@@ -39,9 +39,9 @@ export default async function HalamanKader() {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         <LogoLengkap />
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
-          <h1 className="text-xl font-bold text-slate-900">Silakan masuk</h1>
-          <p className="mt-2 text-base text-slate-700">
+        <div className="mt-8 kartu p-5">
+          <h1 className="text-xl font-bold text-dasar-900">Silakan masuk</h1>
+          <p className="mt-2 text-base text-dasar-700">
             Halaman ini hanya dapat dibuka oleh kader yang sudah masuk.
           </p>
           <Link
@@ -70,48 +70,61 @@ export default async function HalamanKader() {
   }));
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <LogoLengkap />
-        <Link href="/bidan" className="text-sm font-medium text-brand-700 underline">
-          Lihat dashboard bidan
-        </Link>
+    <>
+      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+          <LogoLengkap />
+          <Link href="/bidan" className="tautan text-sm">
+            Dashboard bidan
+          </Link>
+        </div>
       </header>
 
-      <h1 className="mt-8 text-2xl font-bold text-slate-900">Catat penimbangan</h1>
-      <p className="mt-2 text-base text-slate-700">
-        Masukkan berat dan tinggi anak. Status gizi langsung dihitung menurut
-        standar WHO.
-      </p>
-
-      {daftarAnak.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-base text-slate-700">
-          Belum ada anak terdaftar di posyandu Anda. Daftarkan anak terlebih dahulu
-          melalui tombol di bawah.
-        </p>
-      ) : (
-        <div className="mt-6">
-          <FormPengukuran daftarAnak={daftarAnak} />
+      <main id="isi-utama" className="mx-auto max-w-2xl px-4 pb-16">
+        <div className="pt-8">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
+            Halaman kader
+          </p>
+          <h1 className="mt-1 text-2xl font-extrabold text-dasar-900 sm:text-3xl">
+            Catat penimbangan
+          </h1>
+          <p className="mt-2 text-base text-dasar-700">
+            Masukkan berat dan tinggi anak. Status gizi langsung dihitung menurut
+            standar WHO.
+          </p>
         </div>
-      )}
 
-      {/*
-        Pendaftaran anak diletakkan sesudah formulir penimbangan karena
-        menimbang adalah kegiatan harian kader, sedangkan anak baru hanya
-        muncul sesekali.
-      */}
-      <div className="mt-6">
-        <FormAnakBaru />
-      </div>
+        {daftarAnak.length === 0 ? (
+          <p className="pesan-netral mt-6">
+            Belum ada anak terdaftar di posyandu Anda. Daftarkan anak terlebih dahulu
+            melalui tombol di bawah.
+          </p>
+        ) : (
+          <div className="mt-6">
+            <FormPengukuran daftarAnak={daftarAnak} />
+          </div>
+        )}
 
-      <div className="mt-10">
-        <ImportFoto daftarAnak={daftarAnak} />
-      </div>
+        {/*
+          Pendaftaran anak diletakkan sesudah formulir penimbangan karena
+          menimbang adalah kegiatan harian kader, sedangkan anak baru hanya
+          muncul sesekali.
+        */}
+        <div className="mt-5">
+          <FormAnakBaru />
+        </div>
 
-      <footer className="mt-10 border-t border-slate-200 pt-5 text-sm text-slate-600">
-        Ini adalah alat bantu kader posyandu, bukan alat diagnosis. Untuk diagnosis
-        resmi, silakan konsultasi ke bidan atau puskesmas terdekat.
+        <div className="mt-10">
+          <ImportFoto daftarAnak={daftarAnak} />
+        </div>
+      </main>
+
+      <footer className="mt-12 border-t border-dasar-200 bg-white">
+        <div className="mx-auto max-w-2xl px-4 py-8 text-sm text-dasar-600">
+          Ini adalah alat bantu kader posyandu, bukan alat diagnosis. Untuk diagnosis
+          resmi, silakan konsultasi ke bidan atau puskesmas terdekat.
+        </div>
       </footer>
-    </main>
+    </>
   );
 }

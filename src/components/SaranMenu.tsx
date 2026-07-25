@@ -68,16 +68,16 @@ export function SaranMenu({ anakId }: { anakId: string }) {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-xl font-bold text-slate-900">Saran menu harian</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <section className="kartu p-5">
+      <h2 className="text-xl font-bold text-dasar-900">Saran menu harian</h2>
+      <p className="mt-1 text-sm text-dasar-600">
         Menu berbahan pasar desa, disesuaikan dengan hasil penimbangan terakhir.
       </p>
 
       <button
         onClick={susun}
         disabled={memuat}
-        className="mt-4 min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300"
+        className="mt-4 min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300"
       >
         {memuat ? "Menyusun..." : hasil ? "Susun ulang" : "Lihat saran menu"}
       </button>
@@ -85,7 +85,7 @@ export function SaranMenu({ anakId }: { anakId: string }) {
       {galat && (
         <p
           role="alert"
-          className="mt-4 rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
+          className="mt-4 rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
         >
           {galat}
         </p>
@@ -99,36 +99,36 @@ export function SaranMenu({ anakId }: { anakId: string }) {
             <p className="text-3xl font-bold text-brand-700">
               {rupiah(hasil.totalBiayaRp)}
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-dasar-600">
               Harga perkiraan pasar desa. Dapat berbeda di tiap daerah.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold text-slate-900">Menu sehari</h3>
+            <h3 className="font-semibold text-dasar-900">Menu sehari</h3>
             <ul className="mt-2 space-y-2">
               {hasil.menu.map((m) => (
-                <li key={m.waktu} className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-600">{m.waktu}</p>
-                  <p className="text-base font-semibold text-slate-900">{m.hidangan}</p>
+                <li key={m.waktu} className="rounded-lg border border-dasar-200 p-3">
+                  <p className="text-sm font-medium text-dasar-600">{m.waktu}</p>
+                  <p className="text-base font-semibold text-dasar-900">{m.hidangan}</p>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold text-slate-900">Yang perlu dibeli</h3>
-            <ul className="mt-2 divide-y divide-slate-100">
+            <h3 className="font-semibold text-dasar-900">Yang perlu dibeli</h3>
+            <ul className="mt-2 divide-y divide-dasar-200">
               {hasil.belanja.map((b) => (
                 <li key={b.nama} className="flex flex-wrap justify-between gap-2 py-2">
-                  <span className="text-base text-slate-800">
+                  <span className="text-base text-dasar-800">
                     {b.nama}{" "}
-                    <span className="text-sm text-slate-500">({b.takaran})</span>
-                    <span className="block text-sm text-slate-600">
+                    <span className="text-sm text-dasar-600">({b.takaran})</span>
+                    <span className="block text-sm text-dasar-600">
                       untuk {b.manfaat}
                     </span>
                   </span>
-                  <span className="text-base font-medium text-slate-900">
+                  <span className="text-base font-medium text-dasar-900">
                     {rupiah(b.hargaRp)}
                   </span>
                 </li>
@@ -138,30 +138,30 @@ export function SaranMenu({ anakId }: { anakId: string }) {
 
           {hasil.narasi && (
             <div>
-              <h3 className="font-semibold text-slate-900">Cara memasak</h3>
-              <div className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-base leading-relaxed text-slate-800">
+              <h3 className="font-semibold text-dasar-900">Cara memasak</h3>
+              <div className="mt-2 whitespace-pre-wrap rounded-lg bg-dasar-50 p-4 text-base leading-relaxed text-dasar-800">
                 {hasil.narasi}
               </div>
             </div>
           )}
 
           {hasil.dariFallback && (
-            <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+            <p className="rounded-lg bg-dasar-100 p-3 text-sm text-dasar-700">
               Petunjuk memasak sedang tidak tersedia. Menu, bahan, dan biaya di atas
               tetap dapat dipakai.
             </p>
           )}
 
           <div>
-            <h3 className="font-semibold text-slate-900">Catatan</h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-slate-700">
+            <h3 className="font-semibold text-dasar-900">Catatan</h3>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-dasar-700">
               {hasil.catatanGizi.map((c) => (
                 <li key={c}>{c}</li>
               ))}
             </ul>
           </div>
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-dasar-600">
             Saran ini bersifat umum, bukan anjuran medis. Untuk kebutuhan khusus,
             silakan berkonsultasi dengan bidan atau puskesmas.
           </p>

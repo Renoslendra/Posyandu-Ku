@@ -48,9 +48,9 @@ export function GrafikPertumbuhan({
 }) {
   if (data.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
-        <h3 className="font-semibold text-slate-900">{judul}</h3>
-        <p className="mt-2 text-base text-slate-700">
+      <div className="kartu p-5">
+        <h3 className="font-semibold text-dasar-900">{judul}</h3>
+        <p className="mt-2 text-base text-dasar-700">
           Belum ada data pengukuran untuk digambarkan.
         </p>
       </div>
@@ -69,8 +69,8 @@ export function GrafikPertumbuhan({
   );
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <h3 className="font-semibold text-slate-900">{judul}</h3>
+    <div className="kartu p-5">
+      <h3 className="font-semibold text-dasar-900">{judul}</h3>
 
       <div className="mt-3 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -126,7 +126,7 @@ export function GrafikPertumbuhan({
         </ResponsiveContainer>
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-600">
+      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-dasar-600">
         <li className="flex items-center gap-2">
           <span className="inline-block h-1 w-5 rounded bg-brand-500" />
           Anak ini
@@ -145,7 +145,7 @@ export function GrafikPertumbuhan({
         })}
       </ul>
 
-      <p className="mt-3 text-sm text-slate-500">
+      <p className="mt-3 text-sm text-dasar-600">
         Garis putus-putus adalah rentang normal menurut standar WHO. Anak yang berada
         di bawah garis -2 SD perlu diperiksa bidan.
       </p>

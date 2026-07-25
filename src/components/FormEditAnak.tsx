@@ -89,7 +89,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             setTerbuka(true);
             setBerhasil(null);
           }}
-          className="min-h-touch rounded-lg border-2 border-slate-400 px-5 text-base font-semibold text-slate-700 hover:bg-slate-50"
+          className="min-h-touch rounded-xl border-2 border-dasar-400 px-5 text-base font-semibold text-dasar-700 hover:bg-dasar-50"
         >
           Perbaiki data anak
         </button>
@@ -110,10 +110,10 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
       onSubmit={kirim}
       className="space-y-5 rounded-xl border-2 border-brand-200 bg-white p-5"
     >
-      <h2 className="text-xl font-bold text-slate-900">Perbaiki data anak</h2>
+      <h2 className="text-xl font-bold text-dasar-900">Perbaiki data anak</h2>
 
       <div>
-        <label htmlFor="e-nama" className="block text-base font-semibold text-slate-900">
+        <label htmlFor="e-nama" className="block text-base font-semibold text-dasar-900">
           Nama anak
         </label>
         <input
@@ -121,7 +121,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
           value={nama}
           onChange={(e) => setNama(e.target.value)}
           required
-          className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+          className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
         />
       </div>
 
@@ -129,7 +129,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
         <div>
           <label
             htmlFor="e-tanggal"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
             Tanggal lahir
           </label>
@@ -140,12 +140,12 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             onChange={(e) => setTanggalLahir(e.target.value)}
             max={new Date().toISOString().slice(0, 10)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         <div>
-          <span className="block text-base font-semibold text-slate-900">
+          <span className="block text-base font-semibold text-dasar-900">
             Jenis kelamin
           </span>
           <div className="mt-2 flex gap-3">
@@ -160,10 +160,10 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
                 type="button"
                 onClick={() => setJenisKelamin(nilai)}
                 aria-pressed={jenisKelamin === nilai}
-                className={`min-h-touch flex-1 rounded-lg border-2 px-4 text-base font-medium ${
+                className={`min-h-touch flex-1 rounded-xl border-2 px-4 text-base font-medium ${
                   jenisKelamin === nilai
                     ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-slate-300 text-slate-700"
+                    : "border-dasar-300 text-dasar-700"
                 }`}
               >
                 {label}
@@ -178,7 +178,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
       {tanggalBerubah && adaRiwayat && (
         <p
           role="alert"
-          className="rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
+          className="rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
         >
           Tanggal lahir diubah. Usia pada riwayat penimbangan sebelumnya tidak
           dihitung ulang, sehingga status gizi lama mungkin tidak lagi sesuai. Mohon
@@ -189,7 +189,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
       <div>
         <label
           htmlFor="e-orangtua"
-          className="block text-base font-semibold text-slate-900"
+          className="block text-base font-semibold text-dasar-900"
         >
           Nama orang tua
         </label>
@@ -198,7 +198,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
           value={namaOrangTua}
           onChange={(e) => setNamaOrangTua(e.target.value)}
           required
-          className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+          className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
         />
       </div>
 
@@ -206,10 +206,10 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
         <div>
           <label
             htmlFor="e-telepon"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
             Nomor telepon{" "}
-            <span className="font-normal text-slate-500">(boleh dikosongkan)</span>
+            <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
           </label>
           <input
             id="e-telepon"
@@ -217,23 +217,23 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             value={telepon}
             onChange={(e) => setTelepon(e.target.value)}
             placeholder="08xxxxxxxxxx"
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         <div>
           <label
             htmlFor="e-alamat"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
             Alamat{" "}
-            <span className="font-normal text-slate-500">(boleh dikosongkan)</span>
+            <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
           </label>
           <input
             id="e-alamat"
             value={alamat}
             onChange={(e) => setAlamat(e.target.value)}
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
       </div>
@@ -241,7 +241,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
       {galat && (
         <p
           role="alert"
-          className="rounded-lg border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
+          className="rounded-xl border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
         >
           {galat}
         </p>
@@ -251,7 +251,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
         <button
           type="submit"
           disabled={!siap || memuat}
-          className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300 disabled:text-slate-500"
+          className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300 disabled:text-dasar-600"
         >
           {memuat ? "Menyimpan..." : "Simpan perubahan"}
         </button>
@@ -261,7 +261,7 @@ export function FormEditAnak({ anak, adaRiwayat }: Props) {
             setTerbuka(false);
             setGalat(null);
           }}
-          className="min-h-touch rounded-lg border-2 border-slate-400 px-6 text-base font-semibold text-slate-700"
+          className="min-h-touch rounded-xl border-2 border-dasar-400 px-6 text-base font-semibold text-dasar-700"
         >
           Batal
         </button>

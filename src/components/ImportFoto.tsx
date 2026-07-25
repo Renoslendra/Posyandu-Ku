@@ -188,12 +188,12 @@ export function ImportFoto({
   }
 
   return (
-    <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-5">
+    <section className="space-y-5 kartu p-5">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">
+        <h2 className="text-xl font-bold text-dasar-900">
           Masukkan catatan buku tulis
         </h2>
-        <p className="mt-2 text-base text-slate-700">
+        <p className="mt-2 text-base text-dasar-700">
           Foto satu halaman buku catatan posyandu. Sistem membaca angkanya, lalu Anda
           memeriksa dan menyimpannya.
         </p>
@@ -217,7 +217,7 @@ export function ImportFoto({
         </label>
 
         {/* Tanpa capture, peramban membuka galeri atau berkas tersimpan. */}
-        <label className="inline-flex min-h-touch cursor-pointer items-center rounded-lg border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50">
+        <label className="inline-flex min-h-touch cursor-pointer items-center rounded-xl border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50">
           Pilih foto tersimpan
           <input
             type="file"
@@ -229,7 +229,7 @@ export function ImportFoto({
         </label>
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-dasar-600">
         Tidak punya foto? Anda tetap dapat mencatat penimbangan dengan mengetik pada
         formulir di atas.
       </p>
@@ -237,7 +237,7 @@ export function ImportFoto({
       {galat && (
         <p
           role="alert"
-          className="rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
+          className="rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
         >
           {galat}
         </p>
@@ -246,13 +246,13 @@ export function ImportFoto({
       {ringkasan && (
         <div
           role="status"
-          className={`rounded-lg border-2 p-4 ${
+          className={`rounded-xl border-2 p-4 ${
             ringkasan.gagal === 0
               ? "border-status-normal bg-green-50"
               : "border-status-risiko bg-amber-50"
           }`}
         >
-          <p className="text-base font-semibold text-slate-900">
+          <p className="text-base font-semibold text-dasar-900">
             {ringkasan.berhasil} baris tersimpan
             {ringkasan.gagal > 0 && `, ${ringkasan.gagal} baris perlu diperbaiki`}
           </p>
@@ -272,7 +272,7 @@ export function ImportFoto({
 
       {baris && (
         <div className="space-y-4">
-          <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+          <div className="rounded-lg bg-dasar-100 p-3 text-sm text-dasar-700">
             Terbaca {baris.length} baris.
             {jumlahBercatatan > 0 && (
               <>
@@ -288,24 +288,24 @@ export function ImportFoto({
             {baris.map((b, i) => (
               <li
                 key={i}
-                className={`rounded-lg border-2 p-4 ${
+                className={`rounded-xl border-2 p-4 ${
                   b.catatan.length > 0
                     ? "border-status-risiko bg-amber-50"
-                    : "border-slate-200"
+                    : "border-dasar-200"
                 }`}
               >
                 <div className="grid gap-3 sm:grid-cols-4">
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">Nama</span>
+                    <span className="text-sm font-medium text-dasar-700">Nama</span>
                     <input
                       value={b.nama}
                       onChange={(e) => ubahBaris(i, { nama: e.target.value })}
-                      className="mt-1 min-h-touch w-full rounded border-2 border-slate-300 px-2 text-base"
+                      className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-dasar-700">
                       Berat (kg)
                     </span>
                     <input
@@ -320,12 +320,12 @@ export function ImportFoto({
                               : Number(e.target.value.replace(",", ".")),
                         })
                       }
-                      className="mt-1 min-h-touch w-full rounded border-2 border-slate-300 px-2 text-base"
+                      className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-dasar-700">
                       Tinggi (cm)
                     </span>
                     <input
@@ -340,19 +340,19 @@ export function ImportFoto({
                               : Number(e.target.value.replace(",", ".")),
                         })
                       }
-                      className="mt-1 min-h-touch w-full rounded border-2 border-slate-300 px-2 text-base"
+                      className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">Tanggal</span>
+                    <span className="text-sm font-medium text-dasar-700">Tanggal</span>
                     <input
                       type="date"
                       value={b.tanggal ?? ""}
                       onChange={(e) =>
                         ubahBaris(i, { tanggal: e.target.value || null })
                       }
-                      className="mt-1 min-h-touch w-full rounded border-2 border-slate-300 px-2 text-base"
+                      className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                     />
                   </label>
                 </div>
@@ -363,9 +363,9 @@ export function ImportFoto({
                   mencocokkan; kader dapat menimpanya kapan pun.
                 */}
                 <label className="mt-3 block">
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-dasar-700">
                     Anak yang dimaksud{" "}
-                    <span className="font-normal text-slate-500">
+                    <span className="font-normal text-dasar-600">
                       (isi bila nama tidak cocok otomatis)
                     </span>
                   </span>
@@ -374,7 +374,7 @@ export function ImportFoto({
                     onChange={(e) =>
                       ubahBaris(i, { anakId: e.target.value || undefined })
                     }
-                    className="mt-1 min-h-touch w-full rounded border-2 border-slate-300 px-2 text-base"
+                    className="mt-1 min-h-touch w-full rounded border-2 border-dasar-300 px-2 text-base"
                   >
                     <option value="">Cocokkan otomatis dari nama</option>
                     {daftarAnak.map((a) => (
@@ -394,7 +394,7 @@ export function ImportFoto({
                 )}
 
                 {!siapDisimpan(b) && (
-                  <p className="mt-2 text-sm text-slate-600">
+                  <p className="mt-2 text-sm text-dasar-600">
                     Baris ini belum lengkap dan tidak akan disimpan. Lengkapi nama,
                     berat, tinggi, dan tanggal.
                   </p>
@@ -403,7 +403,7 @@ export function ImportFoto({
                 <button
                   type="button"
                   onClick={() => hapusBaris(i)}
-                  className="mt-3 text-sm font-medium text-slate-600 underline"
+                  className="mt-3 text-sm font-medium text-dasar-600 underline"
                 >
                   Buang baris ini
                 </button>
@@ -416,7 +416,7 @@ export function ImportFoto({
               type="button"
               onClick={simpan}
               disabled={menyimpan || jumlahSiap === 0}
-              className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300 disabled:text-slate-500"
+              className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300 disabled:text-dasar-600"
             >
               {menyimpan
                 ? "Menyimpan..."
@@ -428,13 +428,13 @@ export function ImportFoto({
                 setBaris(null);
                 setGalat(null);
               }}
-              className="min-h-touch rounded-lg border-2 border-slate-400 px-6 text-base font-semibold text-slate-700"
+              className="min-h-touch rounded-xl border-2 border-dasar-400 px-6 text-base font-semibold text-dasar-700"
             >
               Batalkan
             </button>
           </div>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-dasar-600">
             Angka disimpan bersama jejak asalnya sebagai hasil pembacaan foto, dan
             dihitung ulang menurut standar WHO oleh sistem, bukan oleh AI.
           </p>

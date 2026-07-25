@@ -82,10 +82,10 @@ export function FormAnakBaru() {
 
   if (!terbuka) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="kartu p-5">
         <button
           onClick={() => setTerbuka(true)}
-          className="min-h-touch rounded-lg border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50"
+          className="min-h-touch rounded-xl border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50"
         >
           Daftarkan anak baru
         </button>
@@ -107,12 +107,12 @@ export function FormAnakBaru() {
   return (
     <form
       onSubmit={kirim}
-      className="space-y-5 rounded-xl border border-slate-200 bg-white p-5"
+      className="space-y-5 kartu p-5"
     >
-      <h2 className="text-xl font-bold text-slate-900">Daftarkan anak baru</h2>
+      <h2 className="text-xl font-bold text-dasar-900">Daftarkan anak baru</h2>
 
       <div>
-        <label htmlFor="nama" className="block text-base font-semibold text-slate-900">
+        <label htmlFor="nama" className="block text-base font-semibold text-dasar-900">
           Nama anak
         </label>
         <input
@@ -120,7 +120,7 @@ export function FormAnakBaru() {
           value={nama}
           onChange={(e) => setNama(e.target.value)}
           required
-          className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+          className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
         />
       </div>
 
@@ -128,7 +128,7 @@ export function FormAnakBaru() {
         <div>
           <label
             htmlFor="tanggalLahir"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
             Tanggal lahir
           </label>
@@ -139,12 +139,12 @@ export function FormAnakBaru() {
             onChange={(e) => setTanggalLahir(e.target.value)}
             max={new Date().toISOString().slice(0, 10)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         <div>
-          <span className="block text-base font-semibold text-slate-900">
+          <span className="block text-base font-semibold text-dasar-900">
             Jenis kelamin
           </span>
           {/*
@@ -163,10 +163,10 @@ export function FormAnakBaru() {
                 type="button"
                 onClick={() => setJenisKelamin(nilai)}
                 aria-pressed={jenisKelamin === nilai}
-                className={`min-h-touch flex-1 rounded-lg border-2 px-4 text-base font-medium ${
+                className={`min-h-touch flex-1 rounded-xl border-2 px-4 text-base font-medium ${
                   jenisKelamin === nilai
                     ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-slate-300 text-slate-700"
+                    : "border-dasar-300 text-dasar-700"
                 }`}
               >
                 {label}
@@ -179,7 +179,7 @@ export function FormAnakBaru() {
       <div>
         <label
           htmlFor="namaOrangTua"
-          className="block text-base font-semibold text-slate-900"
+          className="block text-base font-semibold text-dasar-900"
         >
           Nama orang tua
         </label>
@@ -188,7 +188,7 @@ export function FormAnakBaru() {
           value={namaOrangTua}
           onChange={(e) => setNamaOrangTua(e.target.value)}
           required
-          className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+          className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
         />
       </div>
 
@@ -196,9 +196,9 @@ export function FormAnakBaru() {
         <div>
           <label
             htmlFor="telepon"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
-            Nomor telepon <span className="font-normal text-slate-500">(boleh dikosongkan)</span>
+            Nomor telepon <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
           </label>
           <input
             id="telepon"
@@ -206,22 +206,22 @@ export function FormAnakBaru() {
             value={telepon}
             onChange={(e) => setTelepon(e.target.value)}
             placeholder="08xxxxxxxxxx"
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
 
         <div>
           <label
             htmlFor="alamat"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
-            Alamat <span className="font-normal text-slate-500">(boleh dikosongkan)</span>
+            Alamat <span className="font-normal text-dasar-600">(boleh dikosongkan)</span>
           </label>
           <input
             id="alamat"
             value={alamat}
             onChange={(e) => setAlamat(e.target.value)}
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           />
         </div>
       </div>
@@ -229,7 +229,7 @@ export function FormAnakBaru() {
       {galat && (
         <p
           role="alert"
-          className="rounded-lg border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
+          className="rounded-xl border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
         >
           {galat}
         </p>
@@ -238,7 +238,7 @@ export function FormAnakBaru() {
       {peringatan && (
         <p
           role="alert"
-          className="rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
+          className="rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
         >
           {peringatan}
         </p>
@@ -248,7 +248,7 @@ export function FormAnakBaru() {
         <button
           type="submit"
           disabled={!siap || memuat}
-          className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300 disabled:text-slate-500"
+          className="min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300 disabled:text-dasar-600"
         >
           {memuat ? "Menyimpan..." : "Simpan"}
         </button>
@@ -258,7 +258,7 @@ export function FormAnakBaru() {
             setTerbuka(false);
             setGalat(null);
           }}
-          className="min-h-touch rounded-lg border-2 border-slate-400 px-6 text-base font-semibold text-slate-700"
+          className="min-h-touch rounded-xl border-2 border-dasar-400 px-6 text-base font-semibold text-dasar-700"
         >
           Tutup
         </button>

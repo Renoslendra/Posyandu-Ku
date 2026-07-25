@@ -40,16 +40,16 @@ export function TombolRingkasan() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-xl font-bold text-slate-900">Ringkasan bulanan</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <section className="kartu p-5">
+      <h2 className="text-xl font-bold text-dasar-900">Ringkasan bulanan</h2>
+      <p className="mt-1 text-sm text-dasar-600">
         Disusun dari angka pada dashboard ini. Dapat disalin untuk laporan.
       </p>
 
       <button
         onClick={susun}
         disabled={memuat}
-        className="mt-4 min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300"
+        className="mt-4 min-h-touch rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300"
       >
         {memuat ? "Menyusun..." : teks ? "Susun ulang" : "Susun ringkasan"}
       </button>
@@ -57,7 +57,7 @@ export function TombolRingkasan() {
       {galat && (
         <p
           role="alert"
-          className="mt-4 rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
+          className="mt-4 rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900"
         >
           {galat}
         </p>
@@ -66,13 +66,13 @@ export function TombolRingkasan() {
       {teks && (
         <div className="mt-5 space-y-3">
           {dariFallback && (
-            <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+            <p className="rounded-lg bg-dasar-100 p-3 text-sm text-dasar-700">
               Ringkasan disusun dari template karena layanan bahasa sedang tidak
               tersedia. Angkanya tetap berasal dari perhitungan yang sama.
             </p>
           )}
 
-          <div className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-base leading-relaxed text-slate-800">
+          <div className="whitespace-pre-wrap rounded-lg bg-dasar-50 p-4 text-base leading-relaxed text-dasar-800">
             {teks}
           </div>
         </div>

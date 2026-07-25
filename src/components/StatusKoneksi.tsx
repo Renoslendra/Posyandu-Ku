@@ -65,7 +65,7 @@ export function StatusKoneksi() {
   return (
     <div
       role="status"
-      className={`rounded-lg border-2 p-3 text-base ${
+      className={`rounded-xl border-2 p-3 text-base ${
         daring
           ? "border-brand-500 bg-brand-50 text-brand-700"
           : "border-status-risiko bg-amber-50 text-amber-900"

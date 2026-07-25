@@ -171,10 +171,10 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           e.preventDefault();
           void kirim(false);
         }}
-        className="space-y-5 rounded-xl border border-slate-200 bg-white p-5"
+        className="space-y-5 kartu p-5"
       >
         <div>
-          <label htmlFor="anak" className="block text-base font-semibold text-slate-900">
+          <label htmlFor="anak" className="block text-base font-semibold text-dasar-900">
             Nama anak
           </label>
           <select
@@ -182,7 +182,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             value={anakId}
             onChange={(e) => setAnakId(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
           >
             <option value="">Pilih anak</option>
             {daftarAnak.map((a) => (
@@ -197,7 +197,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           <div>
             <label
               htmlFor="berat"
-              className="block text-base font-semibold text-slate-900"
+              className="block text-base font-semibold text-dasar-900"
             >
               Berat badan (kg)
             </label>
@@ -209,14 +209,14 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
               onChange={(e) => setBerat(e.target.value)}
               placeholder="contoh: 10,5"
               required
-              className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-lg"
+              className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-lg"
             />
           </div>
 
           <div>
             <label
               htmlFor="tinggi"
-              className="block text-base font-semibold text-slate-900"
+              className="block text-base font-semibold text-dasar-900"
             >
               Tinggi badan (cm)
             </label>
@@ -228,7 +228,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
               onChange={(e) => setTinggi(e.target.value)}
               placeholder="contoh: 80,5"
               required
-              className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-lg"
+              className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-lg"
             />
           </div>
         </div>
@@ -236,7 +236,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
         <div>
           <label
             htmlFor="tanggal"
-            className="block text-base font-semibold text-slate-900"
+            className="block text-base font-semibold text-dasar-900"
           >
             Tanggal menimbang
           </label>
@@ -246,7 +246,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-lg border-2 border-slate-300 px-3 text-base sm:w-auto"
+            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base sm:w-auto"
           />
         </div>
 
@@ -254,14 +254,14 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           Cara pengukuran menentukan tabel WHO yang dipakai, dan selisihnya
           sekitar 0,7 cm. Karena itu ditanyakan, bukan diasumsikan dari usia.
         */}
-        <label className="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
+        <label className="flex items-start gap-3 rounded-lg bg-dasar-50 p-3">
           <input
             type="checkbox"
             checked={telentang}
             onChange={(e) => setTelentang(e.target.checked)}
             className="mt-1 h-5 w-5"
           />
-          <span className="text-sm text-slate-700">
+          <span className="text-sm text-dasar-700">
             Diukur telentang (anak dibaringkan). Biasanya untuk anak di bawah 2
             tahun.
           </span>
@@ -270,7 +270,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
         {galat && (
           <p
             role="alert"
-            className="rounded-lg border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
+            className="rounded-xl border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
           >
             {galat}
           </p>
@@ -279,7 +279,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
         <button
           type="submit"
           disabled={!siap || memuat}
-          className="min-h-touch w-full rounded-lg bg-brand-500 px-6 text-lg font-semibold text-white hover:bg-brand-600 disabled:bg-slate-300 disabled:text-slate-500"
+          className="min-h-touch w-full rounded-lg bg-brand-500 px-6 text-lg font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300 disabled:text-dasar-600"
         >
           {memuat ? "Menyimpan..." : "Simpan dan lihat hasil"}
         </button>
@@ -309,7 +309,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             </button>
             <button
               onClick={() => setPerluKonfirmasi(null)}
-              className="min-h-touch rounded-lg border-2 border-slate-400 px-5 font-semibold text-slate-700"
+              className="min-h-touch rounded-xl border-2 border-dasar-400 px-5 font-semibold text-dasar-700"
             >
               Perbaiki angka
             </button>
@@ -318,50 +318,50 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       )}
 
       {hasil && (
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="space-y-4 kartu p-5">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-lg font-bold text-slate-900">Hasil</h2>
+            <h2 className="text-lg font-bold text-dasar-900">Hasil</h2>
             <LencanaStatus status={hasil.status} ukuran="besar" />
           </div>
 
           {hasil.tersimpanLuring && (
-            <p className="rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900">
+            <p className="rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900">
               Tersimpan di perangkat ini. Data akan terkirim otomatis saat sinyal
               kembali.
             </p>
           )}
 
-          <p className="text-base text-slate-700">Usia {hasil.usiaBulan} bulan.</p>
+          <p className="text-base text-dasar-700">Usia {hasil.usiaBulan} bulan.</p>
 
           {hasil.status !== "normal" && hasil.penentuStatus && (
-            <p className="text-base text-slate-700">
+            <p className="text-base text-dasar-700">
               Perhatian utama pada {LABEL_INDIKATOR[hasil.penentuStatus].toLowerCase()}.
             </p>
           )}
 
-          <dl className="grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+          <dl className="grid gap-2 text-sm text-dasar-600 sm:grid-cols-3">
             <div>
-              <dt className="font-medium text-slate-700">Berat menurut umur</dt>
+              <dt className="font-medium text-dasar-700">Berat menurut umur</dt>
               <dd>{hasil.zBeratUsia ?? "tidak terhitung"}</dd>
             </div>
             <div>
-              <dt className="font-medium text-slate-700">Tinggi menurut umur</dt>
+              <dt className="font-medium text-dasar-700">Tinggi menurut umur</dt>
               <dd>{hasil.zTinggiUsia ?? "tidak terhitung"}</dd>
             </div>
             <div>
-              <dt className="font-medium text-slate-700">Berat menurut tinggi</dt>
+              <dt className="font-medium text-dasar-700">Berat menurut tinggi</dt>
               <dd>{hasil.zBeratTinggi ?? "tidak terhitung"}</dd>
             </div>
           </dl>
 
           {hasil.status !== "normal" && (
-            <p className="rounded-lg bg-slate-50 p-3 text-base text-slate-800">
+            <p className="rounded-lg bg-dasar-50 p-3 text-base text-dasar-800">
               Sampaikan hasil ini kepada bidan agar anak dapat diperiksa lebih
               lanjut.
             </p>
           )}
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-dasar-600">
             Angka di atas adalah Z-score menurut standar WHO. Ini alat bantu, bukan
             diagnosis.
           </p>

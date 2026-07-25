@@ -36,9 +36,9 @@ export default async function HalamanOrangTua() {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         <LogoLengkap />
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
-          <h1 className="text-xl font-bold text-slate-900">Silakan masuk</h1>
-          <p className="mt-2 text-base text-slate-700">
+        <div className="mt-8 kartu p-5">
+          <h1 className="text-xl font-bold text-dasar-900">Silakan masuk</h1>
+          <p className="mt-2 text-base text-dasar-700">
             Masuk untuk melihat perkembangan anak Anda.
           </p>
           <Link
@@ -76,10 +76,10 @@ export default async function HalamanOrangTua() {
     <main className="mx-auto max-w-2xl px-4 py-8">
       <LogoLengkap />
 
-      <h1 className="mt-8 text-2xl font-bold text-slate-900">Perkembangan anak Anda</h1>
+      <h1 className="mt-8 text-2xl font-bold text-dasar-900">Perkembangan anak Anda</h1>
 
       {daftar.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-base text-slate-700">
+        <p className="mt-6 kartu p-5 text-base text-dasar-700">
           Belum ada anak yang tertaut pada akun Anda. Hubungi kader posyandu untuk
           menautkan data anak Anda.
         </p>
@@ -92,7 +92,7 @@ export default async function HalamanOrangTua() {
             );
 
             return (
-              <li key={a.id} className="rounded-xl border border-slate-200 bg-white p-5">
+              <li key={a.id} className="kartu p-5">
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={`/anak/${a.id}`}
@@ -103,14 +103,14 @@ export default async function HalamanOrangTua() {
                   <LencanaStatus status={(terakhir?.status as StatusGizi) ?? null} />
                 </div>
 
-                <p className="mt-2 text-base text-slate-700">
+                <p className="mt-2 text-base text-dasar-700">
                   {terakhir
                     ? `Usia ${terakhir.usia_bulan} bulan. ${pemantauan.pesan}`
                     : "Belum ada catatan penimbangan."}
                 </p>
 
                 {terakhir?.status === "normal" && (
-                  <p className="mt-2 text-base text-slate-700">
+                  <p className="mt-2 text-base text-dasar-700">
                     Pertumbuhan anak Anda dalam rentang normal. Tetap timbang setiap
                     bulan di posyandu.
                   </p>
@@ -124,7 +124,7 @@ export default async function HalamanOrangTua() {
                 )}
 
                 {pemantauan.hilang && (
-                  <p className="mt-2 rounded-lg bg-slate-100 p-3 text-base text-slate-800">
+                  <p className="mt-2 rounded-lg bg-dasar-100 p-3 text-base text-dasar-800">
                     Sudah lama tidak menimbang. Mohon datang ke posyandu pada jadwal
                     berikutnya.
                   </p>
@@ -135,7 +135,7 @@ export default async function HalamanOrangTua() {
         </ul>
       )}
 
-      <footer className="mt-10 space-y-2 border-t border-slate-200 pt-5 text-sm text-slate-600">
+      <footer className="mt-10 space-y-2 border-t border-dasar-200 pt-5 text-sm text-dasar-600">
         <p>
           Ini adalah alat bantu, bukan alat diagnosis. Untuk pemeriksaan resmi,
           silakan ke bidan atau puskesmas terdekat.
