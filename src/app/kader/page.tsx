@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FormPengukuran } from "@/components/FormPengukuran";
+import { ImportFoto } from "@/components/ImportFoto";
 import { LogoLengkap } from "@/components/Logo";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
@@ -89,6 +90,10 @@ export default async function HalamanKader() {
           <FormPengukuran daftarAnak={daftarAnak} />
         </div>
       )}
+
+      <div className="mt-10">
+        <ImportFoto />
+      </div>
 
       <footer className="mt-10 border-t border-slate-200 pt-5 text-sm text-slate-600">
         Ini adalah alat bantu kader posyandu, bukan alat diagnosis. Untuk diagnosis
