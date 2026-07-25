@@ -2,20 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Lapisan dasar.
- *
- * Antarmuka ini dipakai kader posyandu di desa, sering di luar ruangan dengan
- * ponsel murah. Setiap keputusan di bawah tunduk pada keterbacaan, bukan gaya.
- */
-
 :root {
   color-scheme: light;
-
-  /* Warna teks. Tidak ada abu-abu di bawah rasio kontras 4,5:1. */
-  --teks-utama: #1c1917;
-  --teks-kedua: #44403c;
-  --teks-pendukung: #57534e;
 }
 
 * {
@@ -32,12 +20,30 @@ html {
 body {
   /* Font minimal 16px sesuai NFR-02.2 */
   font-size: 1rem;
-  color: var(--teks-utama);
-  background-color: #fafaf9;
+  color: #181c1c;
+  background-color: #f7faf8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Angka bertabulasi agar kolom berat dan tinggi sejajar rapi. */
   font-variant-numeric: tabular-nums;
+
+  /*
+   * Ruang bawah untuk bilah navigasi ponsel.
+   *
+   * Bilah itu melayang di atas isi halaman, sehingga tanpa ruang ini bagian
+   * terakhir setiap halaman akan tertutup. Ditaruh di sini, bukan di masing
+   * masing halaman, agar tidak ada halaman yang terlewat.
+   *
+   * Menyertakan inset aman iOS supaya tidak bertumpuk dengan batang gestur.
+   */
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  /* Pada desktop navigasi berada di atas, sehingga ruang ini tidak perlu. */
+  body {
+    padding-bottom: 0;
+  }
 }
 
 /*
@@ -52,12 +58,23 @@ body {
   border-radius: 4px;
 }
 
-/*
- * Menghormati permintaan pengurangan gerak dari setelan sistem.
- *
- * Bukan sekadar kepatuhan: gerak dapat memicu rasa mual pada sebagian orang,
- * dan aplikasi kesehatan adalah tempat terakhir yang boleh mengabaikannya.
- */
+button {
+  /* Menghilangkan penundaan 300 ms pada ketukan di peramban ponsel. */
+  touch-action: manipulation;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -70,105 +87,80 @@ body {
 }
 
 @layer components {
-  /*
-   * Kartu.
-   *
-   * Latar putih di atas dasar hangat, dengan garis tepi tipis. Garisnya
-   * dipertahankan meski sudah ada bayangan, karena bayangan hampir tidak
-   * terlihat pada layar murah di bawah sinar matahari.
-   */
   .kartu {
-    @apply rounded-2xl border border-dasar-200 bg-white shadow-kartu;
+    @apply rounded-2xl border border-outline-variant bg-surface-container shadow-halus;
   }
 
   .kartu-naik {
-    @apply rounded-2xl border border-dasar-200 bg-white shadow-naik transition-shadow duration-200;
+    @apply rounded-2xl border border-outline-variant bg-surface-container shadow-kartu transition-shadow duration-200;
   }
 
   .kartu-naik:hover {
-    @apply shadow-tinggi;
+    @apply shadow-naik;
   }
 
-  /* Tombol utama. Satu per layar, untuk tindakan yang paling diharapkan. */
   .tombol-utama {
-    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
-           bg-brand-500 px-6 text-base font-semibold text-white
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl
+           bg-primary px-6 text-base font-semibold text-on-primary
            shadow-merek transition-all duration-150
-           hover:bg-brand-600 active:scale-[0.98]
-           disabled:cursor-not-allowed disabled:bg-dasar-300 disabled:text-dasar-500
+           hover:bg-primary-fixed-dim active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:bg-surface-variant disabled:text-on-surface-variant
            disabled:shadow-none disabled:active:scale-100;
   }
 
-  /* Tombol kedua. Untuk tindakan yang setara namun bukan yang utama. */
   .tombol-kedua {
-    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
-           border-2 border-brand-500 bg-white px-6 text-base font-semibold
-           text-brand-700 transition-all duration-150
-           hover:bg-brand-50 active:scale-[0.98]
-           disabled:cursor-not-allowed disabled:border-dasar-300 disabled:text-dasar-400
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl
+           border-2 border-primary bg-transparent px-6 text-base font-semibold
+           text-primary transition-all duration-150
+           hover:bg-primary/10 active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:border-outline-variant disabled:text-outline-variant
            disabled:active:scale-100;
   }
 
-  /* Tombol netral. Untuk membatalkan atau menutup. */
   .tombol-netral {
-    @apply inline-flex min-h-touch items-center justify-center gap-2 rounded-xl
-           border-2 border-dasar-300 bg-white px-6 text-base font-semibold
-           text-dasar-700 transition-all duration-150
-           hover:bg-dasar-100 active:scale-[0.98];
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl
+           border-2 border-outline-variant bg-transparent px-6 text-base font-semibold
+           text-on-surface transition-all duration-150
+           hover:bg-surface-variant active:scale-[0.98];
   }
 
-  /*
-   * Kolom masukan.
-   *
-   * Garis tepi 2px, bukan 1px. Pada ponsel murah garis 1px kadang hilang
-   * sama sekali, dan kolom yang tidak terlihat batasnya membuat kader ragu
-   * di mana harus mengetik.
-   */
   .kolom {
-    @apply min-h-touch w-full rounded-xl border-2 border-dasar-300 bg-white px-3.5
-           text-base text-dasar-900 transition-colors duration-150
-           placeholder:text-dasar-400
-           hover:border-dasar-400
-           focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15;
+    @apply min-h-[48px] w-full rounded-xl border-2 border-outline-variant bg-surface-container-lowest px-3.5
+           text-base text-on-surface transition-colors duration-150
+           placeholder:text-outline
+           hover:border-outline
+           focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15;
   }
 
   .label {
-    @apply block text-base font-semibold text-dasar-900;
+    @apply block text-base font-semibold text-on-surface;
   }
 
   .label-pendukung {
-    @apply text-sm font-normal text-dasar-500;
+    @apply text-sm font-normal text-on-surface-variant;
   }
 
-  /* Kotak pesan. Warna latar lembut, garis tepi pekat, teks kontras tinggi. */
   .pesan-galat {
-    @apply rounded-xl border-2 border-status-berat-garis bg-status-berat-lembut
-           p-3.5 text-base text-red-900;
+    @apply rounded-xl border-2 border-error bg-error-container
+           p-3.5 text-base text-on-error-container;
   }
 
   .pesan-peringatan {
-    @apply rounded-xl border-2 border-status-risiko-garis bg-status-risiko-lembut
-           p-3.5 text-base text-amber-900;
+    @apply rounded-xl border-2 border-status-risk bg-tertiary-fixed
+           p-3.5 text-base text-tertiary;
   }
 
   .pesan-berhasil {
-    @apply rounded-xl border-2 border-status-normal-garis bg-status-normal-lembut
-           p-3.5 text-base text-green-900;
+    @apply rounded-xl border-2 border-status-normal bg-[#d1f3e0]
+           p-3.5 text-base text-[#0a4a25];
   }
 
   .pesan-netral {
-    @apply rounded-xl border border-dasar-200 bg-dasar-100 p-3.5 text-base text-dasar-700;
+    @apply rounded-xl border border-outline-variant bg-surface-variant p-3.5 text-base text-on-surface-variant;
   }
 
-  /*
-   * Kerangka pemuatan.
-   *
-   * Menyatakan bahwa sesuatu sedang datang, dan kira-kira berbentuk apa.
-   * Lebih menenangkan daripada layar kosong bagi pengguna dengan koneksi
-   * lambat, yang tidak tahu apakah aplikasinya sedang bekerja atau rusak.
-   */
   .kerangka {
-    @apply rounded-lg bg-dasar-200;
+    @apply rounded-lg bg-surface-variant;
     background-image: linear-gradient(
       90deg,
       transparent 0%,
@@ -179,9 +171,9 @@ body {
     @apply animate-kilau;
   }
 
-  /* Tautan dalam teks berjalan. Selalu bergaris bawah, bukan hanya berwarna. */
   .tautan {
-    @apply font-medium text-brand-700 underline decoration-brand-300 decoration-2
-           underline-offset-2 transition-colors hover:text-brand-800 hover:decoration-brand-500;
+    @apply font-medium text-primary underline decoration-primary/40 decoration-2
+           underline-offset-2 transition-colors hover:text-primary-fixed-dim hover:decoration-primary;
   }
 }
+

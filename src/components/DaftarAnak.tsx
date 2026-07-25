@@ -65,11 +65,10 @@ export function DaftarAnak({ daftar }: { daftar: AnakPrioritas[] }) {
             key={p.nilai}
             onClick={() => setSaring(p.nilai)}
             aria-pressed={saring === p.nilai}
-            className={`min-h-touch rounded-xl border-2 px-4 text-base font-medium ${
-              saring === p.nilai
+            className={`min-h-touch rounded-xl border-2 px-4 text-base font-medium ${saring === p.nilai
                 ? "border-brand-500 bg-brand-50 text-brand-700"
                 : "border-dasar-300 text-dasar-700 hover:bg-dasar-50"
-            }`}
+              }`}
           >
             {p.label}{" "}
             <span className="text-sm text-dasar-600">({jumlah.get(p.nilai) ?? 0})</span>

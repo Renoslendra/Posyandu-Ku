@@ -77,13 +77,20 @@ Keluaran: `src/lib/gizi/zscore.ts`, 27 pengujian.
 
 Diunduh dari paket resmi WHO (`WorldHealthOrganization/anthro`), dipadatkan dari 433 KB menjadi 120 KB. Lima indikator: BB/U, PB/U, TB/U, BB/PB, BB/TB.
 
-Pengujian menemukan bahwa berkas `lenanthro.txt` memuat dua tabel dalam satu berkas (panjang badan dan tinggi badan, dibedakan kolom `loh`). Konversi awal mencampurnya sehingga median pada usia 24 bulan salah. Diperbaiki dengan memisahkan keduanya.
+Pengujian menemukan bahwa# Fase 2: Implementasi Layout Statis dari Stitch
 
-Keluaran: `scripts/unduh-tabel-who.mjs`, `src/lib/gizi/tabel.ts`, 19 pengujian termasuk verifikasi terhadap angka terbitan WHO.
-
-### T-07 Penjaga kualitas data — SELESAI
-
-Dua tingkat temuan: `tolak` untuk nilai mustahil, `tandai` untuk nilai yang patut diperiksa. Ambang lonjakan berat diskalakan terhadap jarak kunjungan.
+- `[x]` 1. **Beranda (`src/app/page.tsx`)**
+  - Mengimplementasikan Bento Grid layout.
+  - Memasukkan Hero section, tombol CTA, dan assets gambar dari `beranda_posyanduku/code.html`.
+- `[x]` 2. **Dashboard Bidan (`src/app/bidan/page.tsx`)**
+  - Mengganti grid metrik (Total Anak, Normal, Risiko, Gizi Berat).
+  - Menyesuaikan UI daftar anak (kiri: Perlu Tindak Lanjut, kanan: Anak Hilang dari Pemantauan).
+- `[x]` 3. **Halaman Input Kader (`src/app/kader/page.tsx` dan `src/components/FormPengukuran.tsx`)**
+  - Menambahkan Smart Import Banner.
+  - Menyesuaikan form input (angka besar, suffix cm/kg di dalam form) sesuai desain.
+  - Memastikan *state* dan fungsi React berjalan lancar dengan UI baru.
+- `[x]` 4. **Komponen Layout (`src/components/Navbar.tsx`)**
+  - Mengadaptasikan navbar mobile (ikon menu bottom) agar aktif/menyorot berdasar halaman.jarak kunjungan.
 
 Keluaran: `src/lib/gizi/penjaga-data.ts`, 18 pengujian.
 

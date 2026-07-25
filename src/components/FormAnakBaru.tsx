@@ -163,11 +163,10 @@ export function FormAnakBaru() {
                 type="button"
                 onClick={() => setJenisKelamin(nilai)}
                 aria-pressed={jenisKelamin === nilai}
-                className={`min-h-touch flex-1 rounded-xl border-2 px-4 text-base font-medium ${
-                  jenisKelamin === nilai
+                className={`min-h-touch flex-1 rounded-xl border-2 px-4 text-base font-medium ${jenisKelamin === nilai
                     ? "border-brand-500 bg-brand-50 text-brand-700"
                     : "border-dasar-300 text-dasar-700"
-                }`}
+                  }`}
               >
                 {label}
               </button>

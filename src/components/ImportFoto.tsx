@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { IkonGambar, IkonKamera, IkonPindaiDokumen } from "@/components/Ikon";
 
 /**
  * Antarmuka import catatan buku tulis.
@@ -188,51 +189,54 @@ export function ImportFoto({
   }
 
   return (
-    <section className="space-y-5 kartu p-5">
-      <div>
-        <h2 className="text-xl font-bold text-dasar-900">
-          Masukkan catatan buku tulis
-        </h2>
-        <p className="mt-2 text-base text-dasar-700">
-          Foto satu halaman buku catatan posyandu. Sistem membaca angkanya, lalu Anda
-          memeriksa dan menyimpannya.
-        </p>
+    <section className="bg-merek-lembut rounded-xl p-4 border border-primary-container/20 flex flex-col gap-3 shadow-halus relative overflow-hidden">
+      <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary-container/10 rounded-full blur-xl"></div>
+      
+      <div className="flex flex-col gap-3 relative z-10">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+            <IkonPindaiDokumen className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="font-section-title text-section-title text-primary-container mb-1">Pindai Buku Tulis</h2>
+            <p className="font-body-base text-body-base text-primary-container/80 mb-3">
+              Otomatis isi data dengan memfoto buku catatan Posyandu.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 mt-2">
+          {/*
+            capture="environment" meminta peramban ponsel membuka kamera belakang
+            secara langsung, bukan menampilkan pemilih berkas.
+          */}
+          <label className="flex-1 h-touch-min px-4 bg-surface rounded-lg border-2 border-primary-container text-primary-container font-body-lg text-body-lg flex items-center gap-2 active:scale-95 transition-transform w-full justify-center cursor-pointer">
+            <IkonKamera className="h-5 w-5" />
+            {memuat ? "Membaca foto..." : "Ambil Foto"}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={pilihBerkas}
+              disabled={memuat}
+              className="sr-only"
+            />
+          </label>
+
+          {/* Tanpa capture, peramban membuka galeri atau berkas tersimpan. */}
+          <label className="flex-1 h-touch-min px-4 bg-transparent rounded-lg border border-primary-container/50 text-primary-container/80 font-body-base text-body-base flex items-center gap-2 active:scale-95 transition-transform w-full justify-center cursor-pointer hover:bg-primary-container/5">
+            <IkonGambar className="h-5 w-5" />
+            Pilih Galeri
+            <input
+              type="file"
+              accept="image/*"
+              onChange={pilihBerkas}
+              disabled={memuat}
+              className="sr-only"
+            />
+          </label>
+        </div>
       </div>
-
-      <div className="flex flex-wrap gap-3">
-        {/*
-          capture="environment" meminta peramban ponsel membuka kamera belakang
-          secara langsung, bukan menampilkan pemilih berkas.
-        */}
-        <label className="inline-flex min-h-touch cursor-pointer items-center rounded-lg bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600">
-          {memuat ? "Membaca foto..." : "Foto dengan kamera"}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={pilihBerkas}
-            disabled={memuat}
-            className="sr-only"
-          />
-        </label>
-
-        {/* Tanpa capture, peramban membuka galeri atau berkas tersimpan. */}
-        <label className="inline-flex min-h-touch cursor-pointer items-center rounded-xl border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50">
-          Pilih foto tersimpan
-          <input
-            type="file"
-            accept="image/*"
-            onChange={pilihBerkas}
-            disabled={memuat}
-            className="sr-only"
-          />
-        </label>
-      </div>
-
-      <p className="text-sm text-dasar-600">
-        Tidak punya foto? Anda tetap dapat mencatat penimbangan dengan mengetik pada
-        formulir di atas.
-      </p>
 
       {galat && (
         <p
@@ -246,11 +250,10 @@ export function ImportFoto({
       {ringkasan && (
         <div
           role="status"
-          className={`rounded-xl border-2 p-4 ${
-            ringkasan.gagal === 0
+          className={`rounded-xl border-2 p-4 ${ringkasan.gagal === 0
               ? "border-status-normal bg-green-50"
               : "border-status-risiko bg-amber-50"
-          }`}
+            }`}
         >
           <p className="text-base font-semibold text-dasar-900">
             {ringkasan.berhasil} baris tersimpan
@@ -288,11 +291,10 @@ export function ImportFoto({
             {baris.map((b, i) => (
               <li
                 key={i}
-                className={`rounded-xl border-2 p-4 ${
-                  b.catatan.length > 0
+                className={`rounded-xl border-2 p-4 ${b.catatan.length > 0
                     ? "border-status-risiko bg-amber-50"
                     : "border-dasar-200"
-                }`}
+                  }`}
               >
                 <div className="grid gap-3 sm:grid-cols-4">
                   <label className="block">

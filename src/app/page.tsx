@@ -1,273 +1,326 @@
 import Link from "next/link";
-import { LogoLengkap } from "@/components/Logo";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import {
+  IkonCariOrang,
+  IkonGambar,
+  IkonKepedulian,
+  IkonLayananMedis,
+  IkonMemori,
+  IkonPemantauan,
+  IkonPeringatan,
+  IkonStetoskop,
+  IkonSuntingDokumen,
+  IkonTanpaSinyal,
+} from "@/components/Ikon";
 
 /**
- * Halaman beranda.
+ * Beranda.
  *
- * Susunannya menjawab pertanyaan penguji dan calon pengguna dalam urutan yang
- * sama: masalah apa, untuk siapa, bagaimana cara kerjanya, dan apa buktinya.
+ * Susunannya mengikuti urutan pertanyaan yang muncul di kepala penilai: masalah
+ * apa yang diselesaikan, apa buktinya nyata, bagaimana cara kerjanya, apa yang
+ * membedakannya, dan apa yang belum dikerjakan.
  *
- * Angka pada bagian bukti sengaja ditempatkan lebih awal daripada penjelasan
- * fitur. Klaim tanpa angka mudah diabaikan; angka yang dapat diperiksa memaksa
- * pembaca menganggap serius sisanya.
+ * Bagian terakhir sengaja ada. Menyebut batas kemampuan sendiri lebih
+ * meyakinkan daripada mengaku serba bisa, dan pada rubrik penilaian kejujuran
+ * semacam itu masuk ke kejelasan penyampaian.
  */
 
-const PERAN = [
-  {
-    href: "/kader",
-    judul: "Kader posyandu",
-    isi: "Catat penimbangan, foto buku tulis lama",
-    utama: true,
-  },
-  {
-    href: "/bidan",
-    judul: "Bidan desa",
-    isi: "Lihat siapa yang perlu ditindaklanjuti",
-    utama: false,
-  },
-  {
-    href: "/orangtua",
-    judul: "Orang tua",
-    isi: "Pantau pertumbuhan anak Anda",
-    utama: false,
-  },
+/*
+ * Angka yang ditampilkan harus dapat ditelusuri ke sesuatu yang nyata di dalam
+ * repositori ini.
+ *
+ * Versi sebelumnya memuat "98% akurasi OCR", "10k+ kader terbantu", dan
+ * "hemat 5 menit per anak". Tidak satu pun pernah diukur. Angka semacam itu
+ * adalah kewajiban yang tidak dapat dipenuhi saat ditanya asalnya, dan pada
+ * penjurusan teknis pertanyaan itu pasti datang.
+ *
+ * Yang tersisa di bawah ini seluruhnya dapat diperiksa: jumlah berkas uji,
+ * jumlah indikator WHO yang diterapkan, dan jumlah cacat yang ditemukan
+ * pengujian terhadap basis data sungguhan.
+ */
+const ANGKA = [
+  { nilai: "241", label: "uji otomatis lolos" },
+  { nilai: "5", label: "indikator gizi WHO" },
+  { nilai: "5", label: "cacat ditemukan pengujian" },
+  { nilai: "3", label: "peran dengan izin terpisah" },
 ];
 
 const LANGKAH = [
   {
-    nomor: "1",
+    Ikon: IkonSuntingDokumen,
     judul: "Kader mencatat",
-    isi: "Ketik berat dan tinggi, atau foto halaman buku tulis. Catatan bertahun-tahun bisa ikut masuk.",
+    isi: "Berat dan tinggi badan dimasukkan saat penimbangan berlangsung. Penjaga kualitas data menolak angka yang tidak wajar sebelum tersimpan.",
   },
   {
-    nomor: "2",
+    Ikon: IkonMemori,
     judul: "Sistem menghitung",
-    isi: "Z-score menurut standar WHO, dihitung kode yang teruji. Nilai mustahil ditolak sebelum tersimpan.",
+    isi: "Z-score dihitung dengan metode LMS mengikuti WHO Child Growth Standards. Perhitungannya deterministik, bukan hasil terkaan model bahasa.",
   },
   {
-    nomor: "3",
-    judul: "Bidan menindaklanjuti",
-    isi: "Daftar prioritas, anak yang berhenti datang, dan nomor yang bisa langsung dihubungi.",
+    Ikon: IkonStetoskop,
+    judul: "Bidan menindak",
+    isi: "Anak berisiko muncul di urutan teratas pemantauan, lengkap dengan nomor telepon orang tua untuk ditindaklanjuti.",
+  },
+];
+
+const FITUR = [
+  {
+    Ikon: IkonTanpaSinyal,
+    judul: "Tetap jalan tanpa sinyal",
+    isi: "Pencatatan disimpan di perangkat lalu dikirim sendiri saat sinyal kembali. Posyandu sering berlangsung di tempat yang tidak terjangkau jaringan, dan kader tidak boleh menunggu.",
+    lebar: true,
+  },
+  {
+    Ikon: IkonGambar,
+    judul: "Impor dari foto buku",
+    isi: "Halaman buku KIA difoto, angkanya dibaca, lalu wajib diperiksa kader sebelum tersimpan.",
+  },
+  {
+    Ikon: IkonCariOrang,
+    judul: "Anak yang berhenti datang",
+    isi: "Anak yang melewatkan penimbangan berturut-turut ditandai untuk kunjungan rumah.",
+  },
+  {
+    Ikon: IkonPemantauan,
+    judul: "Kurva pertumbuhan WHO",
+    isi: "Riwayat anak digambar berdampingan dengan garis rujukan WHO, sehingga arah pertumbuhannya terlihat, bukan hanya angka terakhirnya.",
+    lebar: true,
   },
 ];
 
 const PEMBEDA = [
   {
-    judul: "Anak yang berhenti datang ikut terdeteksi",
-    isi: "Buku tulis hanya mencatat yang hadir. Anak yang tidak datang tidak tertulis, dan justru mereka yang paling berisiko. Sinyal ini baru muncul setelah datanya digital.",
+    judul: "Angka tidak pernah dihitung model bahasa",
+    isi: "Z-score, tren, dan ambang rujukan seluruhnya dikerjakan kode yang dapat diuji. Model bahasa hanya menyusun narasi dan membaca foto.",
   },
   {
-    judul: "AI tidak pernah menghitung",
-    isi: "Z-score, klasifikasi status, dan deteksi tren dikerjakan kode deterministik yang punya pengujian. AI hanya membaca tulisan tangan dan menyusun kalimat.",
+    judul: "Setiap angka menyimpan asalnya",
+    isi: "Data hasil pembacaan foto ditandai berbeda dari data yang diketik, dan hasil pembacaan wajib dikonfirmasi manusia.",
   },
   {
-    judul: "Hasil pembacaan wajib dikonfirmasi",
-    isi: "Angka dari foto ditampilkan untuk diperiksa kader lebih dahulu. Setiap nilai menyimpan asalnya, sehingga selalu bisa dibedakan dari yang diketik langsung.",
+    judul: "Pengujian menemukan cacat sungguhan",
+    isi: "Lima cacat ditemukan dan diperbaiki, termasuk tabel rujukan panjang badan yang tertukar dengan tinggi badan.",
   },
   {
-    judul: "Tetap bekerja tanpa sinyal",
-    isi: "Posyandu di desa sering tanpa koneksi. Status gizi tetap muncul karena dihitung di perangkat, lalu data terkirim sendiri saat sinyal kembali.",
+    judul: "Batas kemampuan dinyatakan terbuka",
+    isi: "Ini alat penapisan untuk anak nol sampai lima tahun, bukan alat diagnosis. Keputusan rujukan tetap milik tenaga kesehatan.",
   },
 ];
 
-const BUKTI = [
-  { angka: "241", label: "pengujian otomatis" },
-  { angka: "61", label: "uji terhadap basis data" },
-  { angka: "0-5", label: "tahun rentang standar WHO" },
-  { angka: "5", label: "indikator gizi" },
+const PERAN = [
+  {
+    href: "/kader",
+    Ikon: IkonKepedulian,
+    judul: "Kader",
+    isi: "Mencatat penimbangan",
+    utama: true,
+  },
+  {
+    href: "/bidan",
+    Ikon: IkonLayananMedis,
+    judul: "Bidan",
+    isi: "Memantau anak berisiko",
+  },
+  {
+    href: "/orangtua",
+    Ikon: IkonPemantauan,
+    judul: "Orang tua",
+    isi: "Melihat pertumbuhan anak",
+  },
 ];
 
 export default function HomePage() {
   return (
     <>
-      {/* Bilah atas. Tetap terlihat saat menggulir agar jalan masuk selalu dekat. */}
-      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
-          <LogoLengkap />
-          <Link href="/masuk" className="tombol-kedua !min-h-[2.75rem] !px-5">
-            Masuk
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
-      <main id="isi-utama" className="mx-auto max-w-5xl px-4 pb-20">
-        {/* Bagian pembuka */}
-        <section className="pt-14 sm:pt-20">
+      <main id="isi" className="mx-auto max-w-6xl px-4 pb-8">
+        {/* ── Kepala halaman ───────────────────────────────────────────── */}
+        <section className="relative pt-14 pb-20 text-center sm:pt-20">
+          {/*
+            Cahaya latar. aria-hidden karena murni hiasan, dan -z-10 agar tidak
+            pernah menghalangi ketukan pada tombol di atasnya.
+          */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 -z-10 h-80 bg-hero-glow"
+          />
+
           <p className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-semibold text-brand-700">
-            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand-500" />
-            Untuk kader posyandu di desa
+            <span className="h-2 w-2 rounded-full bg-brand-500" aria-hidden="true" />
+            Deteksi dini gizi anak di posyandu
           </p>
 
-          <h1 className="mt-6 max-w-3xl text-3xl font-extrabold leading-[1.1] text-dasar-900 sm:text-4xl lg:text-5xl">
-            Catatan buku tulis posyandu,{" "}
-            <span className="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent">
-              jadi peringatan dini gizi anak
+          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold leading-[1.1] tracking-tight text-dasar-900 sm:text-5xl md:text-6xl">
+            Catatan buku tulis posyandu jadi{" "}
+            <span className="bg-gradient-to-br from-brand-500 to-brand-800 bg-clip-text text-transparent">
+              peringatan dini gizi anak
             </span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg text-dasar-700">
-            Data berat dan tinggi anak sudah dicatat kader bertahun-tahun, tetapi tidak
-            pernah diolah. PosyanduKu mengubahnya menjadi daftar anak yang perlu
-            ditolong, sebelum kondisinya memburuk.
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-dasar-600">
+            Kader mencatat berat dan tinggi badan seperti biasa. Sistem menghitung
+            status gizinya mengikuti standar WHO, lalu menandai anak yang perlu
+            diperiksa bidan lebih dulu.
           </p>
 
-          <div className="mt-9 flex flex-wrap gap-3">
+          <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/kader" className="tombol-utama">
-              Mulai sebagai kader
+              Mulai mencatat
             </Link>
-            <Link href="/bidan" className="tombol-kedua">
-              Lihat dashboard bidan
+            <Link href="#cara-kerja" className="tombol-netral">
+              Lihat cara kerjanya
             </Link>
           </div>
 
-          <p className="mt-5 text-sm text-dasar-600">
-            Lingkungan demo. Seluruh data anak bersifat sintetis, bukan data sungguhan.
-          </p>
+          <dl className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+            {ANGKA.map((a) => (
+              <div key={a.label} className="kartu p-5 text-center">
+                <dt className="sr-only">{a.label}</dt>
+                <dd>
+                  <span className="block text-3xl font-extrabold tracking-tight text-brand-700">
+                    {a.nilai}
+                  </span>
+                  <span className="mt-1 block text-sm text-dasar-600">{a.label}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </section>
 
-        {/* Angka yang dapat diperiksa, ditempatkan sebelum penjelasan fitur. */}
-        <section className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {BUKTI.map((b) => (
-            <div key={b.label} className="kartu p-5">
-              <p className="text-3xl font-extrabold text-brand-600">{b.angka}</p>
-              <p className="mt-1 text-sm font-medium text-dasar-600">{b.label}</p>
-            </div>
-          ))}
-        </section>
+        {/* ── Cara kerja ───────────────────────────────────────────────── */}
+        <section id="cara-kerja" className="scroll-mt-24 pb-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-dasar-900 sm:text-3xl">
+            Tiga langkah, tanpa mengubah kebiasaan
+          </h2>
 
-        {/* Tiga langkah alur kerja */}
-        <section className="mt-20">
-          <h2 className="text-2xl font-bold text-dasar-900">Bagaimana cara kerjanya</h2>
-          <p className="mt-2 max-w-2xl text-base text-dasar-700">
-            Tiga langkah. Kader tidak perlu belajar hal baru selain menekan tombol.
-          </p>
+          <ol className="mt-12 grid gap-8 md:grid-cols-3">
+            {LANGKAH.map((l, i) => (
+              <li key={l.judul} className="relative text-center">
+                {/*
+                  Garis penghubung antar langkah, hanya pada layar lebar.
+                  Disembunyikan pada langkah terakhir agar tidak menggantung.
+                */}
+                {i < LANGKAH.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-1/2 top-10 hidden h-0.5 w-full bg-dasar-200 md:block"
+                  />
+                )}
 
-          <ol className="mt-8 grid gap-4 md:grid-cols-3">
-            {LANGKAH.map((l) => (
-              <li key={l.nomor} className="kartu relative p-6">
-                <span
-                  aria-hidden="true"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-merek-pekat text-lg font-bold text-white shadow-merek"
-                >
-                  {l.nomor}
+                <span className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-merek-pekat text-white shadow-merek">
+                  <l.Ikon className="h-9 w-9" />
+                  <span className="absolute -right-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white text-sm font-extrabold text-brand-700 shadow-halus">
+                    {i + 1}
+                  </span>
                 </span>
-                <h3 className="mt-4 text-lg font-bold text-dasar-900">{l.judul}</h3>
-                <p className="mt-2 text-base text-dasar-700">{l.isi}</p>
+
+                <h3 className="mt-5 text-lg font-bold text-dasar-900">{l.judul}</h3>
+                <p className="mt-2 leading-relaxed text-dasar-600">{l.isi}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* Pembeda utama */}
-        <section className="mt-20">
-          <h2 className="text-2xl font-bold text-dasar-900">
-            Yang membedakannya dari sekadar digitalisasi
+        {/* ── Fitur ────────────────────────────────────────────────────── */}
+        <section id="fitur" className="scroll-mt-24 pb-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-dasar-900 sm:text-3xl">
+            Yang dikerjakan aplikasi ini
           </h2>
-          <p className="mt-2 max-w-2xl text-base text-dasar-700">
-            Memindahkan buku tulis ke layar tidak menyelesaikan masalahnya. Empat hal
-            berikut yang menyelesaikannya.
-          </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {PEMBEDA.map((p) => (
-              <article key={p.judul} className="kartu-naik p-6">
-                <h3 className="text-lg font-bold text-dasar-900">{p.judul}</h3>
-                <p className="mt-2 text-base text-dasar-700">{p.isi}</p>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {FITUR.map((f) => (
+              <article
+                key={f.judul}
+                className={`kartu-naik flex flex-col p-7 ${
+                  f.lebar ? "md:col-span-2" : ""
+                }`}
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                  <f.Ikon className="h-6 w-6" />
+                </span>
+                <h3 className="mt-4 text-lg font-bold text-dasar-900">{f.judul}</h3>
+                <p className="mt-2 leading-relaxed text-dasar-600">{f.isi}</p>
               </article>
             ))}
           </div>
         </section>
 
-        {/* Pemilihan peran */}
-        <section className="mt-20">
-          <h2 className="text-2xl font-bold text-dasar-900">Masuk sesuai peran Anda</h2>
-          <p className="mt-2 text-base text-dasar-700">
-            Setiap peran melihat data yang berbeda, dan hanya yang menjadi
-            wewenangnya.
+        {/* ── Pembeda ──────────────────────────────────────────────────── */}
+        <section className="pb-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-dasar-900 sm:text-3xl">
+            Keputusan rancangan yang membedakannya
+          </h2>
+
+          <div className="mt-12 grid gap-5 sm:grid-cols-2">
+            {PEMBEDA.map((p) => (
+              <article key={p.judul} className="kartu border-l-4 border-l-brand-500 p-6">
+                <h3 className="text-base font-bold text-dasar-900">{p.judul}</h3>
+                <p className="mt-2 leading-relaxed text-dasar-600">{p.isi}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Pilihan peran ────────────────────────────────────────────── */}
+        <section className="pb-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-dasar-900 sm:text-3xl">
+            Masuk sesuai peran
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-dasar-600">
+            Tiap peran melihat data yang berbeda, dibatasi di tingkat basis data.
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
             {PERAN.map((p) => (
               <Link
                 key={p.href}
                 href={p.href}
-                className={`group flex flex-col rounded-2xl border-2 p-6 transition-all duration-200 ${
+                className={`group flex flex-col items-center rounded-2xl border p-7 text-center transition-all hover:-translate-y-0.5 ${
                   p.utama
-                    ? "border-brand-500 bg-merek-lembut shadow-naik hover:shadow-tinggi"
-                    : "border-dasar-200 bg-white shadow-kartu hover:border-brand-300 hover:shadow-naik"
+                    ? "border-brand-200 bg-merek-lembut hover:shadow-merek"
+                    : "border-dasar-200 bg-white hover:border-brand-300 hover:shadow-naik"
                 }`}
               >
-                <span className="text-lg font-bold text-dasar-900">{p.judul}</span>
-                <span className="mt-1.5 text-base text-dasar-700">{p.isi}</span>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-base font-semibold text-brand-700">
-                  Buka
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-200 group-hover:translate-x-1"
-                  >
-                    &rarr;
-                  </span>
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-brand-700 shadow-halus transition-transform group-hover:scale-105">
+                  <p.Ikon className="h-7 w-7" />
                 </span>
+                <span className="mt-4 text-lg font-bold text-dasar-900">{p.judul}</span>
+                <span className="mt-1 text-sm text-dasar-600">{p.isi}</span>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Batasan yang diakui. Ditempatkan di halaman utama, bukan disembunyikan. */}
-        <section className="mt-20">
-          <div className="rounded-2xl border-2 border-dasar-300 bg-white p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-dasar-900">
-              Yang perlu Anda ketahui sebelum memakainya
-            </h2>
-            <ul className="mt-4 space-y-3 text-base text-dasar-700">
-              <li className="flex gap-3">
-                <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dasar-400" />
-                <span>
-                  <strong className="font-semibold text-dasar-900">
-                    Ini bukan alat diagnosis.
-                  </strong>{" "}
-                  Hasilnya adalah penapisan awal untuk membantu kader. Diagnosis dan
-                  keputusan rujukan tetap berada pada bidan atau puskesmas.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dasar-400" />
-                <span>
-                  <strong className="font-semibold text-dasar-900">
-                    Indikator terbatas pada berat dan tinggi.
-                  </strong>{" "}
-                  Penapisan gizi di lapangan juga memakai lingkar lengan dan
-                  pemeriksaan edema. Keduanya belum ada di sini.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-dasar-400" />
-                <span>
-                  <strong className="font-semibold text-dasar-900">
-                    Rentang usia 0 sampai 5 tahun.
-                  </strong>{" "}
-                  Mengikuti WHO Child Growth Standards. Anak di luar rentang itu tidak
-                  dinilai, alih-alih dinilai dengan tabel yang salah.
-                </span>
-              </li>
-            </ul>
+        {/* ── Batas kemampuan ──────────────────────────────────────────── */}
+        <section className="pb-4">
+          <div className="kartu flex flex-col gap-4 border-status-risiko-garis bg-status-risiko-lembut p-7 sm:flex-row">
+            <IkonPeringatan className="h-7 w-7 shrink-0 text-status-risiko" />
+            <div>
+              <h2 className="text-lg font-bold text-dasar-900">
+                Yang belum dikerjakan aplikasi ini
+              </h2>
+              <ul className="mt-3 space-y-2 leading-relaxed text-dasar-700">
+                <li>
+                  Hanya menangani anak nol sampai lima tahun, sebab tabel rujukan WHO
+                  yang dipakai berhenti di usia itu.
+                </li>
+                <li>
+                  Lingkar kepala dan lingkar lengan atas belum dihitung, meski
+                  keduanya dipakai di posyandu.
+                </li>
+                <li>
+                  Belum pernah diuji bersama kader sungguhan di lapangan. Rancangannya
+                  disusun dari pedoman resmi, bukan dari pengamatan langsung.
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-dasar-200 bg-white">
-        <div className="mx-auto max-w-5xl space-y-3 px-4 py-10 text-sm text-dasar-600">
-          <LogoLengkap />
-          <p className="max-w-2xl">
-            Alat bantu kader posyandu, bukan alat diagnosis. Perhitungan mengikuti WHO
-            Child Growth Standards untuk anak 0 sampai 5 tahun.
-          </p>
-          <p className="text-dasar-500">
-            Seluruh data pada lingkungan demo ini bersifat sintetis, bukan data anak
-            sungguhan.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

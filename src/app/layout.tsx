@@ -58,15 +58,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    /*
+     * Tidak ada tag `head` manual di sini.
+     *
+     * Sebelumnya ada tautan ke Material Symbols di fonts.googleapis.com.
+     * Font itu dibuang bersama seluruh pemakaian ikonnya, digantikan SVG inline
+     * pada `components/Ikon.tsx`, sehingga aplikasi ini tidak lagi memuat apa
+     * pun dari domain pihak ketiga.
+     */
     <html lang="id" className={plusJakarta.variable}>
-      <body className="min-h-screen bg-dasar-50 font-sans text-dasar-900 antialiased">
+      <body className="min-h-screen bg-background text-on-background font-sans antialiased">
         {/*
           Tautan lewati ke isi utama. Tidak terlihat sampai difokuskan dengan
           papan tombol, sehingga tidak mengganggu tampilan namun tetap ada
           bagi yang membutuhkannya.
+
+          Sasarannya `#isi`, sama dengan id pada elemen `main` di setiap halaman.
+          Sebelumnya menunjuk `#isi-utama` yang tidak ada, sehingga tautan ini
+          tampil namun tidak memindahkan fokus ke mana pun.
         */}
         <a
-          href="#isi-utama"
+          href="#isi"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50
                      focus:rounded-xl focus:bg-brand-500 focus:px-5 focus:py-3
                      focus:text-base focus:font-semibold focus:text-white focus:shadow-tinggi"

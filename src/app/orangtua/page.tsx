@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { LogoLengkap } from "@/components/Logo";
 import { LencanaStatus } from "@/components/LencanaStatus";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { statusPemantauan } from "@/lib/gizi/pola";
 import type { StatusGizi } from "@/lib/gizi/zscore";
@@ -19,13 +21,14 @@ import type { StatusGizi } from "@/lib/gizi/zscore";
 export default async function HalamanOrangTua() {
   if (!supabaseTerkonfigurasi()) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <LogoLengkap />
-        <p className="mt-8 rounded-xl border-2 border-status-risiko bg-amber-50 p-5 text-base text-amber-900">
-          Basis data belum terhubung. Isi kredensial Supabase pada{" "}
-          <code>.env.local</code>.
-        </p>
-      </main>
+      <PagarBelumTerhubung
+        pesan={
+          <>
+            Isi kredensial Supabase pada <code>.env.local</code> sesuai{" "}
+            <code>.env.example</code>, lalu muat ulang halaman ini.
+          </>
+        }
+      />
     );
   }
 
@@ -34,21 +37,10 @@ export default async function HalamanOrangTua() {
 
   if (!pengguna.user) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <LogoLengkap />
-        <div className="mt-8 kartu p-5">
-          <h1 className="text-xl font-bold text-dasar-900">Silakan masuk</h1>
-          <p className="mt-2 text-base text-dasar-700">
-            Masuk untuk melihat perkembangan anak Anda.
-          </p>
-          <Link
-            href="/masuk"
-            className="mt-4 inline-flex min-h-touch items-center rounded-lg bg-brand-500 px-6 font-semibold text-white"
-          >
-            Masuk
-          </Link>
-        </div>
-      </main>
+      <PagarBelumMasuk
+        peran="Orang tua"
+        pesan="Masuk untuk melihat perkembangan anak Anda."
+      />
     );
   }
 
@@ -74,13 +66,9 @@ export default async function HalamanOrangTua() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
-        <div className="mx-auto max-w-2xl px-4 py-3.5">
-          <LogoLengkap />
-        </div>
-      </header>
+      <Navbar peran="Orang tua" />
 
-      <main id="isi-utama" className="mx-auto max-w-2xl px-4 pb-16">
+      <main id="isi" className="mx-auto max-w-2xl px-4 pb-16">
         <div className="pt-8">
           <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
             Halaman orang tua
@@ -172,12 +160,7 @@ export default async function HalamanOrangTua() {
 
       </main>
 
-      <footer className="mt-12 border-t border-dasar-200 bg-white">
-        <div className="mx-auto max-w-2xl px-4 py-8 text-sm text-dasar-600">
-          Ini adalah alat bantu, bukan alat diagnosis. Untuk pemeriksaan resmi,
-          silakan ke bidan atau puskesmas terdekat.
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

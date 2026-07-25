@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { FormEditAnak } from "@/components/FormEditAnak";
 import { GrafikPertumbuhan } from "@/components/GrafikPertumbuhan";
 import { LencanaStatus } from "@/components/LencanaStatus";
-import { LogoLengkap } from "@/components/Logo";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { SaranMenu } from "@/components/SaranMenu";
 import { analisisPola, statusPemantauan } from "@/lib/gizi/pola";
 import { pilihIndikatorPanjangUsia, type JenisKelamin } from "@/lib/gizi/zscore";
@@ -29,13 +31,14 @@ export default async function HalamanAnak({
 
   if (!supabaseTerkonfigurasi()) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <LogoLengkap />
-        <p className="mt-8 rounded-xl border-2 border-status-risiko bg-amber-50 p-5 text-base text-amber-900">
-          Basis data belum terhubung. Isi kredensial Supabase pada{" "}
-          <code>.env.local</code>.
-        </p>
-      </main>
+      <PagarBelumTerhubung
+        pesan={
+          <>
+            Isi kredensial Supabase pada <code>.env.local</code> sesuai{" "}
+            <code>.env.example</code>, lalu muat ulang halaman ini.
+          </>
+        }
+      />
     );
   }
 
@@ -44,18 +47,10 @@ export default async function HalamanAnak({
 
   if (!pengguna.user) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <LogoLengkap />
-        <div className="mt-8 kartu p-5">
-          <h1 className="text-xl font-bold text-dasar-900">Silakan masuk</h1>
-          <Link
-            href="/masuk"
-            className="mt-4 inline-flex min-h-touch items-center rounded-lg bg-brand-500 px-6 font-semibold text-white"
-          >
-            Masuk
-          </Link>
-        </div>
-      </main>
+      <PagarBelumMasuk
+        peran="Detail anak"
+        pesan="Masuk untuk melihat catatan pertumbuhan anak."
+      />
     );
   }
 
@@ -107,16 +102,21 @@ export default async function HalamanAnak({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-dasar-200/80 bg-dasar-50/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3.5">
-          <LogoLengkap />
-          <Link href="/bidan" className="tautan text-sm">
-            Kembali ke dashboard
-          </Link>
-        </div>
-      </header>
+      <Navbar peran="Detail anak" />
 
-      <main id="isi-utama" className="mx-auto max-w-3xl px-4 pb-16">
+      <main id="isi" className="mx-auto max-w-3xl px-4 pb-16">
+        {/*
+          Tautan kembali ditaruh di dalam isi, bukan di bilah navigasi, agar
+          bilah tetap sama bentuknya di seluruh halaman. Halaman ini selalu
+          dibuka dari pemantauan bidan, sehingga jalan pulangnya perlu jelas.
+        */}
+        <Link
+          href="/bidan"
+          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800"
+        >
+          <span aria-hidden="true">&larr;</span>
+          Kembali ke pemantauan
+        </Link>
         {/*
           Kepala halaman memakai latar bergradasi lembut agar identitas anak
           terpisah tegas dari data di bawahnya. Nama dan status adalah dua hal
@@ -239,12 +239,7 @@ export default async function HalamanAnak({
 
       </main>
 
-      <footer className="mt-12 border-t border-dasar-200 bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-dasar-600">
-          Ini adalah alat bantu, bukan alat diagnosis. Untuk diagnosis resmi, silakan
-          konsultasi ke bidan atau puskesmas terdekat.
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

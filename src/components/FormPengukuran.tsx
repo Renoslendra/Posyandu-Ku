@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { LencanaStatus } from "@/components/LencanaStatus";
 import { StatusKoneksi } from "@/components/StatusKoneksi";
+import {
+  IkonBahaya,
+  IkonCentang,
+  IkonPanahBawah,
+  IkonPeringatan,
+} from "@/components/Ikon";
 import { buatKlienRef, tambahKeAntrean } from "@/lib/antrean-offline";
 import type { Temuan } from "@/lib/gizi/penjaga-data";
 import { nilaiPengukuran, LABEL_INDIKATOR } from "@/lib/gizi/tabel";
@@ -171,87 +177,35 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           e.preventDefault();
           void kirim(false);
         }}
-        className="space-y-5 kartu p-5"
+        className="flex flex-col gap-form-gap bg-surface rounded-xl shadow-kartu p-4 border border-outline-variant"
       >
-        <div>
-          <label htmlFor="anak" className="label">
-            Nama anak
+        <div className="flex flex-col gap-2">
+          <label htmlFor="anak" className="font-body-lg text-body-lg text-on-surface">
+            Nama Balita
           </label>
-          <select
-            id="anak"
-            value={anakId}
-            onChange={(e) => setAnakId(e.target.value)}
-            required
-            className="kolom mt-2"
-          >
-            <option value="">Pilih anak</option>
-            {daftarAnak.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="berat" className="label">
-              Berat badan{" "}
-              <span className="label-pendukung">kilogram</span>
-            </label>
-            {/*
-              Satuan ditampilkan di dalam kolom, bukan hanya pada label. Kader
-              yang sudah mulai mengetik tidak lagi melihat labelnya, dan salah
-              satuan adalah kesalahan yang paling mahal di sini.
-            */}
-            <div className="relative mt-2">
-              <input
-                id="berat"
-                type="text"
-                inputMode="decimal"
-                value={berat}
-                onChange={(e) => setBerat(e.target.value)}
-                placeholder="10,5"
-                required
-                className="kolom pr-12 text-lg font-semibold"
-              />
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-base font-medium text-dasar-500"
-              >
-                kg
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="tinggi" className="label">
-              Tinggi badan <span className="label-pendukung">sentimeter</span>
-            </label>
-            <div className="relative mt-2">
-              <input
-                id="tinggi"
-                type="text"
-                inputMode="decimal"
-                value={tinggi}
-                onChange={(e) => setTinggi(e.target.value)}
-                placeholder="80,5"
-                required
-                className="kolom pr-12 text-lg font-semibold"
-              />
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-base font-medium text-dasar-500"
-              >
-                cm
-              </span>
-            </div>
+          <div className="relative">
+            <select
+              id="anak"
+              value={anakId}
+              onChange={(e) => setAnakId(e.target.value)}
+              required
+              className="w-full h-touch-min appearance-none bg-surface border-2 border-[#d6d3d1] text-on-surface font-body-lg text-body-lg rounded-lg pl-4 pr-10 focus:outline-none focus:border-primary focus:ring-0"
+            >
+              <option value="" disabled>Pilih balita...</option>
+              {daftarAnak.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nama}
+                </option>
+              ))}
+            </select>
+            {/* pointer-events-none agar ketukan tetap sampai ke elemen select di bawahnya. */}
+            <IkonPanahBawah className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-dasar-500" />
           </div>
         </div>
 
-        <div>
-          <label htmlFor="tanggal" className="label">
-            Tanggal menimbang
+        <div className="flex flex-col gap-2 mt-4">
+          <label htmlFor="tanggal" className="font-body-lg text-body-lg text-on-surface">
+            Tanggal Pengukuran
           </label>
           <input
             id="tanggal"
@@ -259,50 +213,106 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
             required
-            className="kolom mt-2 sm:w-auto"
+            className="w-full h-touch-min bg-surface border-2 border-[#d6d3d1] text-on-surface font-body-lg text-body-lg rounded-lg px-4 focus:outline-none focus:border-primary focus:ring-0"
           />
         </div>
 
-        {/*
-          Cara pengukuran menentukan tabel WHO yang dipakai, dan selisihnya
-          sekitar 0,7 cm. Karena itu ditanyakan, bukan diasumsikan dari usia.
-        */}
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-dasar-200 bg-dasar-50 p-4 transition-colors hover:border-dasar-300">
-          <input
-            type="checkbox"
-            checked={telentang}
-            onChange={(e) => setTelentang(e.target.checked)}
-            className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500"
-          />
-          <span className="text-base text-dasar-700">
-            Diukur telentang (anak dibaringkan). Biasanya untuk anak di bawah 2
-            tahun.
-          </span>
-        </label>
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="berat" className="font-body-lg text-body-lg text-on-surface">
+              Berat Badan
+            </label>
+            <div className="relative">
+              <input
+                id="berat"
+                type="text"
+                inputMode="decimal"
+                value={berat}
+                onChange={(e) => setBerat(e.target.value)}
+                placeholder="0.0"
+                required
+                className="w-full h-touch-min bg-surface border-2 border-[#d6d3d1] text-on-surface font-display-xl text-[28px] font-bold rounded-lg pl-4 pr-12 focus:outline-none focus:border-primary focus:ring-0 text-right"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body-base text-body-base text-on-surface-variant">kg</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="tinggi" className="font-body-lg text-body-lg text-on-surface">
+              Tinggi/Panjang
+            </label>
+            <div className="relative">
+              <input
+                id="tinggi"
+                type="text"
+                inputMode="decimal"
+                value={tinggi}
+                onChange={(e) => setTinggi(e.target.value)}
+                placeholder="0.0"
+                required
+                className="w-full h-touch-min bg-surface border-2 border-[#d6d3d1] text-on-surface font-display-xl text-[28px] font-bold rounded-lg pl-4 pr-12 focus:outline-none focus:border-primary focus:ring-0 text-right"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body-base text-body-base text-on-surface-variant">cm</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 mt-4">
+          <label className="font-body-lg text-body-lg text-on-surface">Cara Ukur Tinggi</label>
+          <div className="flex bg-surface-container-low rounded-lg p-1">
+            <label className="flex-1 text-center cursor-pointer relative">
+              <input 
+                className="peer sr-only" 
+                name="method" 
+                type="radio" 
+                checked={!telentang}
+                onChange={() => setTelentang(false)}
+              />
+              <div className="h-touch-min flex items-center justify-center font-body-lg text-body-lg rounded-md peer-checked:bg-surface peer-checked:shadow-halus peer-checked:text-primary transition-all text-on-surface-variant">
+                  Berdiri
+              </div>
+            </label>
+            <label className="flex-1 text-center cursor-pointer relative">
+              <input 
+                className="peer sr-only" 
+                name="method" 
+                type="radio" 
+                checked={telentang}
+                onChange={() => setTelentang(true)}
+              />
+              <div className="h-touch-min flex items-center justify-center font-body-lg text-body-lg rounded-md peer-checked:bg-surface peer-checked:shadow-halus peer-checked:text-primary transition-all text-on-surface-variant">
+                  Telentang
+              </div>
+            </label>
+          </div>
+        </div>
 
         {galat && (
-          <p role="alert" className="pesan-galat">
+          <p role="alert" className="pesan-galat mt-4">
             {galat}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={!siap || memuat}
-          className="tombol-utama !min-h-touch-lg w-full text-lg"
-        >
-          {memuat ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-              />
-              Menyimpan...
-            </>
-          ) : (
-            "Simpan dan lihat hasil"
-          )}
-        </button>
+        <div className="pt-4 border-t border-outline-variant mt-2">
+          <button
+            type="submit"
+            disabled={!siap || memuat}
+            className="w-full h-[56px] rounded-lg text-on-primary font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 shadow-merek active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
+            style={{ background: "linear-gradient(135deg, #0f766e 0%, #083b37 100%)" }}
+          >
+            {memuat ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan Pengukuran"
+            )}
+          </button>
+        </div>
       </form>
 
       {perluKonfirmasi && (
@@ -344,62 +354,63 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       )}
 
       {hasil && (
-        <div className="animate-munculNaik kartu space-y-4 p-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-lg font-bold text-dasar-900">Hasil</h2>
-            <LencanaStatus status={hasil.status} ukuran="besar" />
-          </div>
-
+        <section className="animate-[fadeIn_0.3s_ease-out] flex flex-col gap-4 mt-6">
+          <h3 className="font-section-title text-section-title text-on-surface">Hasil Analisis</h3>
+          
           {hasil.tersimpanLuring && (
-            <p className="pesan-peringatan">
-              Tersimpan di perangkat ini. Data akan terkirim otomatis saat sinyal
-              kembali.
+            <p className="pesan-peringatan mb-2">
+              Tersimpan di perangkat ini. Data akan terkirim otomatis saat sinyal kembali.
             </p>
           )}
 
-          <p className="text-base text-dasar-700">Usia {hasil.usiaBulan} bulan.</p>
-
-          {hasil.status !== "normal" && hasil.penentuStatus && (
-            <p className="text-base font-medium text-dasar-800">
-              Perhatian utama pada {LABEL_INDIKATOR[hasil.penentuStatus].toLowerCase()}.
-            </p>
-          )}
-
-          {/*
-            Z-score ditampilkan sebagai tiga kotak terpisah, bukan daftar
-            berjajar. Angka ini paling sering ditanyakan bidan, dan kotak
-            membuatnya lebih mudah dibacakan lewat telepon.
-          */}
-          <dl className="grid gap-3 sm:grid-cols-3">
-            {[
-              ["Berat menurut umur", hasil.zBeratUsia],
-              ["Tinggi menurut umur", hasil.zTinggiUsia],
-              ["Berat menurut tinggi", hasil.zBeratTinggi],
-            ].map(([label, nilai]) => (
-              <div
-                key={label as string}
-                className="rounded-xl border border-dasar-200 bg-dasar-50 p-3.5"
-              >
-                <dt className="text-sm font-medium text-dasar-600">{label}</dt>
-                <dd className="mt-0.5 text-xl font-bold text-dasar-900">
-                  {nilai ?? <span className="text-base font-normal">tidak terhitung</span>}
-                </dd>
+          <div className={`bg-surface border ${hasil.status === 'normal' ? 'border-status-normal/30' : hasil.status === 'risiko' ? 'border-status-risk/30' : 'border-status-severe/30'} rounded-xl p-5 shadow-kartu relative overflow-hidden`}>
+            <div className={`absolute top-0 left-0 w-2 h-full ${hasil.status === 'normal' ? 'bg-status-normal' : hasil.status === 'risiko' ? 'bg-status-risk' : 'bg-status-severe'}`}></div>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${hasil.status === 'normal' ? 'bg-status-normal/10 text-status-normal' : hasil.status === 'risiko' ? 'bg-status-risk/10 text-status-risk' : 'bg-status-severe/10 text-status-severe'}`}>
+                {hasil.status === "normal" ? (
+                  <IkonCentang className="h-7 w-7" />
+                ) : hasil.status === "risiko" ? (
+                  <IkonPeringatan className="h-7 w-7" />
+                ) : (
+                  <IkonBahaya className="h-7 w-7" />
+                )}
               </div>
-            ))}
-          </dl>
+              <div className="flex-1">
+                <h4 className={`font-headline-lg-mobile text-headline-lg-mobile capitalize ${hasil.status === 'normal' ? 'text-status-normal' : hasil.status === 'risiko' ? 'text-status-risk' : 'text-status-severe'}`}>
+                  {hasil.status === 'berat' ? 'Gizi Berat' : hasil.status}
+                </h4>
+                <p className="font-body-base text-body-base text-on-surface-variant">Usia {hasil.usiaBulan} Bulan</p>
+              </div>
+            </div>
 
-          {hasil.status !== "normal" && (
-            <p className="pesan-netral">
-              Sampaikan hasil ini kepada bidan agar anak dapat diperiksa lebih
-              lanjut.
-            </p>
-          )}
+            {hasil.status !== "normal" && hasil.penentuStatus && (
+              <p className="mt-4 font-body-base text-body-base text-on-surface-variant font-medium">
+                Perhatian utama pada {LABEL_INDIKATOR[hasil.penentuStatus].toLowerCase()}. Sampaikan hasil ini kepada bidan.
+              </p>
+            )}
 
-          <p className="text-sm text-dasar-600">
-            Angka di atas adalah Z-score menurut standar WHO. Ini alat bantu, bukan
-            diagnosis.
-          </p>
-        </div>
+            <div className="mt-4 grid grid-cols-2 gap-4 border-t border-outline-variant/50 pt-4">
+              <div>
+                <span className="block font-caption-xs text-caption-xs text-on-surface-variant">BB/U Z-Score</span>
+                <span className="block font-body-lg text-body-lg text-on-surface font-semibold">
+                  {hasil.zBeratUsia !== null ? hasil.zBeratUsia.toFixed(2) : '-'}
+                </span>
+              </div>
+              <div>
+                <span className="block font-caption-xs text-caption-xs text-on-surface-variant">TB/U Z-Score</span>
+                <span className="block font-body-lg text-body-lg text-on-surface font-semibold">
+                  {hasil.zTinggiUsia !== null ? hasil.zTinggiUsia.toFixed(2) : '-'}
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="block font-caption-xs text-caption-xs text-on-surface-variant">BB/TB Z-Score</span>
+                <span className="block font-body-lg text-body-lg text-on-surface font-semibold">
+                  {hasil.zBeratTinggi !== null ? hasil.zBeratTinggi.toFixed(2) : '-'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
     </div>
   );

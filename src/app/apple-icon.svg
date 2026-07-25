@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <!--
+    Ikon untuk pintasan layar utama di iOS.
+
+    Dibuat terpisah dari icon.svg karena iOS tidak membulatkan sudut ikon secara
+    otomatis pada semua versi, dan sudutnya perlu lebih membulat pada ukuran
+    besar agar tidak tampak kaku di antara ikon lain.
+
+    Tandanya juga dibuat lebih lapang di dalam kotak, karena iOS memotong tepi
+    ikon saat menampilkannya.
+  -->
+  <defs>
+    <linearGradient id="latar" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#083b37"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="180" height="180" rx="40" fill="url(#latar)"/>
+
+  <path d="M46 112c0-27 19.5-46 44-46s44 19 44 46"
+        stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.32"/>
+
+  <path d="M52 128l24-24 19 15 38-40"
+        stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="133" cy="79" r="12" fill="#ffffff"/>
+</svg>
