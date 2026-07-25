@@ -24,6 +24,7 @@ import {
   type BarisAnak,
   type BarisPengukuran,
 } from "@/lib/dashboard";
+import { ambilSemua } from "@/lib/ambil-semua";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /**
@@ -62,22 +63,32 @@ export default async function HalamanBidan() {
 
   const supabase = await klienServer();
 
-  // RLS membatasi kedua kueri ini pada wilayah bidan yang sedang masuk.
-  const [{ data: anak }, { data: pengukuran }] = await Promise.all([
-    supabase
-      .from("anak")
-      .select("id, nama, tanggal_lahir, jenis_kelamin, telepon")
-      .order("nama"),
-    supabase
-      .from("pengukuran")
-      .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
-      .order("tanggal"),
+  /*
+   * RLS membatasi kedua kueri ini pada wilayah bidan yang sedang masuk.
+   *
+   * Diambil bertahap agar riwayat penimbangan tidak terpotong batas baris
+   * PostgREST. Pemotongan itu tidak bersuara: yang berubah bukan tampilan,
+   * melainkan angka pada rekapitulasi dan daftar tindak lanjut.
+   */
+  const [anak, pengukuran] = await Promise.all([
+    ambilSemua<BarisAnak>((dari, sampai) =>
+      supabase
+        .from("anak")
+        .select("id, nama, tanggal_lahir, jenis_kelamin, telepon")
+        .order("nama")
+        .range(dari, sampai),
+    ),
+    ambilSemua<BarisPengukuran>((dari, sampai) =>
+      supabase
+        .from("pengukuran")
+        .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
+        .order("tanggal")
+        .range(dari, sampai),
+    ),
   ]);
 
-  const ringkasan = susunRingkasan(
-    (anak ?? []) as BarisAnak[],
-    (pengukuran ?? []) as BarisPengukuran[],
-  );
+  const ringkasan = susunRingkasan(anak.baris, pengukuran.baris);
+  const dataTerpotong = anak.terpotong || pengukuran.terpotong;
 
   /*
    * Kartu ringkasan.
@@ -172,6 +183,21 @@ export default async function HalamanBidan() {
             </div>
           ))}
         </section>
+
+        {/*
+          Data yang tidak terambil seluruhnya dinyatakan di paling atas.
+
+          Angka di bawahnya tetap terbaca meyakinkan meski disusun dari data
+          separuh, dan itulah alasan peringatan ini perlu mendahuluinya. Bidan
+          mengambil keputusan tindak lanjut dari halaman ini.
+        */}
+        {dataTerpotong && (
+          <p className="pesan-galat text-sm mt-0 mb-4">
+            Sebagian data tidak dapat dimuat, sehingga angka di bawah ini belum
+            lengkap. Mohon hubungi pengelola sistem sebelum memakainya untuk
+            pelaporan.
+          </p>
+        )}
 
         {ringkasan.belumDinilai > 0 && (
           <p className="pesan-netral text-sm mt-0 mb-4 animate-muncul">

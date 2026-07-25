@@ -468,3 +468,25 @@ Tujuh penangan permintaan tidak memeriksa kelengkapan konfigurasi, sedangkan hal
 **Yang juga diperbaiki.** Jumlah anak yang sudah ditimbang dihitung dari pengukuran, bukan dari daftar anak, sehingga pengukuran yang anaknya tidak ada di daftar dapat membuat angkanya melebihi jumlah anak terdaftar. Anak yang sudah ditimbang tetapi statusnya tidak dapat dihitung digabung dengan yang belum pernah ditimbang, sehingga satu anak dihitung dua kali dalam dua ember yang saling meniadakan dan laporan menyatakan tiga anak sudah ditimbang berdampingan dengan satu anak belum ditimbang pada total tiga anak. Keadaan itu kini menjadi angka tersendiri dan ditampilkan sebagai hal yang perlu diperiksa, sebab nilai di luar rentang tabel rujukan adalah petunjuk, bukan pertanda baik. Anak yang belum pernah hadir tersortir di dasar daftar berhenti menimbang, di bawah anak yang terakhir hadir tiga bulan lalu, padahal keluarga yang tidak pernah hadir justru sering yang paling berisiko. Tanggal cetak dan nama berkas laporan memakai kalender UTC sehingga laporan yang diunduh pagi bertanggal hari sebelumnya. Penyegaran sesi berjalan pada rute API sehingga setiap permintaan memanggil layanan autentikasi dua kali, dan pengiriman antrean tanpa sinyal yang berjalan satu per satu melipatgandakannya. Tombol keluar tidak melaporkan kegagalan. Pesan keberhasilan pendaftaran anak tidak pernah terlihat karena hanya dirender pada tampilan yang tertutup.
 
 **Cara menegakkannya.** Pengujian pencocokan nama tumbuh dari sembilan belas menjadi dua puluh sembilan, termasuk pasangan nama tidak berkaitan yang sebelumnya tercocok. Pengujian dashboard menambah lima pemeriksaan, di antaranya penjagaan bahwa jumlah ketiga keadaan selalu sama dengan jumlah anak terdaftar. Pengujian menu menambah tiga, termasuk penjagaan bahwa total biaya sama dengan jumlah harga di daftar belanja, sebab dua angka yang dilihat orang tua di tempat berbeda tidak boleh berselisih.
+
+## KP-34: Kueri rekapitulasi diambil bertahap
+
+**Keputusan.** Mengambil daftar anak dan riwayat penimbangan halaman demi halaman, dan menolak menerbitkan angka bila pengambilannya tidak lengkap.
+
+**Konteks.** Tiga tempat mengambil seluruh riwayat penimbangan satu wilayah dalam satu permintaan tanpa menyatakan jangkauan baris: dashboard bidan, laporan CSV, dan ringkasan naratif.
+
+**Alasan.** PostgREST menerapkan batas jumlah baris pada setiap permintaan, umumnya seribu. Ketika batas itu terlampaui tidak ada galat sama sekali; klien hanya menerima lebih sedikit baris daripada yang ada.
+
+Kegagalan yang tidak bersuara itu paling berbahaya di sini, sebab yang terpotong bukan tampilan melainkan angka. Ringkasan dihitung dari senarai yang diterima, sehingga bila riwayat terpotong: anak yang sudah ditimbang tampak belum dinilai, anak yang aktif tampak berhenti menimbang, dan laporan yang berpindah tangan ke dinas kesehatan memuat rekapitulasi yang salah tanpa satu pun tanda bahwa ada yang hilang.
+
+Arah pemotongannya pun paling merugikan. Riwayat diurutkan menaik menurut tanggal, sehingga yang terbuang adalah pengukuran paling baru, yakni justru yang menentukan status terkini setiap anak.
+
+Satu posyandu dengan dua ratus anak yang ditimbang setiap bulan melewati seribu baris dalam waktu kurang dari setahun. Jadi ini bukan persoalan yang menunggu skala besar; ia menunggu waktu berjalan. Pada enam anak data demo, tidak ada yang tampak salah.
+
+**Konsekuensi.** Ketidaklengkapan kini selalu dinyatakan. Halaman bidan menampilkan peringatan di atas seluruh angka, sedangkan laporan dan ringkasan menolak diterbitkan. Menolak lebih baik daripada menerbitkan separuh: berkas laporan yang terunduh tampak sah dan akan disalin ke rekapitulasi dinas kesehatan, sehingga kekeliruannya berpindah ke tempat yang tidak dapat kita perbaiki.
+
+Batas pengaman seratus halaman mencegah kekeliruan pada kueri berubah menjadi penjalanan tanpa henti yang menghabiskan waktu fungsi.
+
+**Yang sengaja tidak diubah.** Halaman orang tua tetap satu permintaan. RLS membatasinya pada anak yang tertaut ke orang tua yang sedang masuk, biasanya satu sampai tiga anak, sedangkan seorang anak paling banyak memiliki enam puluh satu penimbangan sepanjang lima tahun layanan posyandu. Jumlahnya tidak akan mendekati batas.
+
+**Alternatif yang tidak dipilih.** Memindahkan agregasi ke basis data lewat view atau fungsi. Cara itu lebih hemat, sebab yang berpindah ke Node hanya hasil akhirnya, bukan seluruh riwayat. Tidak dipilih sekarang karena berarti memindahkan logika penilaian gizi ke SQL, tempat ia tidak dapat diuji dengan perangkat uji yang sama, dan perhitungan itu bagian paling penting untuk dijaga kebenarannya. Pengambilan bertahap menutup cacatnya tanpa memindahkan apa pun yang berisiko.

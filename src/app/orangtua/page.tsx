@@ -59,8 +59,16 @@ export default async function HalamanOrangTua() {
 
   const daftar = anak ?? [];
 
-  // Mengambil pengukuran terakhir setiap anak. Dilakukan satu kueri agar
-  // halaman tetap ringan pada koneksi lambat.
+  /*
+   * Mengambil pengukuran terakhir setiap anak. Dilakukan satu kueri agar halaman
+   * tetap ringan pada koneksi lambat.
+   *
+   * Tidak diambil bertahap seperti pada halaman bidan, dan itu memang disengaja.
+   * RLS membatasi kueri ini pada anak yang tertaut ke orang tua yang sedang
+   * masuk, biasanya satu sampai tiga anak, sedangkan seorang anak paling banyak
+   * memiliki enam puluh satu penimbangan sepanjang lima tahun layanan posyandu.
+   * Jumlahnya tidak akan mendekati batas baris PostgREST.
+   */
   const { data: pengukuran } = await supabase
     .from("pengukuran")
     .select("anak_id, tanggal, status, usia_bulan, dikonfirmasi")

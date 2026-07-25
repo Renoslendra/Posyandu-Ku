@@ -1,5 +1,6 @@
 import { susunRingkasan, type BarisAnak, type BarisPengukuran } from "@/lib/dashboard";
 import { namaBerkasLaporan, susunLaporanCsv } from "@/lib/laporan";
+import { ambilSemua } from "@/lib/ambil-semua";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /**
@@ -52,22 +53,44 @@ export async function GET() {
     .eq("id", profil.wilayah_id)
     .maybeSingle();
 
-  // RLS membatasi kedua kueri pada wilayah bidan yang sedang masuk.
-  const [{ data: anak }, { data: pengukuran }] = await Promise.all([
-    supabase
-      .from("anak")
-      .select("id, nama, tanggal_lahir, jenis_kelamin, telepon")
-      .order("nama"),
-    supabase
-      .from("pengukuran")
-      .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
-      .order("tanggal"),
+  /*
+   * RLS membatasi kedua kueri pada wilayah bidan yang sedang masuk.
+   *
+   * Diambil bertahap agar tidak terpotong batas baris PostgREST. Laporan ini
+   * berpindah tangan ke dinas kesehatan, sehingga angka yang tidak lengkap lebih
+   * merugikan di sini daripada di tempat lain mana pun pada aplikasi ini.
+   */
+  const [anak, pengukuran] = await Promise.all([
+    ambilSemua<BarisAnak>((dari, sampai) =>
+      supabase
+        .from("anak")
+        .select("id, nama, tanggal_lahir, jenis_kelamin, telepon")
+        .order("nama")
+        .range(dari, sampai),
+    ),
+    ambilSemua<BarisPengukuran>((dari, sampai) =>
+      supabase
+        .from("pengukuran")
+        .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
+        .order("tanggal")
+        .range(dari, sampai),
+    ),
   ]);
 
-  const ringkasan = susunRingkasan(
-    (anak ?? []) as BarisAnak[],
-    (pengukuran ?? []) as BarisPengukuran[],
-  );
+  /*
+   * Laporan tidak diterbitkan bila datanya tidak lengkap.
+   *
+   * Berkas yang terunduh tampak sah dan akan disalin ke rekapitulasi dinas
+   * kesehatan, sehingga menerbitkannya separuh lebih buruk daripada menolak.
+   */
+  if (anak.terpotong || pengukuran.terpotong) {
+    return new Response(
+      "Data terlalu banyak untuk dilaporkan sekaligus. Mohon hubungi pengelola sistem.",
+      { status: 503 },
+    );
+  }
+
+  const ringkasan = susunRingkasan(anak.baris, pengukuran.baris);
 
   const sekarang = new Date();
   const namaWilayah = wilayah?.nama ?? "Posyandu";

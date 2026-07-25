@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { susunRingkasan, type BarisAnak, type BarisPengukuran } from "@/lib/dashboard";
 import { ringkasanTemplate, susunRingkasanNaratif } from "@/lib/ringkasan";
+import { ambilSemua } from "@/lib/ambil-semua";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /*
@@ -58,19 +59,49 @@ export async function POST() {
     return NextResponse.json({ galat: batas.pesan }, { status: 429 });
   }
 
-  // RLS membatasi kedua kueri pada wilayah pengguna yang sedang masuk.
-  const [{ data: anak }, { data: pengukuran }] = await Promise.all([
-    supabase.from("anak").select("id, nama, tanggal_lahir, jenis_kelamin").order("nama"),
-    supabase
-      .from("pengukuran")
-      .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
-      .order("tanggal"),
+  /*
+   * RLS membatasi kedua kueri pada wilayah pengguna yang sedang masuk.
+   *
+   * Diambil bertahap agar riwayat penimbangan tidak terpotong batas baris
+   * PostgREST. Pemotongan itu tidak menghasilkan galat, hanya angka yang salah,
+   * dan pada ringkasan yang dibaca bidan itu berarti anak aktif dapat tampak
+   * berhenti menimbang.
+   */
+  const [anak, pengukuran] = await Promise.all([
+    ambilSemua<BarisAnak>((dari, sampai) =>
+      supabase
+        .from("anak")
+        .select("id, nama, tanggal_lahir, jenis_kelamin")
+        .order("nama")
+        .range(dari, sampai),
+    ),
+    ambilSemua<BarisPengukuran>((dari, sampai) =>
+      supabase
+        .from("pengukuran")
+        .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
+        .order("tanggal")
+        .range(dari, sampai),
+    ),
   ]);
 
-  const data = susunRingkasan(
-    (anak ?? []) as BarisAnak[],
-    (pengukuran ?? []) as BarisPengukuran[],
-  );
+  const data = susunRingkasan(anak.baris, pengukuran.baris);
+
+  /*
+   * Data yang tidak terambil seluruhnya dinyatakan, bukan disembunyikan.
+   *
+   * Ringkasan yang disusun dari data separuh tetap terbaca meyakinkan, dan justru
+   * itu bahayanya: bidan mengambil keputusan tindak lanjut dari angka yang tidak
+   * lengkap tanpa tahu ada yang hilang.
+   */
+  if (anak.terpotong || pengukuran.terpotong) {
+    return NextResponse.json(
+      {
+        galat:
+          "Data terlalu banyak untuk diringkas sekaligus. Mohon hubungi pengelola sistem.",
+      },
+      { status: 503 },
+    );
+  }
 
   if (data.totalAnak === 0) {
     return NextResponse.json({
