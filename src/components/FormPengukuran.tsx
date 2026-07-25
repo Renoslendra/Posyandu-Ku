@@ -174,7 +174,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
         className="space-y-5 kartu p-5"
       >
         <div>
-          <label htmlFor="anak" className="block text-base font-semibold text-dasar-900">
+          <label htmlFor="anak" className="label">
             Nama anak
           </label>
           <select
@@ -182,7 +182,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             value={anakId}
             onChange={(e) => setAnakId(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base"
+            className="kolom mt-2"
           >
             <option value="">Pilih anak</option>
             {daftarAnak.map((a) => (
@@ -195,49 +195,62 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor="berat"
-              className="block text-base font-semibold text-dasar-900"
-            >
-              Berat badan (kg)
+            <label htmlFor="berat" className="label">
+              Berat badan{" "}
+              <span className="label-pendukung">kilogram</span>
             </label>
-            <input
-              id="berat"
-              type="text"
-              inputMode="decimal"
-              value={berat}
-              onChange={(e) => setBerat(e.target.value)}
-              placeholder="contoh: 10,5"
-              required
-              className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-lg"
-            />
+            {/*
+              Satuan ditampilkan di dalam kolom, bukan hanya pada label. Kader
+              yang sudah mulai mengetik tidak lagi melihat labelnya, dan salah
+              satuan adalah kesalahan yang paling mahal di sini.
+            */}
+            <div className="relative mt-2">
+              <input
+                id="berat"
+                type="text"
+                inputMode="decimal"
+                value={berat}
+                onChange={(e) => setBerat(e.target.value)}
+                placeholder="10,5"
+                required
+                className="kolom pr-12 text-lg font-semibold"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-base font-medium text-dasar-500"
+              >
+                kg
+              </span>
+            </div>
           </div>
 
           <div>
-            <label
-              htmlFor="tinggi"
-              className="block text-base font-semibold text-dasar-900"
-            >
-              Tinggi badan (cm)
+            <label htmlFor="tinggi" className="label">
+              Tinggi badan <span className="label-pendukung">sentimeter</span>
             </label>
-            <input
-              id="tinggi"
-              type="text"
-              inputMode="decimal"
-              value={tinggi}
-              onChange={(e) => setTinggi(e.target.value)}
-              placeholder="contoh: 80,5"
-              required
-              className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-lg"
-            />
+            <div className="relative mt-2">
+              <input
+                id="tinggi"
+                type="text"
+                inputMode="decimal"
+                value={tinggi}
+                onChange={(e) => setTinggi(e.target.value)}
+                placeholder="80,5"
+                required
+                className="kolom pr-12 text-lg font-semibold"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-base font-medium text-dasar-500"
+              >
+                cm
+              </span>
+            </div>
           </div>
         </div>
 
         <div>
-          <label
-            htmlFor="tanggal"
-            className="block text-base font-semibold text-dasar-900"
-          >
+          <label htmlFor="tanggal" className="label">
             Tanggal menimbang
           </label>
           <input
@@ -246,7 +259,7 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
             required
-            className="mt-2 min-h-touch w-full rounded-xl border-2 border-dasar-300 px-3 text-base sm:w-auto"
+            className="kolom mt-2 sm:w-auto"
           />
         </div>
 
@@ -254,24 +267,21 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           Cara pengukuran menentukan tabel WHO yang dipakai, dan selisihnya
           sekitar 0,7 cm. Karena itu ditanyakan, bukan diasumsikan dari usia.
         */}
-        <label className="flex items-start gap-3 rounded-lg bg-dasar-50 p-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-dasar-200 bg-dasar-50 p-4 transition-colors hover:border-dasar-300">
           <input
             type="checkbox"
             checked={telentang}
             onChange={(e) => setTelentang(e.target.checked)}
-            className="mt-1 h-5 w-5"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500"
           />
-          <span className="text-sm text-dasar-700">
+          <span className="text-base text-dasar-700">
             Diukur telentang (anak dibaringkan). Biasanya untuk anak di bawah 2
             tahun.
           </span>
         </label>
 
         {galat && (
-          <p
-            role="alert"
-            className="rounded-xl border-2 border-status-berat bg-red-50 p-3 text-base text-red-900"
-          >
+          <p role="alert" className="pesan-galat">
             {galat}
           </p>
         )}
@@ -279,21 +289,37 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
         <button
           type="submit"
           disabled={!siap || memuat}
-          className="min-h-touch w-full rounded-lg bg-brand-500 px-6 text-lg font-semibold text-white hover:bg-brand-600 disabled:bg-dasar-300 disabled:text-dasar-600"
+          className="tombol-utama !min-h-touch-lg w-full text-lg"
         >
-          {memuat ? "Menyimpan..." : "Simpan dan lihat hasil"}
+          {memuat ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+              Menyimpan...
+            </>
+          ) : (
+            "Simpan dan lihat hasil"
+          )}
         </button>
       </form>
 
       {perluKonfirmasi && (
         <div
           role="alert"
-          className="space-y-3 rounded-xl border-2 border-status-risiko bg-amber-50 p-5"
+          className="animate-munculNaik space-y-4 rounded-2xl border-2 border-status-risiko-garis bg-status-risiko-lembut p-5"
         >
           <h2 className="text-lg font-bold text-amber-900">Mohon periksa kembali</h2>
-          <ul className="list-disc space-y-1 pl-5 text-base text-amber-900">
+          <ul className="space-y-2">
             {perluKonfirmasi.map((t) => (
-              <li key={t.kode}>{t.pesan}</li>
+              <li key={t.kode} className="flex gap-2.5 text-base text-amber-900">
+                <span
+                  aria-hidden="true"
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600"
+                />
+                {t.pesan}
+              </li>
             ))}
           </ul>
           <p className="text-sm text-amber-800">
@@ -303,13 +329,13 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             <button
               onClick={() => void kirim(true)}
               disabled={memuat}
-              className="min-h-touch rounded-lg bg-status-risiko px-5 font-semibold text-white"
+              className="inline-flex min-h-touch items-center justify-center rounded-xl bg-status-risiko px-5 text-base font-semibold text-white shadow-halus transition-all hover:brightness-95 active:scale-[0.98] disabled:bg-dasar-300"
             >
               Angka sudah benar, simpan
             </button>
             <button
               onClick={() => setPerluKonfirmasi(null)}
-              className="min-h-touch rounded-xl border-2 border-dasar-400 px-5 font-semibold text-dasar-700"
+              className="tombol-netral !px-5"
             >
               Perbaiki angka
             </button>
@@ -318,14 +344,14 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       )}
 
       {hasil && (
-        <div className="space-y-4 kartu p-5">
+        <div className="animate-munculNaik kartu space-y-4 p-6">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-bold text-dasar-900">Hasil</h2>
             <LencanaStatus status={hasil.status} ukuran="besar" />
           </div>
 
           {hasil.tersimpanLuring && (
-            <p className="rounded-xl border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900">
+            <p className="pesan-peringatan">
               Tersimpan di perangkat ini. Data akan terkirim otomatis saat sinyal
               kembali.
             </p>
@@ -334,28 +360,36 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           <p className="text-base text-dasar-700">Usia {hasil.usiaBulan} bulan.</p>
 
           {hasil.status !== "normal" && hasil.penentuStatus && (
-            <p className="text-base text-dasar-700">
+            <p className="text-base font-medium text-dasar-800">
               Perhatian utama pada {LABEL_INDIKATOR[hasil.penentuStatus].toLowerCase()}.
             </p>
           )}
 
-          <dl className="grid gap-2 text-sm text-dasar-600 sm:grid-cols-3">
-            <div>
-              <dt className="font-medium text-dasar-700">Berat menurut umur</dt>
-              <dd>{hasil.zBeratUsia ?? "tidak terhitung"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-dasar-700">Tinggi menurut umur</dt>
-              <dd>{hasil.zTinggiUsia ?? "tidak terhitung"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-dasar-700">Berat menurut tinggi</dt>
-              <dd>{hasil.zBeratTinggi ?? "tidak terhitung"}</dd>
-            </div>
+          {/*
+            Z-score ditampilkan sebagai tiga kotak terpisah, bukan daftar
+            berjajar. Angka ini paling sering ditanyakan bidan, dan kotak
+            membuatnya lebih mudah dibacakan lewat telepon.
+          */}
+          <dl className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Berat menurut umur", hasil.zBeratUsia],
+              ["Tinggi menurut umur", hasil.zTinggiUsia],
+              ["Berat menurut tinggi", hasil.zBeratTinggi],
+            ].map(([label, nilai]) => (
+              <div
+                key={label as string}
+                className="rounded-xl border border-dasar-200 bg-dasar-50 p-3.5"
+              >
+                <dt className="text-sm font-medium text-dasar-600">{label}</dt>
+                <dd className="mt-0.5 text-xl font-bold text-dasar-900">
+                  {nilai ?? <span className="text-base font-normal">tidak terhitung</span>}
+                </dd>
+              </div>
+            ))}
           </dl>
 
           {hasil.status !== "normal" && (
-            <p className="rounded-lg bg-dasar-50 p-3 text-base text-dasar-800">
+            <p className="pesan-netral">
               Sampaikan hasil ini kepada bidan agar anak dapat diperiksa lebih
               lanjut.
             </p>
