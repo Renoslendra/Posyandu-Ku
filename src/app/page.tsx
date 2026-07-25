@@ -31,6 +31,12 @@ export default function HomePage() {
         >
           Masuk sebagai bidan
         </Link>
+        <Link
+          href="/orangtua"
+          className="inline-flex min-h-touch items-center rounded-lg border-2 border-slate-300 px-6 text-base font-semibold text-slate-700 hover:bg-slate-100"
+        >
+          Masuk sebagai orang tua
+        </Link>
       </div>
 
       <section className="mt-14 grid gap-4 sm:grid-cols-3">

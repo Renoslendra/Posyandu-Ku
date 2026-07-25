@@ -47,7 +47,16 @@ export default function HalamanMasuk() {
         .eq("id", data.user.id)
         .maybeSingle();
 
-      router.push(profil?.peran === "bidan" ? "/bidan" : "/kader");
+      // Tiap peran diarahkan ke halamannya sendiri agar pengguna tidak perlu
+      // memilih menu yang bukan wewenangnya.
+      const tujuan =
+        profil?.peran === "bidan"
+          ? "/bidan"
+          : profil?.peran === "orang_tua"
+            ? "/orangtua"
+            : "/kader";
+
+      router.push(tujuan);
       router.refresh();
     } catch {
       setGalat("Tidak dapat menghubungi server. Periksa koneksi Anda.");
