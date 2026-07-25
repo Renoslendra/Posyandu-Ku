@@ -69,12 +69,24 @@ grant execute on function auth_wilayah_id() to authenticated;
 grant execute on function posyandu_terjangkau() to authenticated;
 
 -- ---------------------------------------------------------------------------
--- Catatan
+-- Role service_role: skrip terminal
 -- ---------------------------------------------------------------------------
 --
--- Role `service_role` melewati RLS dan sudah memiliki hak penuh secara bawaan.
--- Kunci tersebut hanya dipakai skrip seed dan uji RLS di terminal, tidak pernah
--- dikirim ke peramban.
+-- Role ini melewati RLS, tetapi tetap memerlukan hak akses tabel. Anggapan
+-- bahwa service_role otomatis memiliki hak penuh hanya berlaku bila pengaturan
+-- pemberian hak otomatis aktif; pada proyek ini pengaturan tersebut dimatikan,
+-- sehingga haknya harus dinyatakan di sini juga.
+--
+-- Dipakai skrip seed dan uji RLS di terminal, tidak pernah dikirim ke peramban.
+
+grant usage on schema public to service_role;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Catatan
+-- ---------------------------------------------------------------------------
 --
 -- Tabel yang ditambahkan kemudian WAJIB menyertakan GRANT di migrasinya
 -- sendiri. Bila tidak, tabel tersebut akan tertutup total dan galat yang muncul
