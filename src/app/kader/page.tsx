@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FormAnakBaru } from "@/components/FormAnakBaru";
 import { FormPengukuran } from "@/components/FormPengukuran";
 import { ImportFoto } from "@/components/ImportFoto";
 import { LogoLengkap } from "@/components/Logo";
@@ -85,14 +86,23 @@ export default async function HalamanKader() {
 
       {daftarAnak.length === 0 ? (
         <p className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-base text-slate-700">
-          Belum ada anak terdaftar di posyandu Anda. Tambahkan data anak terlebih
-          dahulu, atau jalankan skrip data contoh.
+          Belum ada anak terdaftar di posyandu Anda. Daftarkan anak terlebih dahulu
+          melalui tombol di bawah.
         </p>
       ) : (
         <div className="mt-6">
           <FormPengukuran daftarAnak={daftarAnak} />
         </div>
       )}
+
+      {/*
+        Pendaftaran anak diletakkan sesudah formulir penimbangan karena
+        menimbang adalah kegiatan harian kader, sedangkan anak baru hanya
+        muncul sesekali.
+      */}
+      <div className="mt-6">
+        <FormAnakBaru />
+      </div>
 
       <div className="mt-10">
         <ImportFoto />
