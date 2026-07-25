@@ -6,6 +6,10 @@ Kader mencatat berat dan tinggi anak seperti biasa, atau memfoto halaman buku tu
 
 **10th IndonesiaNEXT 2026 Hackathon** — role Hacker (full-stack MVP).
 
+**Coba langsung: https://posyandu-ku.vercel.app**
+
+Masuk memakai salah satu akun demo yang tertera pada halaman masuk. Ketiganya memperlihatkan peran berbeda: kader mencatat penimbangan, bidan melihat rekapitulasi wilayah, orang tua melihat data anaknya sendiri.
+
 > Ini adalah alat bantu kader posyandu, bukan alat diagnosis. Seluruh data pada lingkungan demo bersifat **sintetis**, bukan data anak sungguhan.
 
 ---
