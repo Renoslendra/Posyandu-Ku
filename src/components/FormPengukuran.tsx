@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { LencanaStatus } from "@/components/LencanaStatus";
+import { StatusKoneksi } from "@/components/StatusKoneksi";
+import { buatKlienRef, tambahKeAntrean } from "@/lib/antrean-offline";
 import type { Temuan } from "@/lib/gizi/penjaga-data";
-import type { StatusGizi } from "@/lib/gizi/zscore";
-import { LABEL_INDIKATOR } from "@/lib/gizi/tabel";
-import type { Indikator } from "@/lib/gizi/zscore";
+import { nilaiPengukuran, LABEL_INDIKATOR } from "@/lib/gizi/tabel";
+import { usiaBulan, type Indikator, type StatusGizi } from "@/lib/gizi/zscore";
 
 /**
  * Formulir pencatatan pengukuran.
@@ -24,6 +25,8 @@ interface Anak {
   id: string;
   nama: string;
   tanggalLahir: string;
+  /** Diperlukan untuk menghitung Z-score di perangkat saat tanpa sinyal. */
+  jenisKelamin: "L" | "P";
 }
 
 interface HasilSimpan {
@@ -34,6 +37,8 @@ interface HasilSimpan {
   zTinggiUsia: number | null;
   zBeratTinggi: number | null;
   penanda: string[];
+  /** true bila baru tersimpan di perangkat dan menunggu dikirim. */
+  tersimpanLuring?: boolean;
 }
 
 export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
@@ -48,10 +53,71 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
   const [perluKonfirmasi, setPerluKonfirmasi] = useState<Temuan[] | null>(null);
   const [hasil, setHasil] = useState<HasilSimpan | null>(null);
 
+  /**
+   * Menyimpan ke antrean perangkat dan menghitung Z-score secara lokal.
+   *
+   * Dipakai saat tanpa sinyal. Kader tetap melihat status gizi seketika,
+   * memakai modul perhitungan yang sama dengan server sehingga hasilnya
+   * tidak akan berbeda setelah tersinkron.
+   */
+  function simpanLuring(beratKg: number, tinggiCm: number) {
+    const anak = daftarAnak.find((a) => a.id === anakId);
+    if (!anak) {
+      setGalat("Data anak tidak ditemukan di perangkat ini.");
+      return;
+    }
+
+    tambahKeAntrean({
+      klienRef: buatKlienRef(),
+      anakId,
+      tanggal,
+      beratKg,
+      tinggiCm,
+      diukurTelentang: telentang,
+      abaikanPenanda: true,
+    });
+
+    const usia = usiaBulan(
+      new Date(`${anak.tanggalLahir}T00:00:00Z`),
+      new Date(`${tanggal}T00:00:00Z`),
+    );
+    const penilaian = nilaiPengukuran({
+      jenisKelamin: anak.jenisKelamin,
+      usiaBulan: usia,
+      beratKg,
+      tinggiCm,
+      diukurTelentang: telentang,
+    });
+
+    setHasil({
+      status: penilaian.status,
+      penentuStatus: penilaian.penentuStatus,
+      usiaBulan: usia,
+      zBeratUsia: penilaian.zBeratUsia,
+      zTinggiUsia: penilaian.zTinggiUsia,
+      zBeratTinggi: penilaian.zBeratTinggi,
+      penanda: [],
+      tersimpanLuring: true,
+    });
+    setBerat("");
+    setTinggi("");
+  }
+
   async function kirim(abaikanPenanda: boolean) {
     setMemuat(true);
     setGalat(null);
     if (!abaikanPenanda) setPerluKonfirmasi(null);
+
+    const beratAngka = Number(berat.replace(",", "."));
+    const tinggiAngka = Number(tinggi.replace(",", "."));
+
+    // Tanpa sinyal, tidak perlu mencoba jaringan lebih dahulu. Menyimpan
+    // langsung ke antrean membuat pencatatan terasa seketika bagi kader.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      simpanLuring(beratAngka, tinggiAngka);
+      setMemuat(false);
+      return;
+    }
 
     try {
       const respons = await fetch("/api/pengukuran", {
@@ -63,8 +129,8 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
           // Masukan formulir selalu bertipe teks, sedangkan skema menuntut
           // angka. Konversi dilakukan di sini agar galat tipe tidak muncul
           // sebagai pesan teknis di hadapan kader.
-          beratKg: Number(berat.replace(",", ".")),
-          tinggiCm: Number(tinggi.replace(",", ".")),
+          beratKg: beratAngka,
+          tinggiCm: tinggiAngka,
           diukurTelentang: telentang,
           abaikanPenanda,
         }),
@@ -86,9 +152,9 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
       setBerat("");
       setTinggi("");
     } catch {
-      setGalat(
-        "Tidak dapat menghubungi server. Periksa koneksi, lalu coba simpan lagi.",
-      );
+      // Sinyal dapat hilang di tengah pengiriman. Data disimpan ke antrean
+      // alih-alih meminta kader mengetik ulang.
+      simpanLuring(beratAngka, tinggiAngka);
     } finally {
       setMemuat(false);
     }
@@ -98,6 +164,8 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
 
   return (
     <div className="space-y-6">
+      <StatusKoneksi />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -255,6 +323,13 @@ export function FormPengukuran({ daftarAnak }: { daftarAnak: Anak[] }) {
             <h2 className="text-lg font-bold text-slate-900">Hasil</h2>
             <LencanaStatus status={hasil.status} ukuran="besar" />
           </div>
+
+          {hasil.tersimpanLuring && (
+            <p className="rounded-lg border-2 border-status-risiko bg-amber-50 p-3 text-base text-amber-900">
+              Tersimpan di perangkat ini. Data akan terkirim otomatis saat sinyal
+              kembali.
+            </p>
+          )}
 
           <p className="text-base text-slate-700">Usia {hasil.usiaBulan} bulan.</p>
 

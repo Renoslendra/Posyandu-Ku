@@ -56,13 +56,16 @@ export default async function HalamanKader() {
 
   const { data: anak } = await supabase
     .from("anak")
-    .select("id, nama, tanggal_lahir")
+    .select("id, nama, tanggal_lahir, jenis_kelamin")
     .order("nama");
 
+  // Jenis kelamin dan tanggal lahir dikirim ke klien agar Z-score dapat
+  // dihitung di perangkat saat tanpa sinyal.
   const daftarAnak = (anak ?? []).map((a) => ({
     id: a.id,
     nama: a.nama,
     tanggalLahir: a.tanggal_lahir,
+    jenisKelamin: a.jenis_kelamin as "L" | "P",
   }));
 
   return (
