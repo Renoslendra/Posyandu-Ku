@@ -9,8 +9,8 @@ import {
 
 const SEKARANG = new Date("2026-07-25T00:00:00Z");
 
-function anak(id: string, nama: string): BarisAnak {
-  return { id, nama, tanggal_lahir: "2024-01-01", jenis_kelamin: "L" };
+function anak(id: string, nama: string, telepon: string | null = null): BarisAnak {
+  return { id, nama, tanggal_lahir: "2024-01-01", jenis_kelamin: "L", telepon };
 }
 
 function ukur(
@@ -238,9 +238,49 @@ describe("susunRingkasan — daftar semua anak", () => {
   });
 });
 
+describe("susunRingkasan — nomor telepon untuk tindak lanjut", () => {
+  it("meneruskan nomor telepon ke daftar anak yang berhenti hadir", () => {
+    // Daftar anak hilang hanya berguna bila dapat ditindaklanjuti.
+    const r = susunRingkasan(
+      [anak("a", "Ana", "081234567890")],
+      [ukur("a", "2026-01-01", 9, "normal")],
+      SEKARANG,
+    );
+    expect(r.hilangDariPemantauan).toHaveLength(1);
+    expect(r.hilangDariPemantauan[0].telepon).toBe("081234567890");
+  });
+
+  it("mengembalikan null bila nomor telepon tidak dicatat", () => {
+    const r = susunRingkasan(
+      [anak("a", "Ana")],
+      [ukur("a", "2026-01-01", 9, "normal")],
+      SEKARANG,
+    );
+    expect(r.hilangDariPemantauan[0].telepon).toBeNull();
+  });
+
+  it("menyertakan nomor telepon pada daftar prioritas dan daftar semua anak", () => {
+    const r = susunRingkasan(
+      [anak("a", "Ana", "08129999")],
+      [ukur("a", "2026-07-01", 9, "berat")],
+      SEKARANG,
+    );
+    expect(r.prioritas[0].telepon).toBe("08129999");
+    expect(r.semuaAnak[0].telepon).toBe("08129999");
+  });
+});
+
 describe("saringAnak", () => {
   function entri(nama: string, status: AnakPrioritas["status"]): AnakPrioritas {
-    return { id: nama, nama, status, alasan: [], jedaHari: 0, tanggalTerakhir: null };
+    return {
+      id: nama,
+      nama,
+      status,
+      alasan: [],
+      jedaHari: 0,
+      tanggalTerakhir: null,
+      telepon: null,
+    };
   }
 
   const daftar = [

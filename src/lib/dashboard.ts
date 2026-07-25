@@ -25,6 +25,8 @@ export interface BarisAnak {
   nama: string;
   tanggal_lahir: string;
   jenis_kelamin: "L" | "P";
+  /** Nomor telepon orang tua, bila kader mencatatnya. */
+  telepon?: string | null;
 }
 
 export interface AnakPrioritas {
@@ -34,6 +36,14 @@ export interface AnakPrioritas {
   alasan: string[];
   jedaHari: number;
   tanggalTerakhir: string | null;
+  /**
+   * Nomor telepon orang tua, bila ada.
+   *
+   * Disertakan agar daftar anak yang berhenti hadir dapat langsung
+   * ditindaklanjuti. Tanpa nomor, daftar itu hanya dapat dilihat, tidak
+   * dikerjakan.
+   */
+  telepon: string | null;
 }
 
 export interface RingkasanDashboard {
@@ -120,6 +130,7 @@ export function susunRingkasan(
       alasan,
       jedaHari: Number.isFinite(pemantauan.jedaHari) ? pemantauan.jedaHari : -1,
       tanggalTerakhir: terakhir?.tanggal ?? null,
+      telepon: anak.telepon ?? null,
     };
 
     semua.push(entri);

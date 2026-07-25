@@ -61,7 +61,10 @@ export default async function HalamanBidan() {
 
   // RLS membatasi kedua kueri ini pada wilayah bidan yang sedang masuk.
   const [{ data: anak }, { data: pengukuran }] = await Promise.all([
-    supabase.from("anak").select("id, nama, tanggal_lahir, jenis_kelamin").order("nama"),
+    supabase
+      .from("anak")
+      .select("id, nama, tanggal_lahir, jenis_kelamin, telepon")
+      .order("nama"),
     supabase
       .from("pengukuran")
       .select("anak_id, tanggal, berat_kg, status, dikonfirmasi")
@@ -174,17 +177,40 @@ export default async function HalamanBidan() {
                 key={a.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-4"
               >
-                <Link
-                  href={`/anak/${a.id}`}
-                  className="font-semibold text-brand-700 underline"
-                >
-                  {a.nama}
-                </Link>
-                <span className="text-sm text-slate-700">
-                  {a.tanggalTerakhir
-                    ? `Terakhir menimbang ${a.jedaHari} hari lalu`
-                    : "Belum pernah tercatat menimbang"}
-                </span>
+                <div>
+                  <Link
+                    href={`/anak/${a.id}`}
+                    className="font-semibold text-brand-700 underline"
+                  >
+                    {a.nama}
+                  </Link>
+                  <span className="block text-sm text-slate-700">
+                    {a.tanggalTerakhir
+                      ? `Terakhir menimbang ${a.jedaHari} hari lalu`
+                      : "Belum pernah tercatat menimbang"}
+                  </span>
+                </div>
+
+                {/*
+                  Daftar ini hanya berguna bila dapat ditindaklanjuti. Tanpa
+                  nomor telepon, bidan hanya dapat melihat siapa yang hilang
+                  tanpa cara menjangkaunya.
+
+                  Memakai tautan tel: alih-alih menyalin nomor, karena bidan
+                  membuka dashboard ini dari ponsel.
+                */}
+                {a.telepon ? (
+                  <a
+                    href={`tel:${a.telepon}`}
+                    className="inline-flex min-h-touch items-center rounded-lg border-2 border-brand-500 px-4 text-base font-semibold text-brand-700 hover:bg-brand-50"
+                  >
+                    Hubungi {a.telepon}
+                  </a>
+                ) : (
+                  <span className="text-sm text-slate-500">
+                    Nomor telepon belum dicatat
+                  </span>
+                )}
               </li>
             ))}
           </ul>

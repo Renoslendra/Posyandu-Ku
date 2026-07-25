@@ -61,7 +61,7 @@ export default async function HalamanAnak({
 
   const { data: anak } = await supabase
     .from("anak")
-    .select("id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua, alamat")
+    .select("id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua, telepon, alamat")
     .eq("id", id)
     .maybeSingle();
 
