@@ -71,8 +71,8 @@ export default async function HalamanKader() {
       >
         {/* Header & Context */}
         <div>
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-2">Input Pengukuran</h1>
-          <p className="font-body-base text-body-base text-on-surface-variant">Catat data pertumbuhan balita. Pastikan koneksi internet stabil atau data akan disimpan luring.</p>
+          <h1 className="mb-2 text-2xl font-extrabold tracking-tight text-dasar-900 sm:text-3xl">Input Pengukuran</h1>
+          <p className="text-dasar-600">Catat data pertumbuhan balita. Pastikan koneksi internet stabil atau data akan disimpan luring.</p>
         </div>
 
         {/* Import Foto (Smart Import Banner) */}

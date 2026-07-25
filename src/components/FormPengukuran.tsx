@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { LencanaStatus } from "@/components/LencanaStatus";
 import { StatusKoneksi } from "@/components/StatusKoneksi";
 import {
   IkonBahaya,

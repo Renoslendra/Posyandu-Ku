@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { DaftarAnak } from "@/components/DaftarAnak";
-import { LencanaStatus } from "@/components/LencanaStatus";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
