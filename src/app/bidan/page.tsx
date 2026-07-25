@@ -135,7 +135,12 @@ export default async function HalamanBidan() {
                 className="rounded-xl border border-slate-200 bg-white p-4"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-lg font-semibold text-slate-900">{a.nama}</span>
+                  <Link
+                    href={`/anak/${a.id}`}
+                    className="text-lg font-semibold text-brand-700 underline"
+                  >
+                    {a.nama}
+                  </Link>
                   <LencanaStatus status={a.status} />
                 </div>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
@@ -168,7 +173,12 @@ export default async function HalamanBidan() {
                 key={a.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-4"
               >
-                <span className="font-semibold text-slate-900">{a.nama}</span>
+                <Link
+                  href={`/anak/${a.id}`}
+                  className="font-semibold text-brand-700 underline"
+                >
+                  {a.nama}
+                </Link>
                 <span className="text-sm text-slate-700">
                   {a.tanggalTerakhir
                     ? `Terakhir menimbang ${a.jedaHari} hari lalu`
