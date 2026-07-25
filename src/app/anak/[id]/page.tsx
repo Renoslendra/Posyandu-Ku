@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FormEditAnak } from "@/components/FormEditAnak";
 import { GrafikPertumbuhan } from "@/components/GrafikPertumbuhan";
 import { LencanaStatus } from "@/components/LencanaStatus";
 import { LogoLengkap } from "@/components/Logo";
@@ -60,11 +61,22 @@ export default async function HalamanAnak({
 
   const { data: anak } = await supabase
     .from("anak")
-    .select("id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua")
+    .select("id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua, alamat")
     .eq("id", id)
     .maybeSingle();
 
   if (!anak) notFound();
+
+  // Perbaikan data hanya untuk kader. Peran diambil dari basis data, bukan
+  // dari sisi klien, agar tombolnya tidak dapat dimunculkan dengan menyunting
+  // permintaan. RLS tetap menjadi penjaga terakhirnya.
+  const { data: profil } = await supabase
+    .from("profil")
+    .select("peran")
+    .eq("id", pengguna.user.id)
+    .maybeSingle();
+
+  const bolehSunting = profil?.peran === "kader";
 
   const { data: pengukuran } = await supabase
     .from("pengukuran")
@@ -163,6 +175,12 @@ export default async function HalamanAnak({
       {terakhir && (
         <div className="mt-10">
           <SaranMenu anakId={anak.id} />
+        </div>
+      )}
+
+      {bolehSunting && (
+        <div className="mt-10">
+          <FormEditAnak anak={anak} adaRiwayat={terkonfirmasi.length > 0} />
         </div>
       )}
 
