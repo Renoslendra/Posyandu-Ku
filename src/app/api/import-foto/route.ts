@@ -2,8 +2,21 @@ import { NextResponse } from "next/server";
 import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { llmTersedia, panggilVision, uraiJsonLLM } from "@/lib/llm";
 import { hasilEkstraksiSchema, type BarisEkstraksi } from "@/lib/validasi";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { BATAS_WAJAR } from "@/lib/gizi/ambang";
+
+/*
+ * Batas durasi fungsi dinyatakan tegas, tidak dibiarkan memakai nilai bawaan.
+ *
+ * Pembacaan foto adalah yang paling mahal di antara rute yang memanggil model:
+ * membaca gambar berukuran megabita lalu menunggu model penglihatan menjawab. Batas
+ * bawaan sepuluh detik pada paket gratis tidak memadai untuk itu.
+ *
+ * Nilai ini harus selalu lebih besar daripada batas waktu di dalam llm.ts,
+ * supaya jalur cadangan aplikasi yang menghasilkan keluaran berguna selalu
+ * mendahului pemutusan oleh platform yang hanya menghasilkan galat gerbang.
+ */
+export const maxDuration = 60;
 
 /**
  * POST /api/import-foto — membaca satu halaman buku tulis posyandu.
@@ -34,15 +47,37 @@ Aturan:
 /**
  * Batas panjang teks data URL gambar, bukan ukuran berkas aslinya.
  *
- * Pengodean base64 menambah sekitar sepertiga, sehingga batas enam mebibita di
- * sini setara berkas gambar sekitar 4,5 megabita. Nilai itu sengaja dipertahankan
- * karena mendekati batas ukuran permintaan pada platform tempat aplikasi ini
- * dijalankan, sehingga penolakan terjadi dengan pesan yang dapat dibaca kader
- * alih-alih galat platform.
+ * Nilainya harus berada di bawah batas ukuran badan permintaan platform, bukan
+ * sekadar mendekatinya. Batas itu 4,5 megabita, sedangkan nilai sebelumnya di
+ * sini enam mebibita, yakni di atasnya. Akibatnya gambar yang berada di antara
+ * kedua angka itu ditolak platform sebelum kode ini dijalankan sama sekali,
+ * sehingga pemeriksaan di bawah tidak pernah berjalan dan kader menerima galat
+ * platform mentah, tepat keadaan yang hendak dihindari.
+ *
+ * Tiga mebibita menyisakan ruang bagi selubung JSON dan tetap memberi kelegaan
+ * di bawah batas platform. Karena base64 menambah sekitar sepertiga, ini setara
+ * berkas gambar sekitar 2,2 megabita. Foto ponsel umumnya lebih besar dari itu,
+ * karena itu gambar diperkecil di peramban sebelum dikirim. Batas ini menjadi
+ * pengaman terakhir, bukan penjaga pertama.
  */
-const MAKS_PANJANG_DATA_URL = 6 * 1024 * 1024;
+const MAKS_PANJANG_DATA_URL = 3 * 1024 * 1024;
 
 export async function POST(permintaan: Request) {
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 

@@ -32,3 +32,40 @@ export function keTanggalIso(d: Date): string {
   const hari = String(d.getDate()).padStart(2, "0");
   return `${tahun}-${bulan}-${hari}`;
 }
+
+/**
+ * Zona waktu yang dipakai untuk tanggal yang dibuat di peladen.
+ *
+ * Kedua fungsi di atas memakai waktu lokal, dan itu benar untuk kode yang
+ * berjalan di peramban kader: waktu lokal peramban memang waktu kader. Namun di
+ * peladen, waktu lokal adalah UTC, sehingga cara yang sama menghasilkan galat
+ * yang sedang diperbaiki, hanya berpindah tempat.
+ *
+ * Keluaran yang dibuat peladen dan dibaca manusia karena itu perlu menyatakan
+ * zona waktunya dengan tegas, tidak mewarisinya dari lingkungan tempat proses
+ * berjalan.
+ */
+const ZONA_INDONESIA = "Asia/Jakarta";
+
+/**
+ * Mengubah objek Date menjadi `YYYY-MM-DD` menurut kalender Indonesia.
+ *
+ * Dipakai untuk keluaran yang disusun peladen, khususnya tanggal cetak dan nama
+ * berkas laporan. Tanpa ini, laporan yang diunduh bidan pukul enam pagi
+ * bertuliskan tanggal hari sebelumnya, dan laporan bertanggal mundur yang
+ * berpindah tangan ke dinas kesehatan akan diragukan seluruh isinya.
+ *
+ * Waktu Indonesia Tengah dan Timur berselisih satu dan dua jam dari zona ini.
+ * Selisih itu hanya berpengaruh pada unduhan yang dilakukan lewat tengah malam,
+ * dan menyatakan satu zona secara tegas tetap lebih baik daripada mewarisi zona
+ * peladen yang tidak berhubungan dengan siapa pun.
+ */
+export function keTanggalIsoIndonesia(d: Date): string {
+  // Bentuk en-CA menghasilkan susunan tahun-bulan-hari yang dibutuhkan.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_INDONESIA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}

@@ -45,7 +45,19 @@ export const anakBaruSchema = z.object({
     .string()
     .trim()
     .min(2, "Nama anak minimal 2 huruf")
-    .max(100, "Nama anak terlalu panjang"),
+    .max(100, "Nama anak terlalu panjang")
+    /*
+     * Nama wajib memuat setidaknya dua huruf, bukan hanya tanda baca.
+     *
+     * Tanpa ini, nama seper ".." atau "--" lolos karena panjangnya memadai.
+     * Nama semacam itu menormalkan menjadi string kosong pada pencocokan,
+     * dan pernah membuat satu anak menjadi pencocok segala sehingga pengukuran
+     * anak lain tertulis ke rekamnya.
+     */
+    .refine(
+      (v) => (v.match(/\p{L}/gu) ?? []).length >= 2,
+      "Nama anak harus memuat huruf, bukan hanya tanda baca",
+    ),
   tanggalLahir: tanggalTidakDiMasaDepan,
   jenisKelamin: jenisKelaminSchema,
   namaOrangTua: z

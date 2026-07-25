@@ -13,7 +13,23 @@
  *      persepsi.
  */
 
-const BATAS_WAKTU_MS = 20_000;
+/*
+ * Batas waktu dipasang di bawah batas durasi fungsi pada peladen, bukan di atasnya.
+ *
+ * Sebelumnya nilainya 20 detik, sementara batas bawaan fungsi tanpa peladen pada
+ * paket gratis adalah 10 detik. Urutannya keliru: platform mematikan fungsi lebih
+ * dahulu, sehingga pembatal waktu di dalam aplikasi tidak pernah menyala dan
+ * seluruh jalur cadangan yang dibangun untuk keadaan ini tidak pernah dijalankan.
+ * Bidan menerima galat gerbang, bukan ringkasan berbasis templat yang seharusnya
+ * muncul.
+ *
+ * Delapan detik menyisakan ruang bagi pekerjaan lain di dalam permintaan yang
+ * sama, yaitu pemeriksaan batas laju dan dua kueri tabel, sekaligus menjamin
+ * jalur cadangan aplikasi selalu mendahului batas platform. Setiap rute yang
+ * memanggil model juga menyatakan `maxDuration` lebih longgar, sehingga batas ini
+ * berlaku sebagai pengaman berlapis, bukan satu-satunya penjaga.
+ */
+const BATAS_WAKTU_MS = 8_000;
 
 export interface HasilLLM {
   ok: boolean;

@@ -106,11 +106,54 @@ describe("hitungBiaya", () => {
   });
 
   it("menghasilkan biaya harian yang terjangkau", () => {
-    // Batas kewajaran belanja harian satu anak di desa.
+    /*
+     * Batas kewajaran belanja harian satu anak di desa.
+     *
+     * Batas ini dinaikkan dari 25.000 menjadi 30.000 setelah perhitungan biaya
+     * diperbaiki. Sebelumnya bahan yang muncul di beberapa waktu makan hanya
+     * dihitung sekali, termasuk telur dan santan yang nyatanya harus dibeli
+     * sebanyak kemunculannya, sehingga total yang ditampilkan lebih rendah
+     * daripada belanja sebenarnya. Angka yang naik di sini bukan menu yang
+     * menjadi lebih mahal, melainkan angka yang menjadi jujur.
+     */
     for (const status of ["normal", "risiko", "berat"] as const) {
       const biaya = hitungBiaya(kerangkaMenu(status, 24)!.menu);
       expect(biaya).toBeGreaterThan(0);
-      expect(biaya).toBeLessThanOrEqual(25_000);
+      expect(biaya).toBeLessThanOrEqual(30_000);
+    }
+  });
+
+  it("menghitung bahan per hidangan sebanyak kemunculannya", () => {
+    /*
+     * Menu status berat memuat telur pada waktu pagi dan malam, jadi dua butir.
+     * Bila keduanya hanya dihitung satu kali, orang tua datang ke pasar dengan
+     * uang yang tidak cukup.
+     */
+    const menu = kerangkaMenu("berat", 24)!.menu;
+    const jumlahTelur = menu.filter((m) =>
+      m.bahan.some((b) => b.nama === "Telur ayam"),
+    ).length;
+    expect(jumlahTelur).toBe(2);
+
+    const belanja = daftarBelanja(menu);
+    const telur = belanja.find((b) => b.nama === "Telur ayam")!;
+    expect(telur.hargaRp).toBe(2800 * jumlahTelur);
+    expect(telur.takaran).toContain("2 kali hidang");
+  });
+
+  it("tidak melipatgandakan bahan yang dibeli dalam satuan besar", () => {
+    // Satu takaran beras melayani beberapa kali makan, jadi dibeli sekali saja.
+    const belanja = daftarBelanja(kerangkaMenu("normal", 24)!.menu);
+    const beras = belanja.find((b) => b.nama === "Beras")!;
+    expect(beras.hargaRp).toBe(3000);
+  });
+
+  it("total biaya sama dengan jumlah harga di daftar belanja", () => {
+    // Angka yang dilihat orang tua di dua tempat tidak boleh berbeda.
+    for (const status of ["normal", "risiko", "berat"] as const) {
+      const menu = kerangkaMenu(status, 24)!.menu;
+      const total = daftarBelanja(menu).reduce((j, b) => j + b.hargaRp, 0);
+      expect(hitungBiaya(menu)).toBe(total);
     }
   });
 

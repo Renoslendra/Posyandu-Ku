@@ -25,6 +25,7 @@ function ringkasan(pilihan: Partial<RingkasanDashboard> = {}): RingkasanDashboar
     sudahDiukur: 2,
     distribusi: { normal: 1, risiko: 1, berat: 0 },
     belumDinilai: 1,
+    tidakDapatDinilai: 0,
     prioritas: [],
     hilangDariPemantauan: [],
     semuaAnak: [],

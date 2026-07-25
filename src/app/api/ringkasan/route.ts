@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { susunRingkasan, type BarisAnak, type BarisPengukuran } from "@/lib/dashboard";
 import { ringkasanTemplate, susunRingkasanNaratif } from "@/lib/ringkasan";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
+
+/*
+ * Batas durasi fungsi dinyatakan tegas, tidak dibiarkan memakai nilai bawaan.
+ *
+ * Rute ini menjalankan dua kueri tabel sebelum memanggil model, sehingga batas
+ * bawaan sepuluh detik dapat terlampaui pada permintaan pertama setelah fungsi
+ * dingin.
+ *
+ * Nilai ini harus selalu lebih besar daripada batas waktu di dalam llm.ts,
+ * supaya jalur cadangan aplikasi yang menghasilkan keluaran berguna selalu
+ * mendahului pemutusan oleh platform yang hanya menghasilkan galat gerbang.
+ */
+export const maxDuration = 60;
 
 /**
  * POST /api/ringkasan — menyusun ringkasan bulanan untuk bidan.
@@ -16,6 +29,21 @@ import { klienServer } from "@/lib/supabase";
  */
 
 export async function POST() {
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 

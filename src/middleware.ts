@@ -43,9 +43,20 @@ export async function middleware(permintaan: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Melewati berkas statis dan gambar agar penyegaran sesi tidak berjalan
-     * pada permintaan yang tidak membutuhkannya.
+     * Melewati berkas statis, gambar, dan rute API agar penyegaran sesi tidak
+     * berjalan pada permintaan yang tidak membutuhkannya.
+     *
+     * Rute API dikecualikan karena setiap penanganannya sudah memanggil
+     * `getUser()` sendiri. Tanpa pengecualian ini, satu permintaan API
+     * menghasilkan dua panggilan ke layanan autentikasi, dan yang paling terasa
+     * adalah pengiriman antrean tanpa sinyal: entri dikirim satu per satu
+     * secara berurutan, sehingga tiga puluh catatan tertunda memicu enam puluh
+     * panggilan berantai pada koneksi yang justru sedang lemah.
+     *
+     * Penyegaran cookie di sini juga tidak berguna bagi permintaan `fetch` dari
+     * peramban, sebab jawabannya tidak menghasilkan navigasi yang menerapkan
+     * cookie baru.
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

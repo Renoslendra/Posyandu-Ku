@@ -66,12 +66,81 @@ function keAngka(teks: string): number | null {
   return Number.isFinite(angka) ? angka : null;
 }
 
+/**
+ * Sisi terpanjang gambar yang dikirim ke server.
+ *
+ * Tulisan tangan pada buku posyandu masih terbaca jelas pada ukuran ini, dan
+ * memperbesarnya hanya menambah waktu unggah tanpa menambah ketepatan bacaan.
+ */
+const SISI_MAKS_PIKSEL = 1600;
+
+/** Mutu pengodean JPEG. Cukup untuk tulisan tangan, jauh lebih ringan. */
+const MUTU_JPEG = 0.75;
+
+/**
+ * Membaca berkas foto lalu memperkecilnya di peramban sebelum dikirim.
+ *
+ * Tanpa ini, foto ponsel berukuran tiga sampai lima megabita dikirim apa adanya
+ * dan ditolak platform sebelum kode server dijalankan, sehingga kader menerima
+ * galat mentah tanpa penjelasan. Memperkecil di sisi peramban juga memotong
+ * waktu unggah, dan itu penting justru pada koneksi desa yang menjadi alasan
+ * fitur ini ada.
+ *
+ * Bila pengecilan gagal, misalnya karena peramban tidak dapat memuat gambarnya,
+ * berkas asli dikirim apa adanya. Kegagalan pengecilan tidak boleh membatalkan
+ * pekerjaan kader; batas ukuran di server tetap menjadi pengaman terakhir dan
+ * pesannya dapat dibaca.
+ */
+async function siapkanGambar(berkas: File): Promise<string> {
+  const asli = await new Promise<string>((selesai, gagal) => {
+    const pembaca = new FileReader();
+    pembaca.onload = () => selesai(String(pembaca.result));
+    pembaca.onerror = () => gagal(new Error("Gagal membaca berkas"));
+    pembaca.readAsDataURL(berkas);
+  });
+
+  try {
+    const gambar = await new Promise<HTMLImageElement>((selesai, gagal) => {
+      const el = new Image();
+      el.onload = () => selesai(el);
+      el.onerror = () => gagal(new Error("Gambar tidak dapat dimuat"));
+      el.src = asli;
+    });
+
+    const sisiTerpanjang = Math.max(gambar.width, gambar.height);
+    if (sisiTerpanjang === 0) return asli;
+
+    const skala = Math.min(1, SISI_MAKS_PIKSEL / sisiTerpanjang);
+    const lebar = Math.round(gambar.width * skala);
+    const tinggi = Math.round(gambar.height * skala);
+
+    const kanvas = document.createElement("canvas");
+    kanvas.width = lebar;
+    kanvas.height = tinggi;
+
+    const konteks = kanvas.getContext("2d");
+    if (!konteks) return asli;
+    konteks.drawImage(gambar, 0, 0, lebar, tinggi);
+
+    const kecil = kanvas.toDataURL("image/jpeg", MUTU_JPEG);
+
+    // Foto yang sudah kecil dan efisien tidak perlu dikodekan ulang.
+    return kecil.length < asli.length ? kecil : asli;
+  } catch {
+    return asli;
+  }
+}
+
 interface HasilSimpanBaris {
   indeks: number;
   nama: string;
   ok: boolean;
   galat?: string;
   status?: string;
+  /** Nama anak yang menerima pengukuran, bisa berbeda dari nama yang dibaca. */
+  namaAnakTujuan?: string;
+  /** Calon anak yang paling menyerupai, untuk baris yang perlu dipilih kader. */
+  saranAnakId?: string;
 }
 
 interface RingkasanSimpan {
@@ -102,12 +171,7 @@ export function ImportFoto({
     setRingkasan(null);
 
     try {
-      const dataUrl = await new Promise<string>((selesai, gagal) => {
-        const pembaca = new FileReader();
-        pembaca.onload = () => selesai(String(pembaca.result));
-        pembaca.onerror = () => gagal(new Error("Gagal membaca berkas"));
-        pembaca.readAsDataURL(berkas);
-      });
+      const dataUrl = await siapkanGambar(berkas);
 
       const respons = await fetch("/api/import-foto", {
         method: "POST",
@@ -253,7 +317,30 @@ export function ImportFoto({
           .filter((u): u is number => u !== undefined),
       );
 
-      const sisa = baris.filter((_, i) => !urutanAsliBerhasil.has(i));
+      /*
+       * Calon anak yang disarankan server dipilih lebih dahulu pada baris yang
+       * perlu keputusan kader.
+       *
+       * Nama yang mirip tetapi tidak persis kini tidak lagi disimpan otomatis,
+       * karena tebakan yang salah tidak terlihat setelah tersimpan. Agar
+       * kehati-hatian itu tidak berubah menjadi pekerjaan tambahan, calon yang
+       * paling menyerupai diisikan pada pemilihnya, sehingga kader hanya perlu
+       * membenarkan alih-alih mencari sendiri di seluruh daftar anak.
+       */
+      const saranPerUrutanAsli = new Map<number, string>();
+      for (const h of isi.hasil as HasilSimpanBaris[]) {
+        const urutanAsli = dikirim[h.indeks]?.urutanAsli;
+        if (!h.ok && h.saranAnakId && urutanAsli !== undefined) {
+          saranPerUrutanAsli.set(urutanAsli, h.saranAnakId);
+        }
+      }
+
+      const sisa = baris
+        .map((b, i) => {
+          const saran = saranPerUrutanAsli.get(i);
+          return saran && !b.anakId ? { ...b, anakId: saran } : b;
+        })
+        .filter((_, i) => !urutanAsliBerhasil.has(i));
       setBaris(sisa.length > 0 ? sisa : null);
 
       router.refresh();
@@ -335,6 +422,38 @@ export function ImportFoto({
             {ringkasan.berhasil} baris tersimpan
             {ringkasan.gagal > 0 && `, ${ringkasan.gagal} baris perlu diperbaiki`}
           </p>
+
+          {/*
+            Nama anak yang menerima pengukuran ditampilkan satu per satu.
+
+            Sebelumnya layar hanya memuat hitungan "N baris tersimpan", sehingga
+            kader tidak punya cara mengetahui ke rekam anak mana angka itu masuk.
+            Bila pencocokan nama pernah keliru, kekeliruan itu tidak akan terlihat
+            dan karena itu tidak akan pernah diperbaiki. Menampilkan nama yang
+            dibaca berdampingan dengan nama tujuan membuatnya dapat diperiksa
+            sebelum kader beralih ke halaman berikutnya.
+          */}
+          {ringkasan.berhasil > 0 && (
+            <ul className="mt-2 space-y-1 text-sm text-dasar-800">
+              {ringkasan.hasil
+                .filter((h) => h.ok)
+                .map((h) => (
+                  <li key={h.indeks}>
+                    Tersimpan ke{" "}
+                    <span className="font-semibold">
+                      {h.namaAnakTujuan ?? h.nama}
+                    </span>
+                    {h.namaAnakTujuan && h.namaAnakTujuan !== h.nama && (
+                      <span className="text-dasar-700">
+                        {" "}
+                        (terbaca &ldquo;{h.nama}&rdquo;)
+                      </span>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          )}
+
           {ringkasan.gagal > 0 && (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
               {ringkasan.hasil

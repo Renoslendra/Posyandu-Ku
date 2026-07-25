@@ -14,6 +14,7 @@
  */
 
 import { LABEL_STATUS } from "./proses-pengukuran";
+import { keTanggalIsoIndonesia } from "./tanggal";
 import type { AnakPrioritas, RingkasanDashboard } from "./dashboard";
 
 /**
@@ -77,9 +78,21 @@ function baris(kolom: (string | number | null)[]): string {
   return kolom.map(bidangCsv).join(",");
 }
 
-/** Menerjemahkan status ke label yang dipahami pembaca laporan. */
-function labelStatus(status: AnakPrioritas["status"]): string {
-  return status ? LABEL_STATUS[status] : "Belum ditimbang";
+/**
+ * Menerjemahkan status ke label yang dipahami pembaca laporan.
+ *
+ * Tanggal penimbangan terakhir menentukan label mana yang dipakai ketika status
+ * kosong. Sebelumnya kosong selalu berarti "Belum ditimbang", sehingga label itu
+ * muncul berdampingan dengan tanggal penimbangan yang nyata pada baris yang sama.
+ * Status kosong pada anak yang sudah ditimbang berarti nilainya di luar rentang
+ * tabel rujukan, dan itu perlu diperiksa, bukan diabaikan sebagai data kosong.
+ */
+function labelStatus(
+  status: AnakPrioritas["status"],
+  tanggalTerakhir: string | null,
+): string {
+  if (status) return LABEL_STATUS[status];
+  return tanggalTerakhir ? "Tidak dapat dinilai" : "Belum ditimbang";
 }
 
 export interface KonteksLaporan {
@@ -106,7 +119,7 @@ export function susunLaporanCsv(
   larik.push(
     baris([
       "Tanggal cetak",
-      konteks.tanggalCetak.toISOString().slice(0, 10),
+      keTanggalIsoIndonesia(konteks.tanggalCetak),
     ]),
   );
   // Dinyatakan di dalam berkasnya sendiri, karena berkas akan berpindah tangan
@@ -124,6 +137,13 @@ export function susunLaporanCsv(
   larik.push(baris(["Total anak terdaftar", ringkasan.totalAnak]));
   larik.push(baris(["Sudah ditimbang", ringkasan.sudahDiukur]));
   larik.push(baris(["Belum pernah ditimbang", ringkasan.belumDinilai]));
+  /*
+   * Baris ini dipisahkan dari "belum pernah ditimbang" supaya rekapitulasi dapat
+   * dijumlahkan. Sebelumnya keduanya digabung, sehingga jumlah "sudah ditimbang"
+   * dan "belum pernah ditimbang" tidak sama dengan total anak terdaftar, dan
+   * staf dinas kesehatan yang memeriksanya akan meragukan seluruh laporan.
+   */
+  larik.push(baris(["Sudah ditimbang, status tidak dapat dinilai", ringkasan.tidakDapatDinilai]));
   larik.push(baris(["Status normal", ringkasan.distribusi.normal]));
   larik.push(baris(["Status perlu perhatian", ringkasan.distribusi.risiko]));
   larik.push(baris(["Status perlu segera diperiksa", ringkasan.distribusi.berat]));
@@ -149,7 +169,7 @@ export function susunLaporanCsv(
     larik.push(
       baris([
         a.nama,
-        labelStatus(a.status),
+        labelStatus(a.status, a.tanggalTerakhir),
         a.tanggalTerakhir ?? "Belum pernah",
         // Jeda -1 menandakan anak belum pernah ditimbang, sehingga jedanya
         // tidak bermakna dan dikosongkan alih-alih ditampilkan sebagai angka.
@@ -175,5 +195,5 @@ export function namaBerkasLaporan(namaWilayah: string, tanggal: Date): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  return `laporan-gizi-${wilayah || "posyandu"}-${tanggal.toISOString().slice(0, 10)}.csv`;
+  return `laporan-gizi-${wilayah || "posyandu"}-${keTanggalIsoIndonesia(tanggal)}.csv`;
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cocokkanNama, type CalonAnak } from "@/lib/cocok-nama";
 import { prosesPengukuran } from "@/lib/proses-pengukuran";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { barisImportSchema, pesanGalatPertama } from "@/lib/validasi";
 import type { StatusGizi } from "@/lib/gizi/zscore";
 
@@ -34,6 +34,22 @@ export interface HasilBaris {
    */
   status?: StatusGizi | null;
   usiaBulan?: number;
+  /**
+   * Nama anak yang benar-benar menerima pengukuran ini.
+   *
+   * Dikembalikan agar kader dapat memeriksa bahwa angka masuk ke rekam yang
+   * benar. Medan `nama` memuat nama yang dibaca dari foto, dan keduanya dapat
+   * berbeda: pencocokan "Bagas" ke "Bagas Pratama" adalah keadaan normal.
+   * Tanpa medan ini, pertukaran data tidak akan pernah terlihat.
+   */
+  namaAnakTujuan?: string;
+  /**
+   * Calon anak yang paling menyerupai, untuk baris yang perlu keputusan kader.
+   *
+   * Antarmuka dapat memakainya untuk memilih calon itu lebih dahulu, sehingga
+   * kader hanya perlu membenarkan alih-alih mencari sendiri di seluruh daftar.
+   */
+  saranAnakId?: string;
 }
 
 export async function POST(permintaan: Request) {
@@ -53,6 +69,21 @@ export async function POST(permintaan: Request) {
   }
   const { baris } = terurai.data;
 
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 
@@ -95,7 +126,21 @@ export async function POST(permintaan: Request) {
 
     if (!anakId) {
       const cocok = cocokkanNama(b.nama, calon);
-      if (cocok.jenis === "persis" || cocok.jenis === "sebagian") {
+
+      /*
+       * Hanya kecocokan persis yang disimpan tanpa bertanya.
+       *
+       * Kecocokan "sebagian" adalah tebakan, dan modul pencocokan sendiri
+       * menyatakannya lewat pesan "Mohon pastikan benar". Sebelumnya tebakan itu
+       * langsung disimpan, sedangkan permintaan konfirmasinya tidak pernah
+       * sampai ke layar. Kader hanya melihat "1 baris tersimpan", tanpa cara
+       * mengetahui ke rekam anak mana angka itu masuk.
+       *
+       * Pencocokan otomatis boleh saja salah. Yang tidak boleh adalah salah
+       * tanpa meninggalkan jejak, sebab kekeliruan yang tidak terlihat tidak
+       * akan pernah diperbaiki.
+       */
+      if (cocok.jenis === "persis") {
         anakId = cocok.anakId;
       } else {
         hasil.push({
@@ -103,9 +148,12 @@ export async function POST(permintaan: Request) {
           nama: b.nama,
           ok: false,
           galat:
-            cocok.jenis === "ganda"
-              ? "Ada beberapa anak dengan nama serupa. Mohon pilih yang benar."
-              : "Nama tidak ditemukan di posyandu Anda. Pilih anak, atau daftarkan lebih dahulu.",
+            cocok.jenis === "sebagian"
+              ? `Nama mirip dengan ${cocok.kandidat[0].nama}. Mohon pastikan anaknya benar.`
+              : cocok.jenis === "ganda"
+                ? "Ada beberapa anak dengan nama serupa. Mohon pilih yang benar."
+                : "Nama tidak ditemukan di posyandu Anda. Pilih anak, atau daftarkan lebih dahulu.",
+          saranAnakId: cocok.kandidat.length > 0 ? cocok.kandidat[0].id : undefined,
         });
         continue;
       }
@@ -212,6 +260,7 @@ export async function POST(permintaan: Request) {
       indeks,
       nama: b.nama,
       ok: true,
+      namaAnakTujuan: anak.nama,
       status: proses.penilaian.status,
       usiaBulan: proses.usiaBulan,
     });

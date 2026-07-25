@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RingkasanDashboard } from "./dashboard";
+import type { AnakPrioritas, RingkasanDashboard } from "./dashboard";
 import { ringkasanTemplate } from "./ringkasan";
 
 /**
@@ -16,8 +16,22 @@ function data(ubah: Partial<RingkasanDashboard> = {}): RingkasanDashboard {
     sudahDiukur: 18,
     distribusi: { normal: 14, risiko: 3, berat: 1 },
     belumDinilai: 2,
+    tidakDapatDinilai: 0,
     prioritas: [],
     hilangDariPemantauan: [],
+    semuaAnak: [],
+    ...ubah,
+  };
+}
+
+/** Membentuk satu entri anak untuk pengujian, dengan medan wajib terisi. */
+function anak(ubah: Partial<AnakPrioritas> & { id: string; nama: string }): AnakPrioritas {
+  return {
+    status: null,
+    alasan: [],
+    jedaHari: 0,
+    tanggalTerakhir: null,
+    telepon: null,
     ...ubah,
   };
 }
@@ -49,8 +63,8 @@ describe("ringkasanTemplate", () => {
     const teks = ringkasanTemplate(
       data({
         prioritas: [
-          { id: "a", nama: "Ana", status: "berat", alasan: ["x"], jedaHari: 10, tanggalTerakhir: "2026-07-01" },
-          { id: "b", nama: "Budi", status: "risiko", alasan: ["y"], jedaHari: 5, tanggalTerakhir: "2026-07-05" },
+          anak({ id: "a", nama: "Ana", status: "berat", alasan: ["x"], jedaHari: 10, tanggalTerakhir: "2026-07-01" }),
+          anak({ id: "b", nama: "Budi", status: "risiko", alasan: ["y"], jedaHari: 5, tanggalTerakhir: "2026-07-05" }),
         ],
       }),
     );
@@ -59,14 +73,16 @@ describe("ringkasanTemplate", () => {
   });
 
   it("membatasi jumlah nama yang disebut agar ringkasan tetap terbaca", () => {
-    const banyak = Array.from({ length: 12 }, (_, i) => ({
-      id: String(i),
-      nama: `Anak${i}`,
-      status: "risiko" as const,
-      alasan: ["x"],
-      jedaHari: 1,
-      tanggalTerakhir: "2026-07-01",
-    }));
+    const banyak = Array.from({ length: 12 }, (_, i) =>
+      anak({
+        id: String(i),
+        nama: `Anak${i}`,
+        status: "risiko",
+        alasan: ["x"],
+        jedaHari: 1,
+        tanggalTerakhir: "2026-07-01",
+      }),
+    );
     const teks = ringkasanTemplate(data({ prioritas: banyak }));
     expect(teks).toContain("12 anak");
     expect(teks).toContain("Anak4");
@@ -77,7 +93,7 @@ describe("ringkasanTemplate", () => {
     const teks = ringkasanTemplate(
       data({
         hilangDariPemantauan: [
-          { id: "a", nama: "Ana", status: null, alasan: [], jedaHari: 120, tanggalTerakhir: "2026-03-01" },
+          anak({ id: "a", nama: "Ana", status: null, alasan: [], jedaHari: 120, tanggalTerakhir: "2026-03-01" }),
         ],
       }),
     );

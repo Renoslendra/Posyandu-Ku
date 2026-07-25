@@ -16,12 +16,27 @@ import type { StatusGizi } from "./gizi/zscore";
 
 export interface Bahan {
   nama: string;
-  /** Takaran untuk satu hari, satu anak. */
+  /** Takaran untuk satu kali hidang, satu anak. */
   takaran: string;
-  /** Perkiraan harga pasar desa dalam rupiah. */
+  /** Perkiraan harga pasar desa dalam rupiah, untuk satu takaran di atas. */
   hargaRp: number;
   /** Alasan bahan ini dipilih, ditampilkan ke orang tua. */
   manfaat: string;
+  /**
+   * Apakah harga bahan ini dijumlahkan setiap kali muncul di menu.
+   *
+   * Ada dua macam bahan, dan membedakannya menentukan benar tidaknya total
+   * biaya. Beras dan sayur dibeli dalam satuan yang cukup untuk beberapa kali
+   * makan, sehingga satu takaran melayani seluruh hari. Telur dan santan
+   * berbeda: satu butir telur pada menu pagi dan satu butir lagi pada menu
+   * malam berarti dua butir yang harus dibeli.
+   *
+   * Sebelumnya seluruh bahan diperlakukan sebagai jenis pertama, sehingga total
+   * biaya lebih rendah daripada belanja sebenarnya. Total yang salah membuat
+   * orang tua datang ke pasar dengan uang yang tidak cukup, dan itu justru
+   * kegagalan yang paling merugikan dari fitur ini.
+   */
+  perHidangan?: boolean;
 }
 
 /**
@@ -42,9 +57,10 @@ const BAHAN: Record<string, Bahan> = {
   },
   telur: {
     nama: "Telur ayam",
-    takaran: "1 butir",
+    takaran: "1 butir setiap kali hidang",
     hargaRp: 2800,
     manfaat: "protein lengkap dan lemak untuk pertumbuhan",
+    perHidangan: true,
   },
   ikanTeri: {
     nama: "Ikan teri kering",
@@ -54,7 +70,7 @@ const BAHAN: Record<string, Bahan> = {
   },
   hati: {
     nama: "Hati ayam",
-    takaran: "1 potong kecil (30 g)",
+    takaran: "1 potong kecil (30 g), 2 kali seminggu",
     hargaRp: 3500,
     manfaat: "zat besi, mencegah anemia",
   },
@@ -90,9 +106,10 @@ const BAHAN: Record<string, Bahan> = {
   },
   kelapa: {
     nama: "Santan kelapa",
-    takaran: "2 sendok makan",
+    takaran: "2 sendok makan setiap kali hidang",
     hargaRp: 1500,
     manfaat: "lemak untuk menambah kalori",
+    perHidangan: true,
   },
   kacangHijau: {
     nama: "Kacang hijau",
@@ -127,6 +144,42 @@ export interface SaranMenu {
  * Bayi di bawah 6 bulan tidak mendapat saran menu: pemberian makan pada usia
  * tersebut adalah wilayah air susu ibu, dan saran makanan justru berbahaya.
  */
+/**
+ * Catatan keselamatan yang menyertai setiap saran menu.
+ *
+ * Ketiga hal di bawah sebelumnya tidak dinyatakan sama sekali, padahal masing
+ * masing dapat merugikan anak.
+ *
+ * Pertama, seluruh menu memuat telur dan ikan, dua bahan yang paling sering
+ * menimbulkan reaksi alergi pada anak. Aplikasi ini tidak menyimpan riwayat
+ * alergi, sehingga tidak mungkin menyaringnya. Yang dapat dilakukan adalah
+ * menyatakannya, agar orang tua yang sudah pernah melihat reaksi tidak
+ * menganggap saran ini menggugurkan pengalamannya sendiri.
+ *
+ * Kedua, saran ini menyertai air susu ibu, bukan menggantikannya. Menu empat
+ * sampai lima kali makan sehari tanpa satu pun penyebutan air susu ibu dapat
+ * dibaca sebagai pengganti, dan itu kekeliruan yang merugikan pada usia di
+ * bawah dua tahun.
+ *
+ * Ketiga, ikan teri kering diawetkan dengan garam. Anjuran umum adalah tidak
+ * menambahkan garam pada makanan bayi di bawah satu tahun, sehingga untuk
+ * kelompok itu teri perlu direndam lebih dahulu.
+ */
+function catatanKeselamatan(lunak: boolean): string[] {
+  const catatan = [
+    "Menu ini menyertai air susu ibu, bukan menggantikannya. Teruskan menyusui sampai anak berusia 2 tahun.",
+    "Bila anak pernah bengkak, gatal, atau mencret setelah makan telur atau ikan, hentikan bahan itu dan tanyakan kepada bidan.",
+  ];
+
+  if (lunak) {
+    catatan.push(
+      "Rendam ikan teri dalam air hangat lalu buang airnya, agar garamnya berkurang. Jangan menambahkan garam pada makanan bayi di bawah 1 tahun.",
+    );
+  }
+
+  return catatan;
+}
+
 export function kerangkaMenu(
   status: StatusGizi,
   usiaBulan: number,
@@ -166,6 +219,7 @@ export function kerangkaMenu(
       catatan: [
         "Menu ini menjaga pertumbuhan yang sudah baik.",
         "Berikan makan 3 kali sehari ditambah 1 kali selingan.",
+        ...catatanKeselamatan(lunak),
       ],
     };
   }
@@ -188,7 +242,9 @@ export function kerangkaMenu(
         },
         {
           waktu: "Siang",
-          hidangan: lunak ? "Bubur hati ayam dan wortel" : "Nasi, hati ayam, wortel",
+          hidangan: lunak
+            ? "Bubur hati ayam dan wortel (2 kali seminggu), hari lain ganti tempe"
+            : "Nasi, hati ayam, wortel (2 kali seminggu), hari lain ganti tempe",
           bahan: [b.hati, b.wortel],
         },
         {
@@ -208,6 +264,7 @@ export function kerangkaMenu(
         "Porsi protein ditambah karena berat badan perlu dinaikkan.",
         "Berikan makan 3 kali sehari ditambah 2 kali selingan.",
         "Santan menambah kalori tanpa menambah banyak volume makanan.",
+        ...catatanKeselamatan(lunak),
       ],
     };
   }
@@ -229,7 +286,9 @@ export function kerangkaMenu(
       },
       {
         waktu: "Siang",
-        hidangan: lunak ? "Bubur hati ayam dan wortel" : "Nasi, hati ayam, wortel",
+        hidangan: lunak
+          ? "Bubur hati ayam dan wortel (2 kali seminggu), hari lain ganti tempe"
+          : "Nasi, hati ayam, wortel (2 kali seminggu), hari lain ganti tempe",
         bahan: [b.hati, b.wortel],
       },
       {
@@ -249,30 +308,64 @@ export function kerangkaMenu(
       "Berikan porsi kecil tetapi sering, 5 sampai 6 kali sehari.",
       "Anak dengan kondisi ini perlu diperiksa bidan atau puskesmas. Menu ini pelengkap, bukan pengganti pemeriksaan.",
       "Bila anak menolak makan atau tampak lemas, segera bawa ke puskesmas.",
+      ...catatanKeselamatan(lunak),
     ],
   };
 }
 
 /** Menjumlahkan biaya seluruh bahan, tanpa menghitung bahan yang sama dua kali. */
 export function hitungBiaya(menu: Menu[]): number {
-  const dipakai = new Map<string, number>();
-  for (const m of menu) {
-    for (const b of m.bahan) {
-      // Bahan yang muncul di beberapa waktu makan tetap dibeli sekali,
-      // sehingga harganya tidak dijumlahkan berulang.
-      dipakai.set(b.nama, b.hargaRp);
-    }
+  let jumlah = 0;
+
+  for (const [, b] of hitungKemunculan(menu)) {
+    /*
+     * Bahan yang dibeli dalam satuan besar dihitung sekali, sedangkan bahan yang
+     * dikonsumsi per hidangan dikalikan jumlah kemunculannya. Satu takaran beras
+     * melayani beberapa kali makan; satu butir telur tidak.
+     */
+    jumlah += b.bahan.perHidangan ? b.bahan.hargaRp * b.jumlah : b.bahan.hargaRp;
   }
-  return [...dipakai.values()].reduce((jumlah, harga) => jumlah + harga, 0);
+
+  return jumlah;
 }
 
-/** Mengumpulkan daftar bahan belanja beserta harganya. */
+/**
+ * Mengumpulkan daftar bahan belanja beserta harganya.
+ *
+ * Bahan yang dikonsumsi per hidangan disertai banyaknya, agar takaran yang
+ * tertulis di daftar belanja sesuai dengan total biaya yang ditampilkan.
+ */
 export function daftarBelanja(menu: Menu[]): Bahan[] {
-  const peta = new Map<string, Bahan>();
-  for (const m of menu) {
-    for (const b of m.bahan) peta.set(b.nama, b);
+  const hasil: Bahan[] = [];
+
+  for (const [, b] of hitungKemunculan(menu)) {
+    if (b.bahan.perHidangan && b.jumlah > 1) {
+      hasil.push({
+        ...b.bahan,
+        takaran: `${b.bahan.takaran}, untuk ${b.jumlah} kali hidang`,
+        hargaRp: b.bahan.hargaRp * b.jumlah,
+      });
+    } else {
+      hasil.push(b.bahan);
+    }
   }
-  return [...peta.values()];
+
+  return hasil;
+}
+
+/** Menghitung berapa kali setiap bahan muncul di seluruh menu sehari. */
+function hitungKemunculan(menu: Menu[]) {
+  const peta = new Map<string, { bahan: Bahan; jumlah: number }>();
+
+  for (const m of menu) {
+    for (const b of m.bahan) {
+      const ada = peta.get(b.nama);
+      if (ada) ada.jumlah += 1;
+      else peta.set(b.nama, { bahan: b, jumlah: 1 });
+    }
+  }
+
+  return peta;
 }
 
 const PERINTAH_SISTEM = `Anda membantu orang tua di desa di Indonesia memasak makanan bergizi untuk anaknya.

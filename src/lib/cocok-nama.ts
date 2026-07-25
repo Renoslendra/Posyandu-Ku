@@ -50,15 +50,80 @@ export interface HasilCocok {
  * posyandu adalah sebutan, bukan gelar.
  */
 export function normalkanNama(nama: string): string {
-  return nama
-    .toLowerCase()
-    // Sebutan yang lazim ditulis di depan nama anak pada buku posyandu.
-    .replace(/^(an|ananda|adik|adk|by|baby|anak)\.?\s+/u, "")
-    // Tanda baca menjadi spasi, bukan dihapus, agar "sri-wahyuni" tetap
-    // terbaca sebagai dua kata alih-alih menyatu.
-    .replace(/[.,'"`\-_/\\()]+/gu, " ")
-    .replace(/\s+/gu, " ")
-    .trim();
+  return (
+    nama
+      .toLowerCase()
+      /*
+       * Aksara beraksen disetarakan dengan bentuk dasarnya, dan spasi tak-putus
+       * dari hasil salin-tempel diperlakukan sebagai spasi biasa. Tanpa ini, nama
+       * yang tampak serupa di layar tidak akan pernah cocok.
+       */
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/gu, "")
+      .replace(/\u00a0/gu, " ")
+      /*
+       * Tanda baca diubah menjadi spasi lebih dahulu, baru sebutan dibuang.
+       *
+       * Urutan ini penting. Pada urutan sebaliknya, tulisan rapat seperti
+       * "An.Aisyah" tidak tersentuh pembuang sebutan karena tidak ada spasi
+       * sesudahnya, sehingga hasilnya "an aisyah" dan tidak pernah cocok persis
+       * dengan "aisyah".
+       */
+      .replace(/[.,'"`\-_/\\()]+/gu, " ")
+      .replace(/\s+/gu, " ")
+      .trim()
+      /*
+       * Sebutan yang lazim ditulis kader di depan nama anak.
+       *
+       * "anak" sengaja tidak termasuk. Pada nama Bali, "Anak Agung" adalah gelar
+       * kehormatan yang merupakan bagian sah dari nama, dan membuangnya mengubah
+       * identitas orangnya. Kerugian membiarkan "Anak" pada satu dua catatan
+       * jauh lebih kecil daripada memotong nama yang benar.
+       */
+      .replace(/^(an|ananda|adik|adk|by|baby)\s+/u, "")
+      .trim()
+  );
+}
+
+/** Memecah nama yang sudah dinormalkan menjadi kata-katanya. */
+function kata(namaNormal: string): string[] {
+  return namaNormal.split(" ").filter((k) => k.length > 0);
+}
+
+/**
+ * Memeriksa apakah dua nama cukup menyerupai untuk dianggap orang yang sama.
+ *
+ * Membandingkan kata, bukan potongan huruf. Diterima bila seluruh kata pada
+ * salah satu nama muncul juga pada nama yang lain, misalnya "Aisyah" terhadap
+ * "Aisyah Putri".
+ *
+ * Sebelumnya pembandingan memakai `String.includes`, dan itu berbahaya karena
+ * tidak mengenal batas kata. Anak terdaftar bernama "Ani" akan tercocok dengan
+ * bacaan "Handayani", sebab potongan hurufnya kebetulan bersarang. Bila hanya
+ * satu anak yang bersarang seperti itu, sistem memilihnya tanpa bertanya, dan
+ * berat badan seorang anak tertulis ke rekam anak lain tanpa ada yang tahu.
+ *
+ * Kata sangat pendek tidak cukup menjadi dasar pencocokan. Satu kata dua huruf
+ * yang sama dapat muncul pada nama yang tidak berkaitan, sehingga nama sekata
+ * diwajibkan memiliki panjang memadai.
+ */
+function menyerupai(a: string, b: string): boolean {
+  const kataA = kata(a);
+  const kataB = kata(b);
+
+  if (kataA.length === 0 || kataB.length === 0) return false;
+
+  const pendek = kataA.length <= kataB.length ? kataA : kataB;
+  const panjang = pendek === kataA ? kataB : kataA;
+
+  /*
+   * Nama sekata perlu setidaknya empat huruf. Nama Indonesia yang lebih pendek
+   * dari itu terlalu umum untuk membedakan seorang anak dari yang lain.
+   */
+  if (pendek.length === 1 && pendek[0].length < 4) return false;
+
+  const himpunan = new Set(panjang);
+  return pendek.every((k) => himpunan.has(k));
 }
 
 /**
@@ -75,26 +140,41 @@ export function cocokkanNama(nama: string, calon: CalonAnak[]): HasilCocok {
     return { jenis: "tidak_ada", anakId: null, kandidat: [] };
   }
 
-  const persis = calon.filter((c) => normalkanNama(c.nama) === dicari);
+  /*
+   * Calon yang namanya menormalkan menjadi kosong dibuang lebih dahulu.
+   *
+   * Nama yang seluruhnya tanda baca, misalnya ".." atau "--", lolos validasi
+   * pendaftaran karena panjangnya memadai, namun menormalkan menjadi string
+   * kosong. Pada pembandingan lama, calon semacam itu menjadi pencocok segala:
+   * setiap nama "mengandung" string kosong, sehingga satu anak dengan nama
+   * seperti itu di satu posyandu akan menyerap seluruh baris yang tidak cocok
+   * persis, tanpa satu pun peringatan.
+   */
+  const calonSah = calon
+    .map((c) => ({ calon: c, normal: normalkanNama(c.nama) }))
+    .filter((c) => c.normal.length > 0);
+
+  const persis = calonSah.filter((c) => c.normal === dicari);
   if (persis.length === 1) {
-    return { jenis: "persis", anakId: persis[0].id, kandidat: persis };
+    return { jenis: "persis", anakId: persis[0].calon.id, kandidat: [persis[0].calon] };
   }
   // Dua anak dengan nama identik memang mungkin terjadi di satu desa. Sistem
   // tidak boleh menebak yang mana.
   if (persis.length > 1) {
-    return { jenis: "ganda", anakId: null, kandidat: persis };
+    return { jenis: "ganda", anakId: null, kandidat: persis.map((c) => c.calon) };
   }
 
-  const sebagian = calon.filter((c) => {
-    const kandidat = normalkanNama(c.nama);
-    return kandidat.includes(dicari) || dicari.includes(kandidat);
-  });
+  const sebagian = calonSah.filter((c) => menyerupai(c.normal, dicari));
 
   if (sebagian.length === 1) {
-    return { jenis: "sebagian", anakId: sebagian[0].id, kandidat: sebagian };
+    return {
+      jenis: "sebagian",
+      anakId: sebagian[0].calon.id,
+      kandidat: [sebagian[0].calon],
+    };
   }
   if (sebagian.length > 1) {
-    return { jenis: "ganda", anakId: null, kandidat: sebagian };
+    return { jenis: "ganda", anakId: null, kandidat: sebagian.map((c) => c.calon) };
   }
 
   return { jenis: "tidak_ada", anakId: null, kandidat: [] };

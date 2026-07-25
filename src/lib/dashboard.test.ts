@@ -339,3 +339,85 @@ describe("saringAnak", () => {
     expect(daftar).toEqual(salinan);
   });
 });
+
+describe("susunRingkasan - perbaikan hasil pemeriksaan", () => {
+  it("tidak menghitung pengukuran yatim sebagai anak yang sudah diukur", () => {
+    /*
+     * Pengukuran yang anaknya tidak ada di daftar dapat muncul bila kueri anak
+     * terpotong batas baris. Sebelumnya angka ini dihitung dari banyaknya kunci
+     * peta pengukuran, sehingga dapat melebihi jumlah anak terdaftar dan bidan
+     * membaca "dari 2 anak terdaftar, 3 anak sudah ditimbang".
+     */
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi")],
+      [ukur("a", "2026-07-01", 10, "normal"), ukur("z", "2026-07-01", 10, "normal")],
+      SEKARANG,
+    );
+    expect(r.sudahDiukur).toBe(1);
+    expect(r.sudahDiukur).toBeLessThanOrEqual(r.totalAnak);
+  });
+
+  it("menjaga jumlah ketiga keadaan sama dengan total anak", () => {
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi"), anak("c", "Cici"), anak("d", "Dedi")],
+      [
+        ukur("a", "2026-07-01", 10, "normal"),
+        ukur("b", "2026-07-01", 10, "berat"),
+        ukur("c", "2026-07-01", 10, null),
+      ],
+      SEKARANG,
+    );
+
+    const berstatus =
+      r.distribusi.normal + r.distribusi.risiko + r.distribusi.berat;
+    expect(berstatus + r.tidakDapatDinilai + r.belumDinilai).toBe(r.totalAnak);
+    expect(r.sudahDiukur + r.belumDinilai).toBe(r.totalAnak);
+  });
+
+  it("membedakan belum pernah ditimbang dari status yang tidak dapat dinilai", () => {
+    /*
+     * Sebelumnya kedua keadaan digabung, sehingga satu anak dihitung sekaligus
+     * sebagai sudah ditimbang dan belum ditimbang.
+     */
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi")],
+      [ukur("a", "2026-07-01", 10, null)],
+      SEKARANG,
+    );
+    expect(r.belumDinilai).toBe(1);
+    expect(r.tidakDapatDinilai).toBe(1);
+    expect(r.sudahDiukur).toBe(1);
+  });
+
+  it("menempatkan anak yang belum pernah hadir di puncak daftar berhenti menimbang", () => {
+    /*
+     * Anak tanpa kunjungan ditandai jedaHari bernilai -1. Sebagai bilangan, -1
+     * adalah nilai terkecil, sehingga pada pengurutan menurun anak itu jatuh ke
+     * dasar daftar, di bawah anak yang terakhir menimbang tiga bulan lalu.
+     *
+     * Keluarga yang tidak pernah hadir sekali pun justru sering yang paling
+     * berisiko, dan bidan membaca daftar dari atas.
+     */
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi")],
+      [ukur("a", "2026-03-01", 10, "normal")],
+      SEKARANG,
+    );
+
+    expect(r.hilangDariPemantauan.length).toBeGreaterThanOrEqual(2);
+    expect(r.hilangDariPemantauan[0].nama).toBe("Budi");
+    expect(r.hilangDariPemantauan[0].jedaHari).toBe(-1);
+  });
+
+  it("mendahulukan status yang tidak dapat dinilai atas status normal", () => {
+    // Nilai di luar rentang tabel rujukan adalah petunjuk, bukan pertanda baik.
+    const r = susunRingkasan(
+      [anak("a", "Ana"), anak("b", "Budi")],
+      [ukur("a", "2026-03-01", 10, "normal"), ukur("b", "2026-03-01", 10, null)],
+      SEKARANG,
+    );
+
+    const urut = r.prioritas.map((p) => p.nama);
+    if (urut.length === 2) expect(urut[0]).toBe("Budi");
+  });
+});

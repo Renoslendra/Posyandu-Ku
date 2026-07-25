@@ -19,9 +19,30 @@ describe("normalkanNama", () => {
 
   it("membuang sebutan yang lazim ditulis kader", () => {
     // Kader sering menulis sebutan di depan nama pada buku posyandu.
-    for (const sebutan of ["An.", "An", "Ananda", "Adik", "By.", "Anak"]) {
+    for (const sebutan of ["An.", "An", "Ananda", "Adik", "By.", "Baby"]) {
       expect(normalkanNama(`${sebutan} Aisyah`)).toBe("aisyah");
     }
+  });
+
+  it("mempertahankan kata Anak karena bagian sah nama Bali", () => {
+    /*
+     * "Anak Agung" adalah gelar kehormatan Bali dan merupakan bagian sah dari
+     * nama seseorang. Membuangnya mengubah identitas orangnya, dan dapat
+     * menabrakkan nama itu dengan anak lain yang memang bernama Agung.
+     */
+    expect(normalkanNama("Anak Agung Ngurah")).toBe("anak agung ngurah");
+    expect(normalkanNama("Anak Aisyah")).toBe("anak aisyah");
+  });
+
+  it("menormalkan sebutan yang ditulis rapat tanpa spasi", () => {
+    // Tulisan tangan pada buku posyandu sering rapat seperti ini.
+    expect(normalkanNama("An.Aisyah")).toBe("aisyah");
+    expect(normalkanNama("By.Bagas")).toBe("bagas");
+  });
+
+  it("menyetarakan aksara beraksen dengan bentuk dasarnya", () => {
+    // Nama yang tampak serupa di layar harus dapat dicocokkan.
+    expect(normalkanNama("Aisyáh")).toBe("aisyah");
   });
 
   it("tidak membuang kata yang kebetulan berawalan sama dengan sebutan", () => {
@@ -145,5 +166,92 @@ describe("cocokkanNama — penolakan yang disengaja", () => {
         expect(h.anakId).toBeNull();
       }
     }
+  });
+});
+
+describe("pencocokan tidak boleh menukar data anak", () => {
+  /*
+   * Kelompok pengujian ini menegakkan perbaikan atas cacat paling berbahaya
+   * pada modul ini: pembandingan memakai potongan huruf, bukan kata.
+   *
+   * Menuliskan berat badan seorang anak ke rekam anak lain tidak terlihat
+   * setelah tersimpan, dapat memicu peringatan gizi buruk palsu, dan sekaligus
+   * menyembunyikan yang sungguhan.
+   */
+
+  it("tidak mencocokkan nama yang hanya bersarang sebagai potongan huruf", () => {
+    // "ani" adalah potongan dari "handayani", tetapi keduanya orang berbeda.
+    const hasil = cocokkanNama("Handayani", [{ id: "a", nama: "Ani" }]);
+    expect(hasil.jenis).toBe("tidak_ada");
+    expect(hasil.anakId).toBeNull();
+  });
+
+  it("menolak beberapa contoh bersarang lain yang tidak berkaitan", () => {
+    const pasangan: [string, string][] = [
+      ["Sitawati", "Ita"],
+      ["Hadi", "Adi"],
+      ["Wulandari", "Andi"],
+      ["Kartika", "Tika"],
+    ];
+
+    for (const [dibaca, terdaftar] of pasangan) {
+      const hasil = cocokkanNama(dibaca, [{ id: "a", nama: terdaftar }]);
+      expect(hasil.jenis, `${dibaca} tidak boleh cocok dengan ${terdaftar}`).toBe(
+        "tidak_ada",
+      );
+    }
+  });
+
+  it("tetap mencocokkan nama yang benar-benar berbagi kata", () => {
+    // Perbaikan tidak boleh mematikan kegunaan aslinya.
+    expect(cocokkanNama("Aisyah", [{ id: "a", nama: "Aisyah Putri" }]).jenis).toBe(
+      "sebagian",
+    );
+    expect(
+      cocokkanNama("Citra Dewi", [{ id: "a", nama: "Citra Dewi Lestari" }]).jenis,
+    ).toBe("sebagian");
+    expect(
+      cocokkanNama("Bagas Pratama", [{ id: "a", nama: "Bagas" }]).jenis,
+    ).toBe("sebagian");
+  });
+
+  it("menolak nama sekata yang terlalu pendek sebagai dasar pencocokan", () => {
+    // Kata tiga huruf terlalu umum untuk membedakan seorang anak.
+    const hasil = cocokkanNama("Eka", [{ id: "a", nama: "Eka Wijaya" }]);
+    expect(hasil.jenis).toBe("tidak_ada");
+  });
+
+  it("tidak menjadikan nama tanpa huruf sebagai pencocok segala", () => {
+    /*
+     * Nama yang seluruhnya tanda baca menormalkan menjadi kosong. Pada
+     * pembandingan lama, calon semacam itu cocok dengan setiap nama, sehingga
+     * satu baris placeholder menyerap seluruh pengukuran yang namanya tidak
+     * dikenali.
+     */
+    for (const namaKosong of ["..", "--", "()", "-/"]) {
+      const hasil = cocokkanNama("Aisyah Putri", [{ id: "a", nama: namaKosong }]);
+      expect(hasil.jenis, `nama "${namaKosong}" tidak boleh cocok`).toBe("tidak_ada");
+      expect(hasil.anakId).toBeNull();
+    }
+  });
+
+  it("mengabaikan calon tanpa huruf saat memilih di antara beberapa calon", () => {
+    // Calon placeholder tidak boleh membuat kecocokan yang sah menjadi ganda.
+    const hasil = cocokkanNama("Aisyah", [
+      { id: "a", nama: "Aisyah Putri" },
+      { id: "b", nama: ".." },
+    ]);
+    expect(hasil.jenis).toBe("sebagian");
+    expect(hasil.anakId).toBe("a");
+  });
+
+  it("tetap menyerahkan keputusan kepada kader bila dua nama sama-sama menyerupai", () => {
+    const hasil = cocokkanNama("Siti", [
+      { id: "a", nama: "Siti Aminah" },
+      { id: "b", nama: "Siti Fatimah" },
+    ]);
+    expect(hasil.jenis).toBe("ganda");
+    expect(hasil.anakId).toBeNull();
+    expect(hasil.kandidat).toHaveLength(2);
   });
 });

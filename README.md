@@ -103,9 +103,13 @@ supabase/migrations/0003_grant.sql
 supabase/migrations/0004_telepon_anak.sql
 supabase/migrations/0005_batas_panggilan.sql
 supabase/migrations/0006_pengukuran_unik.sql
+supabase/migrations/0007_grant_batas_panggilan.sql
+supabase/migrations/0008_tanggal_zona_waktu.sql
 ```
 
 Urutannya penting. Migrasi `0003` wajib dijalankan bila setelan **Automatically expose new tables** dimatikan pada proyek Anda, karena hak akses tabel diberikan secara eksplisit di sana.
+
+Migrasi `0008` juga tidak boleh dilewati. Batasan tanggal semula dievaluasi memakai tanggal basis data, yang berjalan pada UTC, sehingga penimbangan yang dicatat sebelum pukul tujuh pagi ditolak dan catatannya dapat hilang dari antrean luring.
 
 ### 3. Isi environment variable
 

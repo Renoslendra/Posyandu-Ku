@@ -40,6 +40,19 @@ export function ringkasanTemplate(data: RingkasanDashboard): string {
     baris.push(`${data.belumDinilai} anak belum memiliki hasil penimbangan.`);
   }
 
+  /*
+   * Anak yang sudah ditimbang tetapi statusnya tidak dapat dihitung disebut
+   * terpisah. Sebelumnya keadaan ini digabung dengan yang belum pernah
+   * ditimbang, sehingga ringkasan dapat menyatakan "3 anak sudah memiliki hasil
+   * penimbangan" lalu "1 anak belum memiliki hasil penimbangan" pada total tiga
+   * anak, dan bidan yang membacanya kehilangan kepercayaan pada seluruh angka.
+   */
+  if (data.tidakDapatDinilai > 0) {
+    baris.push(
+      `${data.tidakDapatDinilai} anak sudah ditimbang namun statusnya tidak dapat dinilai. Mohon periksa kembali hasil ukurnya.`,
+    );
+  }
+
   if (data.prioritas.length === 0) {
     baris.push("Tidak ada anak yang perlu ditindaklanjuti pada periode ini.");
   } else {
@@ -126,7 +139,8 @@ function susunPerintahPengguna(data: RingkasanDashboard): string {
 - Status normal: ${data.distribusi.normal}
 - Status perlu perhatian: ${data.distribusi.risiko}
 - Status perlu segera diperiksa: ${data.distribusi.berat}
-- Belum dinilai: ${data.belumDinilai}
+- Belum pernah ditimbang: ${data.belumDinilai}
+- Sudah ditimbang namun status tidak dapat dinilai: ${data.tidakDapatDinilai}
 
 Anak yang perlu ditindaklanjuti (${data.prioritas.length} anak):
 ${prioritas || "(tidak ada)"}

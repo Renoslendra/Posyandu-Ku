@@ -48,10 +48,31 @@ export interface AnakPrioritas {
 
 export interface RingkasanDashboard {
   totalAnak: number;
-  /** Anak yang punya pengukuran terkonfirmasi. */
+  /**
+   * Anak terdaftar yang punya pengukuran terkonfirmasi.
+   *
+   * Dihitung dengan menyusuri daftar anak, bukan dengan menghitung banyaknya
+   * kunci pada peta pengukuran. Pengukuran yang anaknya tidak ada di daftar,
+   * misalnya karena kueri terpotong batas baris, akan membuat cara kedua
+   * melaporkan angka yang lebih besar daripada jumlah anak terdaftar.
+   */
   sudahDiukur: number;
   distribusi: Record<StatusGizi, number>;
+  /** Anak yang belum pernah ditimbang sama sekali. */
   belumDinilai: number;
+  /**
+   * Anak yang sudah ditimbang tetapi statusnya tidak dapat dihitung.
+   *
+   * Keadaan ini berbeda dari belum pernah ditimbang, dan sebelumnya keduanya
+   * dicampur menjadi satu angka. Percampuran itu menghasilkan laporan yang
+   * bertentangan dengan dirinya sendiri: satu anak dihitung sekaligus sebagai
+   * sudah ditimbang dan belum ditimbang.
+   *
+   * Angka ini perlu tindak lanjut. Status yang tidak dapat dihitung berarti
+   * nilainya di luar rentang tabel rujukan, dan itu petunjuk, bukan ketiadaan
+   * masalah.
+   */
+  tidakDapatDinilai: number;
   /** Anak dengan status berat, pola bermasalah, atau berhenti hadir. */
   prioritas: AnakPrioritas[];
   hilangDariPemantauan: AnakPrioritas[];
@@ -70,6 +91,24 @@ export interface RingkasanDashboard {
  *
  * Dipisahkan dari lapisan basis data agar dapat diuji tanpa koneksi Supabase.
  */
+/**
+ * Membandingkan dua anak menurut lamanya tidak menimbang, terlama lebih dulu.
+ *
+ * Anak yang belum pernah tercatat menimbang ditandai `jedaHari` bernilai -1,
+ * sebab tak terhingga tidak dapat dikirim sebagai JSON. Penandanya harus
+ * diterjemahkan saat membandingkan, bukan diurutkan apa adanya: sebagai bilangan,
+ * -1 adalah nilai terkecil, sehingga pada pengurutan menurun anak itu jatuh ke
+ * dasar daftar, di bawah anak yang terakhir menimbang tiga bulan lalu.
+ *
+ * Itu bertentangan dengan alasan daftar ini dibuat. Keluarga yang tidak pernah
+ * hadir sekali pun justru sering yang paling berisiko, dan bidan membaca daftar
+ * dari atas.
+ */
+function bandingkanJeda(a: AnakPrioritas, b: AnakPrioritas): number {
+  const jeda = (n: number) => (n < 0 ? Number.POSITIVE_INFINITY : n);
+  return jeda(b.jedaHari) - jeda(a.jedaHari);
+}
+
 export function susunRingkasan(
   daftarAnak: BarisAnak[],
   pengukuran: BarisPengukuran[],
@@ -91,6 +130,8 @@ export function susunRingkasan(
 
   const distribusi: Record<StatusGizi, number> = { normal: 0, risiko: 0, berat: 0 };
   let belumDinilai = 0;
+  let tidakDapatDinilai = 0;
+  let sudahDiukur = 0;
   const prioritas: AnakPrioritas[] = [];
   const hilang: AnakPrioritas[] = [];
   const semua: AnakPrioritas[] = [];
@@ -99,8 +140,21 @@ export function susunRingkasan(
     const riwayat = perAnak.get(anak.id) ?? [];
     const terakhir = riwayat.at(-1) ?? null;
 
-    if (!terakhir || terakhir.status === null) {
+    if (terakhir) sudahDiukur += 1;
+
+    /*
+     * Tiga keadaan dibedakan, bukan dua.
+     *
+     * Anak yang sudah ditimbang tetapi statusnya tidak dapat dihitung bukan anak
+     * yang belum ditimbang. Menggabungkan keduanya membuat satu anak masuk dua
+     * ember yang saling meniadakan, dan menghasilkan laporan yang menyatakan
+     * "3 anak sudah ditimbang" berdampingan dengan "1 anak belum ditimbang"
+     * pada total tiga anak.
+     */
+    if (!terakhir) {
       belumDinilai += 1;
+    } else if (terakhir.status === null) {
+      tidakDapatDinilai += 1;
     } else {
       distribusi[terakhir.status] += 1;
     }
@@ -138,16 +192,24 @@ export function susunRingkasan(
     if (alasan.length > 0) prioritas.push(entri);
   }
 
-  // Urutan prioritas: status terburuk lebih dulu, lalu yang paling lama
-  // tidak menimbang. Bidan membaca dari atas dan berhenti kapan pun.
-  const bobot: Record<string, number> = { berat: 3, risiko: 2 };
+  /*
+   * Urutan prioritas: status terburuk lebih dulu, lalu yang paling lama tidak
+   * menimbang. Bidan membaca dari atas dan berhenti kapan pun.
+   *
+   * Status yang tidak dapat dihitung diberi bobot di atas normal. Nilai di luar
+   * rentang tabel rujukan adalah petunjuk yang perlu diperiksa, bukan pertanda
+   * baik, dan sebelumnya anak semacam itu diperlakukan setara anak sehat.
+   */
+  const bobot: Record<string, number> = { berat: 4, risiko: 3, normal: 1 };
+  const nilaiBobot = (status: StatusGizi | null) => bobot[status ?? "tidak_dinilai"] ?? 2;
+
   prioritas.sort((a, b) => {
-    const selisih = (bobot[b.status ?? ""] ?? 1) - (bobot[a.status ?? ""] ?? 1);
+    const selisih = nilaiBobot(b.status) - nilaiBobot(a.status);
     if (selisih !== 0) return selisih;
-    return b.jedaHari - a.jedaHari;
+    return bandingkanJeda(a, b);
   });
 
-  hilang.sort((a, b) => b.jedaHari - a.jedaHari);
+  hilang.sort(bandingkanJeda);
 
   // Daftar lengkap diurutkan menurut nama agar kader dan bidan dapat
   // menyusurinya seperti membaca buku absen posyandu.
@@ -155,9 +217,10 @@ export function susunRingkasan(
 
   return {
     totalAnak: daftarAnak.length,
-    sudahDiukur: perAnak.size,
+    sudahDiukur,
     distribusi,
     belumDinilai,
+    tidakDapatDinilai,
     prioritas,
     hilangDariPemantauan: hilang,
     semuaAnak: semua,

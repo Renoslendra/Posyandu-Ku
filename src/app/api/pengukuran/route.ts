@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { prosesPengukuran } from "@/lib/proses-pengukuran";
 import { pengukuranBaruSchema, pesanGalatPertama } from "@/lib/validasi";
 
@@ -33,6 +33,21 @@ export async function POST(permintaan: Request) {
   }
   const data = terurai.data;
 
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
 
   const { data: pengguna } = await supabase.auth.getUser();
@@ -168,6 +183,27 @@ export async function POST(permintaan: Request) {
     if (galatSimpan.code === "23505") {
       return NextResponse.json({ ok: true, duplikat: true }, { status: 200 });
     }
+
+    /*
+     * Pelanggaran batasan basis data dijawab 400, bukan 500.
+     *
+     * Sebelumnya seluruh kegagalan penyimpanan dilaporkan sebagai galat server,
+     * sehingga data yang memang tidak sah menghasilkan pesan yang tidak
+     * memberitahu apa pun kepada kader. Lebih buruk lagi pada pencatatan tanpa
+     * sinyal: galat 500 dianggap kegagalan sementara, sehingga entri dicoba
+     * berulang sampai batas percobaan lalu dibuang. Catatan penimbangan hilang
+     * karena sesuatu yang tidak akan pernah berhasil dicoba lagi.
+     */
+    if (galatSimpan.code === "23514") {
+      return NextResponse.json(
+        {
+          galat:
+            "Tanggal atau nilai pengukuran tidak diterima. Mohon periksa tanggalnya.",
+        },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json(
       { galat: "Gagal menyimpan pengukuran" },
       { status: 500 },

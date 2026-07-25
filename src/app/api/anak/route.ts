@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { anakBaruSchema, pesanGalatPertama } from "@/lib/validasi";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /**
  * /api/anak — mendaftarkan dan memperbarui data anak.
@@ -30,6 +30,21 @@ export async function POST(permintaan: Request) {
   }
   const data = terurai.data;
 
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 
@@ -74,6 +89,19 @@ export async function POST(permintaan: Request) {
     .single();
 
   if (error) {
+    /*
+     * Pelanggaran batasan basis data dijawab 400 dengan pesan yang menyebut
+     * penyebabnya. Yang paling mungkin terjadi adalah tanggal lahir, sebab
+     * batasan itu dievaluasi pada zona waktu basis data sedangkan formulir
+     * memakai jam perangkat kader. Melaporkannya sebagai galat server membuat
+     * kader mencari kesalahan di tempat yang salah.
+     */
+    if (error.code === "23514") {
+      return NextResponse.json(
+        { galat: "Data tidak diterima. Mohon periksa tanggal lahirnya." },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ galat: "Gagal menyimpan data anak" }, { status: 500 });
   }
 
@@ -107,6 +135,21 @@ export async function PATCH(permintaan: Request) {
   }
   const data = terurai.data;
 
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 

@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { daftarBelanja, susunSaranMenu } from "@/lib/menu";
-import { klienServer } from "@/lib/supabase";
+import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import type { StatusGizi } from "@/lib/gizi/zscore";
+
+/*
+ * Batas durasi fungsi dinyatakan tegas, tidak dibiarkan memakai nilai bawaan.
+ *
+ * Penyusunan narasi memasak memanggil model, sehingga batas bawaan sepuluh detik
+ * dapat terlampaui pada permintaan pertama setelah fungsi dingin.
+ *
+ * Nilai ini harus selalu lebih besar daripada batas waktu di dalam llm.ts,
+ * supaya jalur cadangan aplikasi yang menghasilkan keluaran berguna selalu
+ * mendahului pemutusan oleh platform yang hanya menghasilkan galat gerbang.
+ */
+export const maxDuration = 60;
 
 /**
  * POST /api/menu — menyusun saran menu harian untuk satu anak.
@@ -16,6 +28,21 @@ import type { StatusGizi } from "@/lib/gizi/zscore";
  */
 
 export async function POST(permintaan: Request) {
+  /*
+   * Konfigurasi diperiksa lebih dahulu supaya kegagalan menyebut penyebabnya.
+   *
+   * Pembangun klien melempar pengecualian bila kredensial basis data belum
+   * terisi, dan pengecualian itu keluar sebagai galat server tanpa keterangan.
+   * Halaman biasa sudah memeriksanya, sehingga bila satu variabel lingkungan
+   * terlewat, tampilan terlihat sehat sementara setiap penyimpanan gagal diam
+   * dengan pesan yang menyesatkan.
+   */
+  if (!supabaseTerkonfigurasi()) {
+    return NextResponse.json(
+      { galat: "Basis data belum terhubung." },
+      { status: 503 },
+    );
+  }
   const supabase = await klienServer();
   const { data: pengguna } = await supabase.auth.getUser();
 

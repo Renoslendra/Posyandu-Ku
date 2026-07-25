@@ -179,6 +179,18 @@ export default async function HalamanBidan() {
           </p>
         )}
 
+        {/*
+          Anak yang sudah ditimbang namun statusnya tidak dapat dihitung disebut
+          terpisah, dengan nada yang menuntut tindakan. Nilai di luar rentang tabel
+          rujukan adalah petunjuk, bukan data yang boleh diabaikan.
+        */}
+        {ringkasan.tidakDapatDinilai > 0 && (
+          <p className="pesan-peringatan text-sm mt-0 mb-4 animate-muncul">
+            {ringkasan.tidakDapatDinilai} anak sudah ditimbang namun statusnya tidak
+            dapat dinilai. Mohon periksa kembali hasil ukurnya.
+          </p>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-munculNaik" style={{ animationDelay: '0.2s' }}>
           {/* Left Column: Priority */}
           <section className="lg:col-span-2 flex flex-col gap-4">
