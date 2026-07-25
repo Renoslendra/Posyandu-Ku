@@ -12,7 +12,14 @@
 
 import { AMBANG_Z, BATAS_USIA_PANJANG_BADAN_BULAN } from "./ambang";
 
-export type Indikator = "bb_u" | "tb_u" | "bb_pb" | "bb_tb";
+/**
+ * Indikator antropometri WHO.
+ *
+ * WHO memisahkan panjang badan (telentang) dari tinggi badan (berdiri) karena
+ * hasil keduanya berbeda sekitar 0,7 cm pada anak yang sama. Karena itu
+ * pb_u dan tb_u adalah dua tabel berbeda, demikian pula bb_pb dan bb_tb.
+ */
+export type Indikator = "bb_u" | "pb_u" | "tb_u" | "bb_pb" | "bb_tb";
 export type JenisKelamin = "L" | "P";
 export type StatusGizi = "normal" | "risiko" | "berat";
 
@@ -141,6 +148,23 @@ export function pilihIndikatorBeratTinggi(
   if (diukurTelentang) return "bb_pb";
   if (usiaBulan < BATAS_USIA_PANJANG_BADAN_BULAN) return "bb_pb";
   return "bb_tb";
+}
+
+/**
+ * Menentukan tabel panjang/tinggi menurut umur yang berlaku.
+ *
+ * Sama seperti berat menurut panjang/tinggi, WHO memakai dua tabel: PB/U untuk
+ * pengukuran telentang dan TB/U untuk pengukuran berdiri. Selisih keduanya
+ * sekitar 0,7 cm pada usia yang sama, sehingga pemilihannya tidak boleh
+ * disamakan.
+ */
+export function pilihIndikatorPanjangUsia(
+  usiaBulan: number,
+  diukurTelentang: boolean,
+): "pb_u" | "tb_u" {
+  if (diukurTelentang) return "pb_u";
+  if (usiaBulan < BATAS_USIA_PANJANG_BADAN_BULAN) return "pb_u";
+  return "tb_u";
 }
 
 /**
