@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GrafikPertumbuhan } from "@/components/GrafikPertumbuhan";
 import { LencanaStatus } from "@/components/LencanaStatus";
 import { LogoLengkap } from "@/components/Logo";
+import { SaranMenu } from "@/components/SaranMenu";
 import { analisisPola, statusPemantauan } from "@/lib/gizi/pola";
 import { pilihIndikatorPanjangUsia, type JenisKelamin } from "@/lib/gizi/zscore";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
@@ -158,6 +159,12 @@ export default async function HalamanAnak({
           }))}
         />
       </section>
+
+      {terakhir && (
+        <div className="mt-10">
+          <SaranMenu anakId={anak.id} />
+        </div>
+      )}
 
       <section className="mt-10">
         <h2 className="text-xl font-bold text-slate-900">Riwayat penimbangan</h2>
