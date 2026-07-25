@@ -40,3 +40,27 @@ end $$;
 
 comment on constraint pengukuran_satu_per_tanggal on pengukuran is
   'Satu anak hanya memiliki satu pengukuran per tanggal. Melindungi deteksi pola dan grafik pertumbuhan dari data ganda.';
+
+-- Membetulkan batasan yang tidak menegakkan apa pun.
+--
+-- `ocr_awalnya_belum_dikonfirmasi` pada migrasi 0001 berbunyi:
+--   check (sumber = 'manual' or dikonfirmasi is not null)
+--
+-- Kolom `dikonfirmasi` bertipe not null, sehingga bagian kanan selalu benar dan
+-- batasannya tidak pernah menolak apa pun. Komentarnya menjanjikan sesuatu yang
+-- tidak terjadi, dan batasan yang menjanjikan lebih dari yang ditegakkan lebih
+-- berbahaya daripada tidak ada batasan, karena pembaca berikutnya akan
+-- mengandalkannya.
+--
+-- Jaminan yang sesungguhnya berada di lapisan aplikasi: endpoint /api/import-foto
+-- tidak menulis apa pun, dan /api/import-simpan hanya dapat dipanggil setelah
+-- kader melihat tabel koreksi. Jejak asalnya tetap tersimpan pada kolom `sumber`
+-- sehingga nilai hasil pembacaan mesin selalu dapat dibedakan (FR-10.4).
+--
+-- Batasan lama dihapus dan digantikan komentar yang menyatakan keadaan
+-- sebenarnya, alih-alih dibiarkan memberi rasa aman yang keliru.
+alter table pengukuran
+  drop constraint if exists ocr_awalnya_belum_dikonfirmasi;
+
+comment on column pengukuran.sumber is
+  'Jejak asal nilai: manual bila dicatat langsung kader, ocr_ai bila berasal dari pembacaan foto. Nilai ocr_ai hanya tersimpan setelah kader memeriksanya lewat tabel koreksi; penegakannya di lapisan aplikasi, bukan basis data.';

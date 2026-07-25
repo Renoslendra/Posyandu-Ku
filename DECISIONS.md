@@ -297,3 +297,47 @@ Dua rincian yang muncul dari pengujian:
 Tanda urutan byte disertakan di awal berkas agar Excel di Windows membacanya sebagai UTF-8. Tanpanya huruf beraksen pada nama anak tampil rusak, dan laporan yang tampak rusak akan diragukan isinya.
 
 Penafian "bukan alat diagnosis" ditulis di dalam berkas, bukan hanya di halaman tempat berkas diunduh, karena berkas berpindah tangan terlepas dari antarmukanya.
+
+---
+
+## KP-26: Pencocokan nama menolak menebak
+
+**Keputusan.** Nama hasil pembacaan foto dicocokkan ke anak terdaftar hanya bila kecocokannya tunggal. Bila ada dua calon atau lebih yang menyerupai, sistem menolak memilih dan kader menentukan lewat daftar pilihan.
+
+**Alasan.** Mencocokkan ke anak yang salah berarti menuliskan berat badan seorang anak ke rekam anak lain. Kesalahan itu tidak terlihat setelah tersimpan, dan akibatnya berlapis: anak yang sehat dapat memicu peringatan gizi buruk palsu, sementara anak yang sungguh berisiko tersembunyi di balik angka yang bukan miliknya.
+
+Meminta kader memilih memakan beberapa detik. Memperbaiki data yang tertukar memakan waktu jauh lebih lama, dan hanya mungkin bila kesalahannya disadari.
+
+Normalisasi yang dilakukan terbatas pada hal yang pasti: huruf besar kecil, spasi berlebih, tanda baca, dan sebutan seperti "An." atau "Ananda" yang lazim ditulis kader di depan nama. Kemiripan fonetis dan jarak edit sengaja tidak dipakai, karena keduanya menghasilkan kecocokan yang tampak masuk akal namun tidak dapat dipertanggungjawabkan.
+
+Satu perkecualian yang perlu dicatat: nama "Siti" tetap tercocok ke anak bernama "Siti" meski ada juga "Siti Aminah", karena kecocokan persis diperiksa sebelum kecocokan sebagian.
+
+---
+
+## KP-27: Batasan unik pengukuran per tanggal
+
+**Keputusan.** Menambahkan batasan `unique (anak_id, tanggal)` pada tabel pengukuran, dan menghapus batasan `ocr_awalnya_belum_dikonfirmasi` yang tidak menegakkan apa pun.
+
+**Alasan.** Uji `scripts/uji-import.mjs` menemukan bahwa memfoto halaman yang sama dua kali menghasilkan pengukuran ganda. Penyebabnya: batasan `unique (anak_id, klien_ref)` tidak berlaku ketika `klien_ref` bernilai null, karena PostgreSQL memperlakukan setiap NULL sebagai nilai yang berbeda. Batasan itu bekerja untuk antrean luring yang selalu mengirim `klien_ref`, namun jalur import foto tidak memilikinya.
+
+Akibatnya bukan sekadar baris berlebih. Dua pengukuran pada tanggal sama membuat deteksi berat stagnan membandingkan nilai dengan dirinya sendiri, dan grafik pertumbuhan menampilkan dua titik bertumpuk.
+
+Temuan kedua muncul saat memperbaikinya: batasan `ocr_awalnya_belum_dikonfirmasi` berbunyi `check (sumber = 'manual' or dikonfirmasi is not null)`, sedangkan kolom `dikonfirmasi` bertipe not null. Bagian kanannya selalu benar, sehingga batasan itu tidak pernah menolak apa pun meski komentarnya menjanjikan sebaliknya.
+
+Batasan yang menjanjikan lebih dari yang ditegakkan lebih berbahaya daripada tidak ada batasan, karena pembaca berikutnya akan mengandalkannya. Batasan itu dihapus dan digantikan komentar yang menyatakan keadaan sebenarnya: jaminan bahwa nilai hasil pembacaan mesin melewati mata kader berada di lapisan aplikasi, bukan basis data.
+
+---
+
+## KP-28: Import foto wajib punya langkah simpan
+
+**Keputusan.** Menambahkan endpoint `/api/import-simpan` beserta tombol simpan pada tabel koreksi.
+
+**Alasan.** Pemeriksaan menemukan bahwa tabel hasil pembacaan foto tidak memiliki tombol simpan sama sekali. Kader dapat memfoto, sistem membaca, kader dapat mengoreksi setiap sel, lalu tidak ada cara menyimpannya. Keterangan "Data belum tersimpan" pada antarmuka benar secara permanen.
+
+Ini membuat pembeda utama produk tidak berfungsi: klaim bahwa catatan bertahun-tahun dapat masuk sistem tidak benar tanpa langkah simpan. FR-10.3 dan FR-10.5 pada PRD juga tidak terpenuhi.
+
+Dua pilihan rancangan yang menyertainya:
+
+Setiap baris diproses sendiri-sendiri, bukan sebagai satu transaksi. Kader yang sudah memfoto dan memeriksa sepuluh baris tidak boleh kehilangan sembilan yang benar karena satu yang salah. Baris yang berhasil hilang dari layar, yang gagal ditinggalkan beserta alasannya agar dapat diperbaiki tanpa memfoto ulang.
+
+Z-score dihitung ulang di server memakai fungsi yang sama dengan pencatatan manual. Angka apa pun dari klien tidak dipercaya sebagai hasil perhitungan, sejalan dengan KP-03.

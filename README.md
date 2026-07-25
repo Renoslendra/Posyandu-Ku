@@ -102,6 +102,7 @@ supabase/migrations/0002_rls.sql
 supabase/migrations/0003_grant.sql
 supabase/migrations/0004_telepon_anak.sql
 supabase/migrations/0005_batas_panggilan.sql
+supabase/migrations/0006_pengukuran_unik.sql
 ```
 
 Urutannya penting. Migrasi `0003` wajib dijalankan bila setelan **Automatically expose new tables** dimatikan pada proyek Anda, karena hak akses tabel diberikan secara eksplisit di sana.
@@ -146,7 +147,7 @@ npm run dev
 npm test
 ```
 
-222 pengujian, mencakup:
+241 pengujian, mencakup:
 
 | Berkas | Cakupan |
 |--------|---------|
@@ -159,6 +160,7 @@ npm test
 | `menu.test.ts` | Kelayakan usia, penyesuaian menurut status, biaya tidak berlipat |
 | `laporan.test.ts` | Pengutipan CSV, penafian di dalam berkas, penamaan berkas |
 | `batas-laju.test.ts` | Penolakan setelah ambang, perilaku gagal-terbuka |
+| `cocok-nama.test.ts` | Sebutan di depan nama, nama identik ganda, penolakan menebak |
 | `validasi.test.ts` | Skema masukan, termasuk tanggal yang tidak ada di kalender |
 | `proses-pengukuran.test.ts` | Alur lengkap dari masukan sampai status gizi |
 
@@ -169,7 +171,10 @@ node scripts/uji-rls.mjs          # isolasi data antar peran
 node scripts/uji-alur.mjs         # apa yang terlihat tiap peran setelah masuk
 node scripts/uji-fitur-baru.mjs   # pendaftaran dan perbaikan data anak
 node scripts/uji-batas-laju.mjs   # pembatasan laju bertahan dan tidak dapat dikosongkan
+node scripts/uji-import.mjs       # penyimpanan hasil import foto dan jejak asal data
 ```
+
+Uji terhadap basis data ini menemukan bug nyata: pengukuran ganda pada tanggal yang sama lolos karena batasan unik lama tidak berlaku ketika `klien_ref` bernilai null (KP-27).
 
 Pengujian pada `tabel.test.ts` membandingkan nilai tabel terhadap tabel terbitan WHO: median berat lahir 3,3464 kg (laki-laki), median tinggi 60 bulan 110,0 cm, dan ambang -2 SD pada beberapa titik usia.
 

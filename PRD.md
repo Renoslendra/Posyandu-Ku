@@ -497,6 +497,9 @@ Kriteria penilaian resmi hackathon beserta cara dokumen dan produk ini memenuhin
 | FR-10.1 | Kader dapat mengunggah atau memfoto satu halaman buku tulis posyandu | **Must Have** |
 | FR-10.2 | Sistem memakai LLM vision untuk mengekstrak baris data menjadi struktur: nama, berat, tinggi, tanggal | **Must Have** |
 | FR-10.3 | Hasil ekstraksi ditampilkan dalam tabel yang dapat dikoreksi kader sebelum disimpan | **Must Have** |
+| FR-10.10 | Nama hasil pembacaan dicocokkan ke anak terdaftar; bila ada lebih dari satu calon, sistem menolak memilih dan kader menentukan | **Must Have** |
+| FR-10.11 | Setiap baris disimpan sendiri-sendiri, sehingga satu baris yang gagal tidak menggagalkan sisanya | **Must Have** |
+| FR-10.12 | Kader dapat memotret langsung dengan kamera atau memilih foto tersimpan, sebagai dua tombol terpisah | **Must Have** |
 | FR-10.4 | Setiap nilai menyimpan asal datanya: `manual` atau `ocr_ai` | **Must Have** |
 | FR-10.5 | Nilai berasal dari AI berstatus `belum dikonfirmasi` dan **tidak dihitung** ke statistik maupun peringatan sampai dikonfirmasi kader | **Must Have** |
 | FR-10.6 | Nilai yang belum dikonfirmasi ditandai jelas di antarmuka | **Must Have** |
@@ -557,7 +560,7 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | 3 | Penjaga kualitas data | Input berat 90 kg untuk balita ditolak dengan pesan yang jelas |
 | 4 | Dashboard bidan | Distribusi status gizi tampil, filter status berfungsi, grafik pertumbuhan memuat data nyata dari basis data |
 | 5 | RLS | Kader posyandu A yang mengakses data posyandu B menerima penolakan, dibuktikan lewat uji otomatis |
-| 6 | Import foto | Satu halaman buku tulis menghasilkan tabel terkoreksi, dan nilai belum dikonfirmasi tidak muncul pada statistik |
+| 6 | Import foto | Satu halaman buku tulis menghasilkan tabel terkoreksi, kader menekan simpan, dan data tersimpan dengan jejak asal `ocr_ai`; nilai belum dikonfirmasi tidak muncul pada statistik |
 | 7 | Anak hilang dari pemantauan | Anak dengan kunjungan terakhir lebih dari 90 hari muncul di daftar |
 | 8 | Offline | Input saat mode pesawat tersimpan, lalu muncul di server setelah koneksi kembali |
 | 9 | Ringkasan bulanan | Ringkasan tersusun kurang dari 15 detik; saat kunci LLM dinonaktifkan, versi fallback tetap tampil |
@@ -569,6 +572,9 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | 15 | Laporan bulanan | Bidan mengunduh CSV yang memuat rekapitulasi dan rincian per anak; nama beraksen terbaca benar di Excel; kader dan orang tua menerima penolakan |
 | 16 | Tindak lanjut anak hilang | Nomor telepon tampil pada daftar anak yang berhenti hadir, dan dapat ditekan untuk menelepon dari ponsel |
 | 17 | Pembatasan laju | Penghitung tersimpan di basis data, terbukti menolak setelah ambang terlampaui, dan tidak dapat dikosongkan pengguna |
+| 18 | Pencocokan nama import | Nama yang menyerupai dua anak menghasilkan penolakan memilih, bukan tebakan; kader memilih dari daftar |
+| 19 | Kamera di ponsel | Tombol "Foto dengan kamera" membuka kamera langsung; tombol "Pilih foto tersimpan" membuka galeri |
+| 20 | Pencegahan data ganda | Menyimpan halaman yang sama dua kali tidak menghasilkan pengukuran ganda pada tanggal yang sama |
 
 ---
 
@@ -587,6 +593,8 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | **Unit test pembatasan laju** | Penolakan setelah ambang, pesan menyebutkan lama tunggu, dan perilaku gagal-terbuka saat pemeriksaan bermasalah | `npm test` |
 | **Uji pembatasan laju terhadap basis data** | Penghitung bertahan, terpisah per pengguna dan per endpoint, jendela kedaluwarsa dimulai ulang, pengguna tidak dapat mengosongkannya | `node scripts/uji-batas-laju.mjs` |
 | **Uji fitur pendaftaran dan perbaikan** | Kader dapat menulis, bidan dan orang tua ditolak, data uji dibersihkan | `node scripts/uji-fitur-baru.mjs` |
+| **Unit test pencocokan nama** | Sebutan di depan nama, huruf besar kecil, nama identik ganda, nama tidak ditemukan | `npm test` |
+| **Uji penyimpanan hasil import** | Jejak asal `ocr_ai`, Z-score dihitung ulang, duplikat tanggal ditolak, batas wewenang penulisan | `node scripts/uji-import.mjs` |
 | **Uji manual alur** | Alur lengkap kader, bidan, orang tua pada lingkungan produksi | daftar periksa sebelum pengumpulan |
 
 Keberadaan pengujian ini adalah bukti langsung bagi kriteria penguasaan kompetensi role yang berbobot 30%.
