@@ -388,7 +388,9 @@ Kriteria penilaian resmi hackathon beserta cara dokumen dan produk ini memenuhin
 | FR-02.5 | Dashboard menyediakan fitur pencarian anak berdasarkan nama | **Should Have** |
 | FR-02.6 | Dashboard menampilkan grafik pertumbuhan per anak (berat & tinggi dari waktu ke waktu) | **Must Have** |
 | FR-02.7 | Dashboard menampilkan garis standar WHO pada grafik pertumbuhan | **Must Have** |
-| FR-02.8 | Dashboard menyediakan fitur ekspor laporan ke PDF | **Could Have** |
+| FR-02.8 | Dashboard menyediakan fitur ekspor laporan | **Could Have** — dibangun sebagai CSV, bukan PDF |
+
+> **Catatan FR-02.8.** Laporan diekspor sebagai CSV. Alasannya: berkas ini berakhir di tangan staf dinas kesehatan yang perlu menyalin angkanya ke rekapitulasi mereka sendiri. PDF terlihat lebih resmi namun angkanya harus diketik ulang, sedangkan CSV langsung terbuka di Excel dan dapat diolah. Rinciannya di `DECISIONS.md` KP-25.
 
 ### FR-03: AI Summary & Rekomendasi
 
@@ -564,6 +566,9 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | 12 | Perbaikan data anak | Kader memperbaiki nama yang salah catat; mengubah tanggal lahir memunculkan peringatan bahwa usia riwayat lama tidak dihitung ulang |
 | 13 | Saring dan cari | Penyaringan status menampilkan jumlah per pilihan, termasuk anak yang belum pernah ditimbang; pencarian nama mengabaikan besar kecil huruf |
 | 14 | Saran menu | Total biaya harian tampil dalam rupiah dan tidak berubah meski LLM gagal; anak di bawah 6 bulan tidak mendapat saran menu |
+| 15 | Laporan bulanan | Bidan mengunduh CSV yang memuat rekapitulasi dan rincian per anak; nama beraksen terbaca benar di Excel; kader dan orang tua menerima penolakan |
+| 16 | Tindak lanjut anak hilang | Nomor telepon tampil pada daftar anak yang berhenti hadir, dan dapat ditekan untuk menelepon dari ponsel |
+| 17 | Pembatasan laju | Penghitung tersimpan di basis data, terbukti menolak setelah ambang terlampaui, dan tidak dapat dikosongkan pengguna |
 
 ---
 
@@ -578,6 +583,10 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | **Uji fallback LLM** | Perilaku saat kunci tidak tersedia, saat timeout, dan saat respons tidak sesuai format | `npm test` dengan mock |
 | **Unit test saran menu** | Kelayakan usia di bawah 6 bulan, penyesuaian menurut status, bahan yang diizinkan, biaya tidak berlipat untuk bahan yang sama | `npm test` |
 | **Unit test penyaringan** | Saring per status, anak yang belum dinilai, pencarian tanpa membedakan huruf, gabungan saring dan cari | `npm test` |
+| **Unit test laporan CSV** | Pengutipan nama bermuatan koma, penafian di dalam berkas, jeda hari yang dikosongkan, nama berkas per wilayah dan tanggal | `npm test` |
+| **Unit test pembatasan laju** | Penolakan setelah ambang, pesan menyebutkan lama tunggu, dan perilaku gagal-terbuka saat pemeriksaan bermasalah | `npm test` |
+| **Uji pembatasan laju terhadap basis data** | Penghitung bertahan, terpisah per pengguna dan per endpoint, jendela kedaluwarsa dimulai ulang, pengguna tidak dapat mengosongkannya | `node scripts/uji-batas-laju.mjs` |
+| **Uji fitur pendaftaran dan perbaikan** | Kader dapat menulis, bidan dan orang tua ditolak, data uji dibersihkan | `node scripts/uji-fitur-baru.mjs` |
 | **Uji manual alur** | Alur lengkap kader, bidan, orang tua pada lingkungan produksi | daftar periksa sebelum pengumpulan |
 
 Keberadaan pengujian ini adalah bukti langsung bagi kriteria penguasaan kompetensi role yang berbobot 30%.
@@ -617,7 +626,7 @@ Keberadaan pengujian ini adalah bukti langsung bagi kriteria penguasaan kompeten
 | NFR-03.3 | Kunci API LLM hanya dipakai di sisi server, disimpan di environment variable | Pencarian pada bundel klien tidak menemukan kunci |
 | NFR-03.4 | Input divalidasi di server memakai skema, bukan hanya di klien | Nilai di luar skema ditolak sebelum menyentuh basis data |
 | NFR-03.5 | Seluruh trafik memakai HTTPS | Otomatis pada Vercel |
-| NFR-03.6 | Endpoint LLM dibatasi lajunya per pengguna | Mencegah penyalahgunaan biaya API |
+| NFR-03.6 | Endpoint LLM dibatasi lajunya per pengguna, dengan penghitung yang bertahan lintas invocation serverless | Batas tetap berlaku meski permintaan dilayani proses berbeda; diuji lewat `scripts/uji-batas-laju.mjs` |
 | NFR-03.7 | Gambar buku tulis tidak disimpan permanen | Dihapus setelah ekstraksi |
 
 ### NFR-04: Reliability
@@ -682,6 +691,8 @@ Pendukung yang menyertai MVP:
 | **Saran menu lokal** | Menu berbahan pasar desa beserta biaya. Bahan dan harga dari daftar tetap di kode; LLM hanya menyusun cara memasak |
 | **Pendaftaran dan perbaikan data anak** | Kader mendaftarkan anak baru dan memperbaiki salah catat, dengan peringatan bila tanggal lahir diubah |
 | **Saring status dan cari nama** | Dashboard dapat disaring menurut status gizi, termasuk anak yang belum pernah ditimbang, dan dicari menurut nama |
+| **Laporan bulanan CSV** | Bidan mengunduh rekapitulasi dan rincian per anak, siap dibuka di Excel untuk pelaporan ke dinas kesehatan |
+| **Tindak lanjut anak yang berhenti hadir** | Nomor telepon orang tua tampil pada daftar, dapat langsung ditelepon dari ponsel |
 | **Mode demo aman** | Data sintetis dan respons LLM ter-cache agar demo tetap berjalan saat kuota/API bermasalah |
 | **Deploy publik** | URL produksi di Vercel |
 

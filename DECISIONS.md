@@ -251,3 +251,49 @@ Dua pilihan yang tersedia adalah menyembunyikan masalahnya atau menyatakannya. M
 **Keputusan.** Penyaringan status pada dashboard menyertakan pilihan "Belum ditimbang", di samping tiga status gizi.
 
 **Alasan.** Anak yang belum pernah ditimbang tidak muncul pada penyaringan status mana pun, sehingga justru paling mudah terlupakan. Ini pengulangan pola yang sama dengan anak yang berhenti hadir: yang tidak tercatat tidak terlihat. Memberinya pilihan tersendiri membuat kelompok tersebut dapat ditindaklanjuti.
+
+---
+
+## KP-23: Nomor telepon ditampilkan pada daftar anak yang berhenti hadir
+
+**Keputusan.** Nomor telepon orang tua tampil sebagai tautan `tel:` pada daftar anak yang berhenti menimbang, bukan hanya tersimpan di basis data.
+
+**Alasan.** Pemeriksaan mandiri menemukan ketidakkonsistenan: formulir meminta nomor telepon, basis data menyimpannya, lalu tidak ada satu pun tempat yang menampilkannya. Data yang dikumpulkan tanpa pernah dipakai adalah beban bagi kader yang mengetiknya, bukan manfaat.
+
+Daftar anak yang berhenti hadir adalah tempat nomor itu paling bernilai. Tanpa nomor, bidan hanya dapat melihat siapa yang hilang tanpa cara menjangkaunya, dan deteksi yang tidak dapat ditindaklanjuti berhenti menjadi deteksi.
+
+Memakai tautan `tel:` alih-alih teks yang harus disalin, karena bidan membuka dashboard dari ponsel.
+
+---
+
+## KP-24: Pembatasan laju dipindahkan ke basis data
+
+**Keputusan.** Penghitung pembatasan laju disimpan di tabel `batas_panggilan` melalui fungsi `catat_panggilan`, menggantikan penghitung dalam memori proses.
+
+**Alasan.** Penghitung dalam memori tidak berfungsi pada Vercel: setiap permintaan dapat dilayani proses berbeda, sehingga catatannya hilang dan batasnya tidak pernah tercapai. Batas yang tidak berfungsi lebih buruk daripada tidak ada batas, karena menciptakan keyakinan yang salah bahwa biaya API sudah terlindungi.
+
+Memilih basis data alih-alih Redis agar tidak menambah layanan baru untuk kebutuhan sekecil ini. Volumenya satu baris per pengguna per endpoint.
+
+Dua rincian yang disengaja:
+
+Pemeriksaan dan penambahan terjadi dalam satu pernyataan SQL, sehingga dua permintaan yang datang bersamaan tidak dapat sama-sama lolos melewati batas.
+
+Bila pemeriksaan batas gagal, permintaan **diizinkan**, bukan ditolak. Kegagalan pembatasan laju tidak boleh mematikan fitur yang sedang dipakai kader di lapangan. Risiko yang diterima terbatas pada biaya API, sedangkan menolak permintaan akan menghentikan pekerjaan yang sah. Kegagalannya tetap dicatat ke log agar tidak tertelan diam-diam.
+
+Tabelnya tertutup sepenuhnya bagi pengguna, termasuk untuk membaca penghitungnya sendiri, karena akses baca membuka jalan menuju cara mengosongkannya.
+
+---
+
+## KP-25: Laporan diekspor sebagai CSV, bukan PDF
+
+**Keputusan.** FR-02.8 dipenuhi dengan ekspor CSV. Pustaka pembuat PDF tidak ditambahkan.
+
+**Alasan.** Laporan ini berakhir di tangan staf dinas kesehatan yang perlu menyalin angkanya ke rekapitulasi mereka sendiri. PDF terlihat lebih resmi, namun angka di dalamnya harus diketik ulang, dan pengetikan ulang adalah sumber kesalahan yang justru ingin dihapus produk ini. CSV langsung terbuka di Excel dan dapat diolah.
+
+Pertimbangan kedua: pustaka PDF menambah beban bundel untuk keluaran yang lebih sulit dipakai.
+
+Dua rincian yang muncul dari pengujian:
+
+Tanda urutan byte disertakan di awal berkas agar Excel di Windows membacanya sebagai UTF-8. Tanpanya huruf beraksen pada nama anak tampil rusak, dan laporan yang tampak rusak akan diragukan isinya.
+
+Penafian "bukan alat diagnosis" ditulis di dalam berkas, bukan hanya di halaman tempat berkas diunduh, karena berkas berpindah tangan terlepas dari antarmukanya.

@@ -99,7 +99,12 @@ Buat proyek di [supabase.com](https://supabase.com), lalu jalankan migrasi lewat
 ```
 supabase/migrations/0001_skema_awal.sql
 supabase/migrations/0002_rls.sql
+supabase/migrations/0003_grant.sql
+supabase/migrations/0004_telepon_anak.sql
+supabase/migrations/0005_batas_panggilan.sql
 ```
+
+Urutannya penting. Migrasi `0003` wajib dijalankan bila setelan **Automatically expose new tables** dimatikan pada proyek Anda, karena hak akses tabel diberikan secara eksplisit di sana.
 
 ### 3. Isi environment variable
 
@@ -141,7 +146,7 @@ npm run dev
 npm test
 ```
 
-147 pengujian, mencakup:
+222 pengujian, mencakup:
 
 | Berkas | Cakupan |
 |--------|---------|
@@ -149,10 +154,22 @@ npm test
 | `tabel.test.ts` | Kesesuaian tabel terhadap angka terbitan WHO, pemilihan indikator |
 | `penjaga-data.test.ts` | Penolakan nilai mustahil, penandaan nilai yang patut diperiksa |
 | `pola.test.ts` | Deteksi berat stagnan, anak berhenti menimbang |
-| `dashboard.test.ts` | Agregasi, urutan prioritas, penyaringan data belum dikonfirmasi |
+| `dashboard.test.ts` | Agregasi, urutan prioritas, penyaringan status, pencarian nama |
 | `ringkasan.test.ts` | Jalur fallback saat LLM gagal |
+| `menu.test.ts` | Kelayakan usia, penyesuaian menurut status, biaya tidak berlipat |
+| `laporan.test.ts` | Pengutipan CSV, penafian di dalam berkas, penamaan berkas |
+| `batas-laju.test.ts` | Penolakan setelah ambang, perilaku gagal-terbuka |
 | `validasi.test.ts` | Skema masukan, termasuk tanggal yang tidak ada di kalender |
 | `proses-pengukuran.test.ts` | Alur lengkap dari masukan sampai status gizi |
+
+Selain itu, empat skrip menguji terhadap basis data sungguhan, bukan mock:
+
+```bash
+node scripts/uji-rls.mjs          # isolasi data antar peran
+node scripts/uji-alur.mjs         # apa yang terlihat tiap peran setelah masuk
+node scripts/uji-fitur-baru.mjs   # pendaftaran dan perbaikan data anak
+node scripts/uji-batas-laju.mjs   # pembatasan laju bertahan dan tidak dapat dikosongkan
+```
 
 Pengujian pada `tabel.test.ts` membandingkan nilai tabel terhadap tabel terbitan WHO: median berat lahir 3,3464 kg (laki-laki), median tinggi 60 bulan 110,0 cm, dan ambang -2 SD pada beberapa titik usia.
 
@@ -243,11 +260,13 @@ Kredensial dikelola Supabase Auth; aplikasi tidak menyimpan maupun menangani kat
 
 ## Cakupan
 
-**Dibangun (MVP):** input pengukuran dengan penjaga kualitas data, mesin Z-score WHO, dashboard bidan, autentikasi dan RLS tiga peran, import foto buku tulis dengan jejak asal data, deteksi anak berhenti menimbang, kemampuan offline. Ditambah ringkasan bulanan dengan fallback.
+**Tujuh fitur inti:** input pengukuran dengan penjaga kualitas data, mesin Z-score WHO, dashboard bidan, autentikasi dan RLS tiga peran, import foto buku tulis dengan jejak asal data, deteksi anak berhenti menimbang, kemampuan offline.
+
+**Pendukung:** ringkasan bulanan dengan fallback, saran menu berbahan pasar desa, pendaftaran dan perbaikan data anak, penyaringan status dan pencarian nama, laporan bulanan CSV, tindak lanjut lewat nomor telepon.
 
 **Sengaja ditunda:** chatbot, tombol darurat GPS, cerita komunitas, prediksi ML, integrasi WhatsApp/SMS, ekspor e-PPGBM, dan lainnya. Alasan masing-masing ada di [`DECISIONS.md`](./DECISIONS.md).
 
-Cakupan dipersempit dari 14 fitur menjadi 7 secara sadar: fitur yang berfungsi setengah menurunkan kegunaan produk lebih besar daripada fitur yang ditunda dengan alasan tertulis.
+Cakupan dipersempit dari 14 fitur berlabel Must Have menjadi tujuh fitur inti secara sadar: fitur yang berfungsi setengah menurunkan kegunaan produk lebih besar daripada fitur yang ditunda dengan alasan tertulis.
 
 ---
 
