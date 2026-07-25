@@ -213,3 +213,41 @@ Ini menjadikan digitalisasi bukan sekadar memindahkan catatan, tetapi memunculka
 **Keputusan.** Menambahkan `*.pptx.pdf` ke `.gitignore`.
 
 **Alasan.** Berkas panduan hackathon bertanda "confidential" dari penyelenggara. Repositori ini akan bersifat publik, sehingga materi tersebut tidak boleh ikut terunggah.
+
+---
+
+## KP-19: Harga menu tidak diserahkan ke LLM
+
+**Keputusan.** Bahan pangan, takaran, dan harganya berasal dari daftar tetap di `src/lib/menu.ts`. LLM hanya menyusun cara memasak dan kalimatnya. Total biaya dihitung kode.
+
+**Alasan.** Model akan mengarang angka rupiah yang terdengar masuk akal namun tidak dapat dipertanggungjawabkan. Ini bukan sekadar soal ketepatan: menu yang biayanya salah membuat orang tua datang ke pasar dengan uang yang tidak cukup, lalu berhenti mempercayai sarannya. Kegagalan seperti itu lebih merugikan daripada tidak ada saran sama sekali.
+
+Konsekuensi yang diterima: menu tidak dapat menyesuaikan diri dengan bahan yang tidak ada di daftar. Ditukar dengan biaya yang selalu dapat dipertanggungjawabkan.
+
+Turunan lain dari keputusan ini: bila LLM gagal, yang hilang hanya petunjuk memasaknya. Menu, bahan, dan biaya tetap tampil utuh.
+
+---
+
+## KP-20: Bayi di bawah 6 bulan tidak mendapat saran menu
+
+**Keputusan.** `kerangkaMenu` mengembalikan nilai kosong untuk usia di bawah 6 bulan, dan antarmuka menampilkan arahan untuk berkonsultasi dengan bidan.
+
+**Alasan.** Pada usia tersebut air susu ibu sudah mencukupi, dan pemberian makanan justru berisiko. Menampilkan saran menu di situ bukan fitur yang kurang berguna, melainkan anjuran yang berbahaya. Batas ini ditegakkan kode dan diuji, bukan diserahkan pada perintah kepada model.
+
+---
+
+## KP-21: Mengubah tanggal lahir tidak menghitung ulang riwayat
+
+**Keputusan.** Kader dapat memperbaiki tanggal lahir, namun Z-score pada pengukuran lama tidak dihitung ulang. Yang dilakukan adalah memunculkan peringatan bahwa status gizi lama mungkin tidak lagi sesuai, dan menganjurkan penimbangan ulang.
+
+**Alasan.** Perhitungan ulang seluruh riwayat memerlukan pekerjaan latar belakang dan penanganan kegagalan sebagian, dan itu tidak selesai dalam waktu tersedia dengan mutu yang dapat dipertanggungjawabkan.
+
+Dua pilihan yang tersedia adalah menyembunyikan masalahnya atau menyatakannya. Menyembunyikannya berarti bidan membaca status gizi yang salah tanpa tahu bahwa itu salah. Menyatakannya membuat kader tahu apa yang perlu dilakukan. Data yang diketahui keliru lebih aman daripada data keliru yang tampak benar.
+
+---
+
+## KP-22: Anak yang belum pernah ditimbang mendapat saringannya sendiri
+
+**Keputusan.** Penyaringan status pada dashboard menyertakan pilihan "Belum ditimbang", di samping tiga status gizi.
+
+**Alasan.** Anak yang belum pernah ditimbang tidak muncul pada penyaringan status mana pun, sehingga justru paling mudah terlupakan. Ini pengulangan pola yang sama dengan anak yang berhenti hadir: yang tidak tercatat tidak terlihat. Memberinya pilihan tersendiri membuat kelompok tersebut dapat ditindaklanjuti.

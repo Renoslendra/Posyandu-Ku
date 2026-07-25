@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # PosyanduKu — Asisten Digital Kader Posyandu
 
-**Versi**: 3.0
+**Versi**: 3.1
 **Event**: 10th IndonesiaNEXT 2026 Hackathon by Telkomsel
 **Role**: Hacker (Full-stack MVP)
 **Format**: Hackathon Individu — 24 jam, satu karya per peserta
@@ -89,16 +89,16 @@ Panduan menetapkan enam keluaran untuk role Hacker. Berikut pemenuhannya:
 |----|------------------|-----------|---------------------------|
 | 1 | Full-stack MVP, deploy ke URL publik | Next.js App Router, deploy Vercel | URL produksi di README |
 | 2 | Pipeline penuh + database (Supabase) | PostgreSQL + Auth + RLS 3 peran | Migrasi SQL di `supabase/migrations/` |
-| 3 | LLM API | Vision untuk import foto, teks untuk ringkasan bulanan | `app/api/import/` dan `app/api/summary/` |
+| 3 | LLM API | Vision untuk import foto; teks untuk ringkasan bulanan dan saran menu | `src/app/api/import-foto/`, `src/app/api/ringkasan/`, `src/app/api/menu/` |
 | 4 | GitHub commit history | Commit bertahap per fitur, bukan satu dump | `git log` |
-| 5 | No-hardcode | Kredensial di environment variable, data contoh lewat skrip seed | `.env.example`, `supabase/seed.sql` |
+| 5 | No-hardcode | Kredensial di environment variable, data contoh lewat skrip seed | `.env.example`, `scripts/seed.mjs` |
 | 6 | PRD.md | Dokumen ini | `PRD.md` |
 
 Panduan juga menyatakan:
 
 > "Penilaian tidak hanya melihat kerumitan teknis — yang utama adalah fungsi, relevansi terhadap masalah, dan logika di balik setiap keputusan."
 
-Karena itu cakupan dipersempit secara sengaja dari 14 fitur menjadi 7 fitur yang berfungsi utuh. Alasan setiap fitur yang ditunda dicatat di `DECISIONS.md`.
+Karena itu cakupan dipersempit secara sengaja dari 14 fitur menjadi 7 fitur inti yang berfungsi utuh, ditambah lima pendukung. Alasan setiap fitur yang ditunda dicatat di `DECISIONS.md`.
 
 ---
 
@@ -187,7 +187,7 @@ Kriteria penilaian resmi hackathon beserta cara dokumen dan produk ini memenuhin
 |-------|--------------------|-----------------------------|
 | **30%** | Penguasaan kompetensi role (Hacker) | Mesin Z-score deterministik dengan golden test; RLS diuji lintas pengguna; sinkronisasi offline; fallback saat LLM gagal; pemisahan tegas antara perhitungan (kode) dan penarasian (LLM) |
 | **20%** | Pemahaman masalah | Analisis kompetitor bernama (e-PPGBM, ASIK, Primaku) beserta kelemahan spesifiknya; dua kesenjangan yang belum dijawab siapa pun (data lama, anak yang berhenti hadir) |
-| **20%** | Kualitas & kegunaan output | 7 fitur berfungsi utuh tanpa jalan buntu; kriteria penerimaan yang dapat diuji; mode demo aman |
+| **20%** | Kualitas & kegunaan output | 7 fitur inti dan 5 pendukung berfungsi utuh tanpa jalan buntu; 14 kriteria penerimaan yang dapat diuji; mode demo aman |
 | **15%** | Orisinalitas pendekatan | Deteksi anak yang hilang dari pemantauan; jejak asal data dengan konfirmasi kader; import lewat foto buku tulis |
 | **15%** | Kejelasan penyampaian | PRD ini, `DECISIONS.md` berisi alasan setiap keputusan, README, dan video demo 3 menit |
 
@@ -392,6 +392,10 @@ Kriteria penilaian resmi hackathon beserta cara dokumen dan produk ini memenuhin
 
 ### FR-03: AI Summary & Rekomendasi
 
+> **Status: dibangun, dengan satu penyimpangan yang disengaja.** FR-03.3 menyebut LLM yang menyusun saran menu, namun **harga dan bahan tidak diserahkan ke LLM**. Keduanya berasal dari daftar tetap di `src/lib/menu.ts`; LLM hanya menyusun cara memasak dan kalimatnya. Alasannya: model akan mengarang angka rupiah yang terdengar masuk akal namun tidak dapat dipertanggungjawabkan, dan menu yang biayanya salah membuat orang tua gagal berbelanja. FR-03.7 (deteksi pola) juga dikerjakan kode deterministik, bukan LLM.
+>
+> FR-03.6 (kandungan gizi) dipenuhi dalam bentuk sederhana: setiap bahan menyertakan alasan singkat mengapa dipilih ("protein dan zat besi"), bukan tabel gizi lengkap. Angka gram nutrien memerlukan basis data komposisi pangan yang belum diverifikasi.
+
 | ID | Requirement | Priority |
 |----|-------------|----------|
 | FR-03.1 | Sistem menggunakan LLM untuk generate ringkasan bulanan (total anak, distribusi status gizi, yang perlu ditindaklanjuti) | **Must Have** |
@@ -556,6 +560,10 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | 8 | Offline | Input saat mode pesawat tersimpan, lalu muncul di server setelah koneksi kembali |
 | 9 | Ringkasan bulanan | Ringkasan tersusun kurang dari 15 detik; saat kunci LLM dinonaktifkan, versi fallback tetap tampil |
 | 10 | Keamanan | Tidak ada kunci API pada bundel klien, diperiksa lewat pencarian pada hasil build |
+| 11 | Pendaftaran anak | Kader mendaftarkan anak baru, dan anak tersebut langsung muncul pada pilihan formulir penimbangan |
+| 12 | Perbaikan data anak | Kader memperbaiki nama yang salah catat; mengubah tanggal lahir memunculkan peringatan bahwa usia riwayat lama tidak dihitung ulang |
+| 13 | Saring dan cari | Penyaringan status menampilkan jumlah per pilihan, termasuk anak yang belum pernah ditimbang; pencarian nama mengabaikan besar kecil huruf |
+| 14 | Saran menu | Total biaya harian tampil dalam rupiah dan tidak berubah meski LLM gagal; anak di bawah 6 bulan tidak mendapat saran menu |
 
 ---
 
@@ -568,6 +576,8 @@ Setiap butir dapat diperiksa langsung pada aplikasi yang sudah dideploy.
 | **Unit test deteksi pola** | Berat stagnan 2 kali, data kurang dari 3 titik, jeda kunjungan lebih dari 90 hari | `npm test` |
 | **Uji RLS** | Akses lintas posyandu, lintas peran, dan orang tua terhadap anak orang lain | skrip uji terhadap Supabase |
 | **Uji fallback LLM** | Perilaku saat kunci tidak tersedia, saat timeout, dan saat respons tidak sesuai format | `npm test` dengan mock |
+| **Unit test saran menu** | Kelayakan usia di bawah 6 bulan, penyesuaian menurut status, bahan yang diizinkan, biaya tidak berlipat untuk bahan yang sama | `npm test` |
+| **Unit test penyaringan** | Saring per status, anak yang belum dinilai, pencarian tanpa membedakan huruf, gabungan saring dan cari | `npm test` |
 | **Uji manual alur** | Alur lengkap kader, bidan, orang tua pada lingkungan produksi | daftar periksa sebelum pengumpulan |
 
 Keberadaan pengujian ini adalah bukti langsung bagi kriteria penguasaan kompetensi role yang berbobot 30%.
@@ -669,7 +679,9 @@ Pendukung yang menyertai MVP:
 | Pendukung | Deskripsi |
 |-----------|-----------|
 | **Ringkasan bulanan (LLM)** | Narasi ringkasan untuk bidan, dengan fallback deterministik bila LLM gagal |
-| **Saran menu lokal (LLM)** | Menu berbahan pasar desa beserta estimasi biaya |
+| **Saran menu lokal** | Menu berbahan pasar desa beserta biaya. Bahan dan harga dari daftar tetap di kode; LLM hanya menyusun cara memasak |
+| **Pendaftaran dan perbaikan data anak** | Kader mendaftarkan anak baru dan memperbaiki salah catat, dengan peringatan bila tanggal lahir diubah |
+| **Saring status dan cari nama** | Dashboard dapat disaring menurut status gizi, termasuk anak yang belum pernah ditimbang, dan dicari menurut nama |
 | **Mode demo aman** | Data sintetis dan respons LLM ter-cache agar demo tetap berjalan saat kuota/API bermasalah |
 | **Deploy publik** | URL produksi di Vercel |
 
@@ -916,3 +928,15 @@ Aplikasi ini adalah **alat bantu kader posyandu**, bukan alat diagnosis.
 | **3.0** | Menyesuaikan diri dengan panduan resmi hackathon: memperbaiki bobot kriteria penilaian, tanggal dan durasi, angka prevalensi yang tidak konsisten, serta rujukan standar WHO yang salah rentang usia. Menambahkan ringkasan solusi, penjelasan relevansi tema, pemetaan deliverable role Hacker, kriteria penerimaan, rencana pengujian, ambang batas algoritma, pembagian peran kode dan LLM, kebijakan privasi, ketahanan layanan LLM, risiko, pertanyaan terbuka, dan glosarium. Menambahkan FR-10 sampai FR-13. Mempersempit cakupan dari 14 fitur menjadi 7 fitur MVP, dengan alasan penundaan tertulis untuk sisanya. |
 
 Alasan di balik setiap keputusan teknis dicatat terpisah di `DECISIONS.md`.
+
+### Catatan versi 3.1
+
+Versi ini menutup selisih antara dokumen dan kode yang ditemukan saat pemeriksaan mandiri. Tiga hal diperbaiki:
+
+| No | Selisih pada versi 3.0 | Penanganan |
+|----|------------------------|------------|
+| 1 | Saran menu lokal dicantumkan sebagai pendukung MVP, namun belum ada di kode | Dibangun (`src/lib/menu.ts`, `src/app/api/menu/`), dengan harga dan bahan dari daftar tetap di kode alih-alih dari LLM |
+| 2 | Path rujukan salah: `app/api/import/`, `app/api/summary/`, `supabase/seed.sql` | Dibetulkan menjadi `src/app/api/import-foto/`, `src/app/api/ringkasan/`, `scripts/seed.mjs` |
+| 3 | Empat butir Must Have belum ada: pendaftaran anak (FR-01.1), saring status (FR-02.4), cari nama (FR-02.5), perbaikan data anak (FR-04.6) | Keempatnya dibangun |
+
+Pilihan yang diambil adalah membangun yang kurang, bukan menurunkan klaim dokumen. Alasannya: penguji yang membaca PRD lalu membuka aplikasi akan menemukan selisihnya, dan dokumen yang menjanjikan lebih dari yang ada merugikan kriteria kejelasan penyampaian lebih besar daripada cakupan yang lebih sempit namun jujur.
