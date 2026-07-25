@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Navbar } from "@/components/Navbar";
+import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import {
   IkonCariOrang,
@@ -133,7 +133,7 @@ const PERAN = [
 export default function HomePage() {
   return (
     <>
-      <Navbar />
+      <BilahNavigasi />
 
       <main id="isi" className="mx-auto max-w-6xl px-4 pb-8">
         {/* ── Kepala halaman ───────────────────────────────────────────── */}

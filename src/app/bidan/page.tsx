@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { DaftarAnak } from "@/components/DaftarAnak";
-import { Navbar } from "@/components/Navbar";
+import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { TombolRingkasan } from "@/components/TombolRingkasan";
+import { wajibPeran } from "@/lib/sesi";
 import {
   IkonBahaya,
   IkonCariOrang,
@@ -46,17 +47,20 @@ export default async function HalamanBidan() {
     );
   }
 
-  const supabase = await klienServer();
-  const { data: pengguna } = await supabase.auth.getUser();
+  /*
+   * Hanya bidan. Kader yang menekan tautan ini dialihkan ke halaman
+   * pencatatannya, bukan disuguhi halaman pemantauan yang kosong.
+   */
+  const sesi = await wajibPeran(["bidan"]);
 
-  if (!pengguna.user) {
+  if (!sesi) {
     return (
-      <PagarBelumMasuk
-        peran="Bidan"
-        pesan="Halaman pemantauan hanya dapat dibuka oleh bidan yang sudah masuk."
+      <PagarBelumMasuk pesan="Halaman pemantauan hanya dapat dibuka oleh bidan yang sudah masuk."
       />
     );
   }
+
+  const supabase = await klienServer();
 
   // RLS membatasi kedua kueri ini pada wilayah bidan yang sedang masuk.
   const [{ data: anak }, { data: pengukuran }] = await Promise.all([
@@ -116,7 +120,7 @@ export default async function HalamanBidan() {
 
   return (
     <>
-      <Navbar />
+      <BilahNavigasi />
 
       {/*
         Tanpa pt besar: bilah navigasi memakai sticky, bukan fixed, sehingga

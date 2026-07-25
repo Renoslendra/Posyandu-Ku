@@ -369,3 +369,31 @@ Pemisahan ini memungkinkan kader mendata anak lebih dahulu, misalnya saat kunjun
 **Yang belum ada, dan diakui.** Cara orang tua ditautkan ke anaknya di lapangan belum dirancang. Penautan dilakukan lewat kolom `anak.orang_tua_id`, dan pada lingkungan demo diisi skrip. Siapa yang berwenang menautkan, serta bagaimana memastikan akun yang ditautkan benar-benar milik orang tua anak tersebut, belum dijawab. Ini bertalian dengan mekanisme persetujuan orang tua yang juga sudah diakui belum ada pada MVP.
 
 Nama yang mirip diperingatkan tetapi tidak ditolak saat pendaftaran. Dua anak bernama sama di satu posyandu adalah kejadian wajar, sehingga penolakan otomatis akan menghalangi pencatatan yang sah. Keputusannya diserahkan kepada kader, yang mengenal warganya.
+
+## KP-31: Antarmuka mengikuti peran, bukan hanya basis datanya
+
+**Keputusan.** Menambahkan pembacaan sesi di sisi server, penyaringan tautan navigasi menurut peran, pengalihan bila peran membuka halaman yang bukan haknya, dan fitur keluar.
+
+**Alasan.** Pemeriksaan menemukan bahwa pemisahan peran hanya ditegakkan di basis data. Setiap halaman memeriksa apakah ada pengguna yang masuk, tetapi tidak memeriksa perannya. Akibatnya terkumpul empat cacat yang saling memperburuk.
+
+Pertama, tidak ada cara keluar. Folder `src/app/api/keluar` ada tetapi kosong, dan `signOut` tidak pernah dipanggil di mana pun. Pengguna yang sudah masuk tidak dapat mengakhiri sesinya dari dalam aplikasi. Satu-satunya cara berpindah peran adalah masuk kembali, yang hanya berhasil karena `signInWithPassword` menimpa sesi sebelumnya.
+
+Kedua, bilah navigasi selalu menampilkan tombol "Masuk", termasuk kepada pengguna yang baru saja masuk. Aplikasi seolah melupakan siapa yang sedang memakainya.
+
+Ketiga, tautan ke halaman semua peran ditampilkan kepada semua orang. Orang tua melihat tautan "Catat" dan "Pemantauan" yang bukan haknya.
+
+Keempat, halaman peran dapat dibuka peran mana pun. Orang tua yang membuka halaman pemantauan bidan mendapat kerangka halaman lengkap dengan isi kosong, sebab RLS menyaring datanya tanpa memberi tahu bahwa ia salah halaman. Yang lebih janggal terjadi pada arah sebaliknya: kader yang membuka halaman orang tua melihat seluruh anak di posyandunya disajikan dengan nada bicara untuk orang tua, lengkap dengan anjuran "bawa anak Anda ke bidan". RLS tidak mencegahnya karena kader memang berhak membaca data itu; yang salah adalah halamannya.
+
+**Batas yang perlu dinyatakan.** Pemeriksaan peran di aplikasi adalah lapisan kejelasan, bukan lapisan keamanan. Penjaga sesungguhnya tetap RLS di basis data, dan itu tidak berubah. Bila pemeriksaan di aplikasi dilewati, pengguna tetap tidak dapat membaca data di luar wewenangnya. Tugas lapisan ini hanya mengantar pengguna ke halaman yang tepat.
+
+Karena itu peran yang salah dialihkan, bukan ditolak dengan pesan galat. Pengguna yang menekan tautan yang bukan haknya lebih tertolong bila diantar ke tempat yang benar daripada dihadapkan pada layar penolakan.
+
+**Rincian rancangan yang menyertainya.**
+
+Keluar dikerjakan lewat Route Handler dengan POST, bukan dari komponen klien. Cookie sesi ditandai httpOnly sehingga hanya server yang dapat menghapusnya; memanggil `signOut()` di peramban akan membersihkan penyimpanan lokal namun meninggalkan cookie, dan pengguna kembali masuk sendiri pada muat berikutnya. Permintaan GET sengaja tidak dilayani, sebab tautan yang dapat diambil peramban akan membuat pengguna keluar tanpa berbuat apa pun, misalnya karena pemuatan awal.
+
+Galat dari `signOut` tidak diteruskan sebagai kegagalan. Bila token sudah kedaluwarsa, Supabase mengembalikan galat padahal hasil yang diinginkan pengguna justru sudah tercapai. Menampilkan pesan gagal pada keadaan itu membuat pengguna mengira dirinya masih masuk.
+
+Pengguna yang memiliki sesi tetapi tidak memiliki baris `profil` tidak dialihkan ke mana pun. Tidak ada halaman peran yang dapat menerimanya, sehingga pengalihan hanya akan memantulkannya berulang kali. Keadaan ini nyata, sebagaimana dicatat pada KP-29.
+
+Pembantu yang tidak membutuhkan konteks permintaan dipisahkan ke `lib/peran.ts`, terpisah dari `lib/sesi.ts` yang menarik `next/headers`. Pemisahan itu membuat aturan siapa boleh membuka apa dapat diuji langsung, dan 17 pengujian baru menegakkannya, termasuk satu yang menangkap keadaan mustahil berupa peran yang dialihkan ke halaman yang justru akan memantulkannya kembali.

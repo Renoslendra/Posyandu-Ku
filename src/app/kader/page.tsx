@@ -2,9 +2,10 @@ import Link from "next/link";
 import { FormAnakBaru } from "@/components/FormAnakBaru";
 import { FormPengukuran } from "@/components/FormPengukuran";
 import { ImportFoto } from "@/components/ImportFoto";
-import { Navbar } from "@/components/Navbar";
+import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
+import { wajibPeran } from "@/lib/sesi";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 
 /**
@@ -30,17 +31,21 @@ export default async function HalamanKader() {
     );
   }
 
-  const supabase = await klienServer();
-  const { data: pengguna } = await supabase.auth.getUser();
+  /*
+   * Hanya kader. Peran lain dialihkan ke halamannya sendiri, bukan ditolak,
+   * sebab pengguna yang tersesat lebih tertolong bila diantar ke tempat yang
+   * benar. RLS tetap menjadi penjaga sesungguhnya.
+   */
+  const sesi = await wajibPeran(["kader"]);
 
-  if (!pengguna.user) {
+  if (!sesi) {
     return (
-      <PagarBelumMasuk
-        peran="Kader"
-        pesan="Halaman pencatatan hanya dapat dibuka oleh kader yang sudah masuk."
+      <PagarBelumMasuk pesan="Halaman pencatatan hanya dapat dibuka oleh kader yang sudah masuk."
       />
     );
   }
+
+  const supabase = await klienServer();
 
   const { data: anak } = await supabase
     .from("anak")
@@ -58,7 +63,7 @@ export default async function HalamanKader() {
 
   return (
     <>
-      <Navbar />
+      <BilahNavigasi />
 
       {/*
         Tanpa pt besar: bilah navigasi memakai sticky, bukan fixed, sehingga

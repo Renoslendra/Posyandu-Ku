@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Navbar } from "./Navbar";
+import { BilahNavigasi } from "./BilahNavigasi";
 import { Footer } from "./Footer";
 import { IkonPeringatan } from "./Ikon";
 
@@ -18,17 +18,19 @@ import { IkonPeringatan } from "./Ikon";
  */
 
 export function PagarBelumMasuk({
-  peran,
   pesan,
 }: {
-  /** Ditampilkan pada bilah navigasi agar pengguna tahu halaman apa ini. */
-  peran: string;
-  /** Menjelaskan siapa yang berhak membuka halaman ini. */
+  /**
+   * Menjelaskan siapa yang berhak membuka halaman ini.
+   *
+   * Peran tidak lagi diterima sebagai prop: bilah navigasi kini membaca sesi
+   * sendiri, dan pada halaman ini justru belum ada sesi untuk ditampilkan.
+   */
   pesan: string;
 }) {
   return (
     <>
-      <Navbar peran={peran} />
+      <BilahNavigasi />
 
       <main id="isi" className="mx-auto max-w-md px-4 py-16">
         <div className="kartu p-7 text-center">
@@ -53,7 +55,7 @@ export function PagarBelumMasuk({
 export function PagarBelumTerhubung({ pesan }: { pesan: React.ReactNode }) {
   return (
     <>
-      <Navbar />
+      <BilahNavigasi />
 
       <main id="isi" className="mx-auto max-w-xl px-4 py-16">
         <div className="kartu border-status-risiko-garis bg-status-risiko-lembut p-7">

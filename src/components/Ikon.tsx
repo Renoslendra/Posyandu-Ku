@@ -278,6 +278,15 @@ export function IkonTelepon({ className }: Props) {
 
 /* ── Navigasi ─────────────────────────────────────────────────────────── */
 
+export function IkonBeranda({ className }: Props) {
+  return (
+    <Svg className={className}>
+      <path d="M3.5 10.5L12 3.5l8.5 7v9.5h-17V10.5z" />
+      <path d="M9.5 20.5v-6h5v6" />
+    </Svg>
+  );
+}
+
 export function IkonPanahKanan({ className }: Props) {
   return (
     <Svg className={className}>

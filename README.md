@@ -235,6 +235,19 @@ node scripts/uji-import.mjs       # penyimpanan hasil import foto dan jejak asal
 
 Uji terhadap basis data ini menemukan bug nyata: pengukuran ganda pada tanggal yang sama lolos karena batasan unik lama tidak berlaku ketika `klien_ref` bernilai null (KP-27).
 
+Satu skrip lagi menguji perilaku sesi terhadap server yang sedang berjalan, memakai
+permintaan HTTP dan cookie sungguhan sebab yang diuji justru penanganan cookie sesi:
+
+```bash
+npm run start      # di jendela terminal lain
+npm run uji:sesi
+```
+
+Ke-32 pemeriksaannya menegakkan hal-hal yang tidak terlihat pada pengujian unit:
+pengguna yang sudah masuk tidak lagi ditawari tombol masuk, peran yang membuka
+halaman bukan haknya dialihkan ke halamannya sendiri, tombol keluar benar-benar
+mengakhiri sesi, dan `/api/keluar` menolak permintaan GET.
+
 Pengujian pada `tabel.test.ts` membandingkan nilai tabel terhadap tabel terbitan WHO: median berat lahir 3,3464 kg (laki-laki), median tinggi 60 bulan 110,0 cm, dan ambang -2 SD pada beberapa titik usia.
 
 Pengujian ini menemukan dua kesalahan nyata selama pembangunan: pencampuran tabel panjang badan dengan tinggi badan (KP-07), dan tanggal seperti `2024-02-31` yang lolos validasi karena JavaScript menggulirkannya menjadi 2 Maret.

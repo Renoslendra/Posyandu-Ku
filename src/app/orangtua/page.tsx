@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { LencanaStatus } from "@/components/LencanaStatus";
-import { Navbar } from "@/components/Navbar";
+import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
+import { wajibPeran } from "@/lib/sesi";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { statusPemantauan } from "@/lib/gizi/pola";
 import type { StatusGizi } from "@/lib/gizi/zscore";
@@ -32,17 +33,24 @@ export default async function HalamanOrangTua() {
     );
   }
 
-  const supabase = await klienServer();
-  const { data: pengguna } = await supabase.auth.getUser();
+  /*
+   * Hanya orang tua. Kader dan bidan dialihkan ke halamannya sendiri.
+   *
+   * Tanpa pemeriksaan ini, kader yang membuka halaman ini akan melihat seluruh
+   * anak di posyandunya disajikan dengan nada bicara untuk orang tua, lengkap
+   * dengan anjuran "bawa anak Anda ke bidan". RLS tidak mencegahnya karena
+   * kader memang berhak membaca data itu; yang salah adalah halamannya.
+   */
+  const sesi = await wajibPeran(["orang_tua"]);
 
-  if (!pengguna.user) {
+  if (!sesi) {
     return (
-      <PagarBelumMasuk
-        peran="Orang tua"
-        pesan="Masuk untuk melihat perkembangan anak Anda."
+      <PagarBelumMasuk pesan="Masuk untuk melihat perkembangan anak Anda."
       />
     );
   }
+
+  const supabase = await klienServer();
 
   const { data: anak } = await supabase
     .from("anak")
@@ -66,7 +74,7 @@ export default async function HalamanOrangTua() {
 
   return (
     <>
-      <Navbar peran="Orang tua" />
+      <BilahNavigasi />
 
       <main id="isi" className="mx-auto max-w-2xl px-4 pb-16">
         <div className="pt-8">

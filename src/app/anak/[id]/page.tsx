@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { FormEditAnak } from "@/components/FormEditAnak";
 import { GrafikPertumbuhan } from "@/components/GrafikPertumbuhan";
 import { LencanaStatus } from "@/components/LencanaStatus";
-import { Navbar } from "@/components/Navbar";
+import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { SaranMenu } from "@/components/SaranMenu";
+import { wajibPeran } from "@/lib/sesi";
 import { analisisPola, statusPemantauan } from "@/lib/gizi/pola";
 import { pilihIndikatorPanjangUsia, type JenisKelamin } from "@/lib/gizi/zscore";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
@@ -42,17 +43,24 @@ export default async function HalamanAnak({
     );
   }
 
-  const supabase = await klienServer();
-  const { data: pengguna } = await supabase.auth.getUser();
+  /*
+   * Ketiga peran boleh membuka halaman ini, tetapi melihat isi yang berbeda.
+   *
+   * Bidan memakainya untuk menelaah anak dari daftar prioritas, orang tua untuk
+   * melihat grafik anaknya, kader untuk memperbaiki data. Anak mana yang dapat
+   * dibuka ditentukan RLS: anak di luar wewenang pengguna tidak ditemukan,
+   * sehingga menghasilkan halaman tidak ditemukan.
+   */
+  const sesi = await wajibPeran(["kader", "bidan", "orang_tua"]);
 
-  if (!pengguna.user) {
+  if (!sesi) {
     return (
-      <PagarBelumMasuk
-        peran="Detail anak"
-        pesan="Masuk untuk melihat catatan pertumbuhan anak."
+      <PagarBelumMasuk pesan="Masuk untuk melihat catatan pertumbuhan anak."
       />
     );
   }
+
+  const supabase = await klienServer();
 
   const { data: anak } = await supabase
     .from("anak")
@@ -62,16 +70,25 @@ export default async function HalamanAnak({
 
   if (!anak) notFound();
 
-  // Perbaikan data hanya untuk kader. Peran diambil dari basis data, bukan
-  // dari sisi klien, agar tombolnya tidak dapat dimunculkan dengan menyunting
-  // permintaan. RLS tetap menjadi penjaga terakhirnya.
-  const { data: profil } = await supabase
-    .from("profil")
-    .select("peran")
-    .eq("id", pengguna.user.id)
-    .maybeSingle();
+  /*
+   * Perbaikan data hanya untuk kader. Peran dibaca di server, bukan dikirim
+   * dari klien, agar tombolnya tidak dapat dimunculkan dengan menyunting
+   * permintaan. RLS tetap menjadi penjaga terakhirnya.
+   */
+  const bolehSunting = sesi.peran === "kader";
 
-  const bolehSunting = profil?.peran === "kader";
+  /*
+   * Tautan kembali mengikuti peran, sebab tidak semua peran datang dari
+   * halaman pemantauan. Orang tua yang diberi tautan ke pemantauan bidan akan
+   * dialihkan kembali ke halamannya sendiri, dan perjalanan bolak-balik itu
+   * tampak seperti kerusakan.
+   */
+  const kembali =
+    sesi.peran === "orang_tua"
+      ? { href: "/orangtua", label: "Kembali ke daftar anak" }
+      : sesi.peran === "kader"
+        ? { href: "/kader", label: "Kembali ke pencatatan" }
+        : { href: "/bidan", label: "Kembali ke pemantauan" };
 
   const { data: pengukuran } = await supabase
     .from("pengukuran")
@@ -102,7 +119,7 @@ export default async function HalamanAnak({
 
   return (
     <>
-      <Navbar peran="Detail anak" />
+      <BilahNavigasi />
 
       <main id="isi" className="mx-auto max-w-3xl px-4 pb-16">
         {/*
@@ -111,11 +128,11 @@ export default async function HalamanAnak({
           dibuka dari pemantauan bidan, sehingga jalan pulangnya perlu jelas.
         */}
         <Link
-          href="/bidan"
+          href={kembali.href}
           className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800"
         >
           <span aria-hidden="true">&larr;</span>
-          Kembali ke pemantauan
+          {kembali.label}
         </Link>
         {/*
           Kepala halaman memakai latar bergradasi lembut agar identitas anak
