@@ -100,13 +100,18 @@ export async function GET() {
   });
 
   /*
-   * Tanda urutan byte diperlukan agar Excel di Windows membaca berkas ini
-   * sebagai UTF-8. Tanpanya, huruf beraksen pada nama anak tampil rusak, dan
-   * laporan yang tampak rusak akan diragukan isinya.
+   * Tanda urutan bita tidak ditambahkan di sini.
+   *
+   * `susunLaporanCsv` sudah menyertakannya, sebab BOM adalah bagian dari bentuk
+   * berkas CSV yang dihasilkan, bukan bagian dari cara berkas itu dikirim.
+   * Menambahkannya di kedua tempat menghasilkan dua BOM berurutan, dan BOM yang
+   * kedua tidak lagi diperlakukan sebagai penanda penyandian melainkan sebagai
+   * isi berkas: Excel menampilkannya sebagai karakter sampah pada sel pertama.
+   *
+   * Kekeliruan itu sempat terjadi dan tidak tertangkap pengujian unit, sebab
+   * pengujiannya memeriksa keluaran penyusun, bukan tanggapan HTTP.
    */
-  const isi = `\uFEFF${csv}`;
-
-  return new Response(isi, {
+  return new Response(csv, {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
