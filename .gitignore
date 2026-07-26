@@ -37,3 +37,6 @@ Thumbs.db
 
 # Materi hackathon bertanda confidential dari penyelenggara — jangan di-commit
 *.pptx.pdf
+# Dokumen kerja internal — disimpan lokal, tidak disertakan di repositori
+DECISIONS.md
+DEMO.md
