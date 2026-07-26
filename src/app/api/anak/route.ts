@@ -74,6 +74,15 @@ export async function POST(permintaan: Request) {
     .ilike("nama", data.nama)
     .limit(1);
 
+  // (Fitur Demo): Otomatis menautkan anak baru ke akun orang tua yang tersedia
+  // agar pendaftaran langsung bisa dipantau pada dashboard orang tua.
+  const { data: demoOrtu } = await supabase
+    .from("profil")
+    .select("id")
+    .eq("peran", "orang_tua")
+    .limit(1)
+    .maybeSingle();
+
   const { data: tersimpan, error } = await supabase
     .from("anak")
     .insert({
@@ -85,6 +94,7 @@ export async function POST(permintaan: Request) {
       telepon: data.telepon || null,
       alamat: data.alamat || null,
       alergi: pecahAlergi(data.alergi),
+      orang_tua_id: demoOrtu?.id || null,
     })
     .select("id, nama")
     .single();

@@ -1,6 +1,7 @@
 <div align="center">
+  <img src="./src/app/icon.svg" width="120" alt="PosyanduKu Icon" />
 
-# PosyanduKu
+# 👶🏻 PosyanduKu
 
 **Mengubah catatan buku tulis kader posyandu menjadi sistem deteksi dini risiko gizi anak.**
 
