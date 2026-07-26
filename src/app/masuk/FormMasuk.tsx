@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Logo, LogoLengkap } from "@/components/Logo";
 import { IkonCentang, IkonPanahKanan } from "@/components/Ikon";
 import { klienBrowser } from "@/lib/supabase-browser";
+import { inisial } from "@/lib/peran";
 
 /**
  * Halaman masuk.
@@ -38,29 +39,39 @@ import { klienBrowser } from "@/lib/supabase-browser";
  * bangkitan yang menyiratkan pengguna nyata padahal tidak ada. Inisial tidak
  * membawa masalah itu, dan tidak dapat gagal dimuat.
  */
+/*
+ * Nama pada kartu ini wajib sama dengan nama yang tersimpan di tabel profil,
+ * sebagaimana dibuat scripts/buat-akun-demo.mjs.
+ *
+ * Sebelumnya keduanya berbeda: kartu menyebut Bu Sari, Bidan Rina, dan Pak Andi,
+ * sedangkan akun yang benar-benar dibuat bernama Bu Ani, Bu Ratna, dan Ibu Wati.
+ * Akibatnya nama pada bilah navigasi berganti begitu pengguna masuk, dan
+ * pergantian seperti itu membuat orang menduga ia masuk ke akun yang salah.
+ *
+ * Nama orang tua paling penting dicocokkan. Pada data contoh, Ibu Wati adalah
+ * orang tua Bagas Pratama; menyebutnya Pak Andi membuat halaman orang tua tampak
+ * menampilkan anak milik orang lain.
+ */
 const AKUN_DEMO = [
   {
-    nama: "Bu Sari",
+    nama: "Bu Ani",
     peran: "Kader",
     tugas: "Mencatat penimbangan",
     surel: "kader@posyanduku.demo",
-    inisial: "SR",
     gaya: "bg-brand-500",
   },
   {
-    nama: "Bidan Rina",
+    nama: "Bu Ratna",
     peran: "Bidan",
     tugas: "Memantau anak berisiko",
     surel: "bidan@posyanduku.demo",
-    inisial: "RN",
     gaya: "bg-brand-700",
   },
   {
-    nama: "Pak Andi",
+    nama: "Ibu Wati",
     peran: "Orang tua",
-    tugas: "Melihat pertumbuhan anak",
+    tugas: "Melihat pertumbuhan Bagas",
     surel: "ortu@posyanduku.demo",
-    inisial: "AN",
     gaya: "bg-dasar-600",
   },
 ];
@@ -269,7 +280,7 @@ export function FormMasuk() {
                         aria-hidden="true"
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-extrabold tracking-wide text-white ${a.gaya}`}
                       >
-                        {a.inisial}
+                        {inisial(a.nama)}
                       </span>
 
                       <span className="min-w-0 flex-1">

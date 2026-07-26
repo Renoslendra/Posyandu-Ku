@@ -7,6 +7,7 @@ import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { SaranMenu } from "@/components/SaranMenu";
+import { BuatAkunOrangTua } from "@/components/BuatAkunOrangTua";
 import {
   KartuRiwayatMenu,
   type EntriRiwayatMenu,
@@ -74,7 +75,7 @@ export default async function HalamanAnak({
   const { data: anak } = await supabase
     .from("anak")
     .select(
-      "id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua, telepon, alamat, alergi",
+      "id, nama, tanggal_lahir, jenis_kelamin, nama_orang_tua, telepon, alamat, alergi, orang_tua_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -325,6 +326,21 @@ export default async function HalamanAnak({
             ))}
           </ul>
         </section>
+      )}
+
+      {/*
+        Pembuatan akun hanya diperlihatkan kepada kader. Bidan tidak mendaftarkan
+        anak, dan orang tua yang membuka halaman ini sudah punya akun.
+      */}
+      {bolehSunting && (
+        <div className="mt-10">
+          <BuatAkunOrangTua
+            anakId={anak.id}
+            namaAnak={anak.nama}
+            namaOrangTua={anak.nama_orang_tua}
+            sudahTertaut={Boolean(anak.orang_tua_id)}
+          />
+        </div>
       )}
 
       {bolehSunting && (
