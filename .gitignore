@@ -1,43 +1,32 @@
-# Dependencies
 node_modules/
 .pnp
 .pnp.js
 
-# Next.js
 .next/
 out/
 build/
 next-env.d.ts
 
-# Environment variables — JANGAN di-commit
+.vercel
+*.tsbuildinfo
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.mimocode/
+
+# Kredensial. Jangan pernah di-commit.
 .env
 .env.local
 .env*.local
 
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-
-# Logs
-*.log
-npm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Editor
-.idea/
-.vscode/
-
-# Tooling lokal
-.mimocode/
-
-# Materi hackathon bertanda confidential dari penyelenggara — jangan di-commit
+# Materi hackathon bertanda confidential dari penyelenggara.
 *.pptx.pdf
-# Dokumen kerja internal — disimpan lokal, tidak disertakan di repositori
+
+# Dokumen kerja internal. Disimpan lokal, repositori hanya memuat README dan PRD.
 DECISIONS.md
 DEMO.md
 PERFORMA.md
