@@ -14,7 +14,8 @@
     "demo:reset": "node scripts/seed.mjs && node scripts/buat-akun-demo.mjs",
     "cek": "node scripts/cek-kesiapan.mjs",
     "uji:db": "node scripts/uji-rls.mjs && node scripts/uji-alur.mjs && node scripts/uji-fitur-baru.mjs && node scripts/uji-import.mjs && node scripts/uji-batas-laju.mjs && node scripts/uji-riwayat.mjs",
-    "uji:sesi": "node scripts/uji-sesi.mjs"
+    "uji:sesi": "node scripts/uji-sesi.mjs",
+    "uji:ortu": "node scripts/uji-akun-orangtua.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",
