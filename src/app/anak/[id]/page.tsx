@@ -7,6 +7,10 @@ import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { SaranMenu } from "@/components/SaranMenu";
+import {
+  KartuRiwayatMenu,
+  type EntriRiwayatMenu,
+} from "@/components/KartuRiwayatMenu";
 import { wajibPeran } from "@/lib/sesi";
 import { analisisPola, statusPemantauan } from "@/lib/gizi/pola";
 import {
@@ -128,22 +132,55 @@ export default async function HalamanAnak({
     .order("dibuat_pada", { ascending: false })
     .limit(5);
 
-  const riwayatMenu = (menuTersimpan ?? []).map((m) => {
-    const isi = (m.isi ?? {}) as {
-      narasi?: string;
-      totalBiayaRp?: number;
-      menu?: unknown[];
-    };
+  /*
+   * Seluruh isi tersimpan dibaca, bukan hanya narasinya.
+   *
+   * Bentuk jsonb tidak dijamin oleh skema, sehingga setiap bidang diperiksa
+   * jenisnya sebelum dipakai. Baris yang ditulis versi aplikasi terdahulu dapat
+   * kekurangan bidang mana pun, dan halaman ini harus tetap tampil alih-alih
+   * gagal karena satu entri riwayat berbentuk lain.
+   */
+  const riwayatMenu: EntriRiwayatMenu[] = (menuTersimpan ?? []).map((m) => {
+    const isi = (m.isi ?? {}) as Record<string, unknown>;
+
+    const menu = Array.isArray(isi.menu)
+      ? (isi.menu as unknown[]).filter(
+          (h): h is { waktu: string; hidangan: string } =>
+            typeof h === "object" &&
+            h !== null &&
+            typeof (h as { waktu?: unknown }).waktu === "string" &&
+            typeof (h as { hidangan?: unknown }).hidangan === "string",
+        )
+      : [];
+
+    const belanja = Array.isArray(isi.belanja)
+      ? (isi.belanja as unknown[])
+          .filter(
+            (b): b is Record<string, unknown> => typeof b === "object" && b !== null,
+          )
+          .map((b) => ({
+            nama: typeof b.nama === "string" ? b.nama : "",
+            takaran: typeof b.takaran === "string" ? b.takaran : "",
+            hargaRp: typeof b.hargaRp === "number" ? b.hargaRp : 0,
+            manfaat: typeof b.manfaat === "string" ? b.manfaat : "",
+          }))
+          .filter((b) => b.nama.length > 0)
+      : [];
 
     return {
       id: m.id,
-      status: m.status as StatusGizi,
       usiaBulan: m.usia_bulan,
       dibuatPada: m.dibuat_pada as string,
       dariFallback: m.dari_fallback as boolean,
       narasi: typeof isi.narasi === "string" ? isi.narasi : "",
       totalBiayaRp: typeof isi.totalBiayaRp === "number" ? isi.totalBiayaRp : null,
-      jumlahHidangan: Array.isArray(isi.menu) ? isi.menu.length : 0,
+      menu,
+      belanja,
+      catatanGizi: Array.isArray(isi.catatanGizi)
+        ? (isi.catatanGizi as unknown[]).filter(
+            (c): c is string => typeof c === "string",
+          )
+        : [],
     };
   });
 
@@ -280,33 +317,11 @@ export default async function HalamanAnak({
 
           <ul className="mt-4 flex flex-col gap-3">
             {riwayatMenu.map((m) => (
-              <li key={m.id} className="kartu p-4">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <span className="font-semibold text-dasar-900">
-                    {tanggalIndonesiaSingkat(m.dibuatPada.slice(0, 10))}
-                  </span>
-
-                  <span className="text-sm text-dasar-600">
-                    usia {m.usiaBulan} bulan
-                    {m.jumlahHidangan > 0 && ` · ${m.jumlahHidangan} hidangan`}
-                    {m.totalBiayaRp !== null &&
-                      ` · Rp${m.totalBiayaRp.toLocaleString("id-ID")}`}
-                  </span>
-                </div>
-
-                {m.narasi && (
-                  <p className="mt-2 text-base leading-relaxed text-dasar-700">
-                    {m.narasi}
-                  </p>
-                )}
-
-                {m.dariFallback && (
-                  <p className="mt-2 text-sm text-dasar-500">
-                    Disusun tanpa bantuan model bahasa. Isi anjurannya tetap dihitung
-                    kode yang sama.
-                  </p>
-                )}
-              </li>
+              <KartuRiwayatMenu
+                key={m.id}
+                entri={m}
+                tanggal={tanggalIndonesiaSingkat(m.dibuatPada.slice(0, 10))}
+              />
             ))}
           </ul>
         </section>
