@@ -191,6 +191,8 @@ Buat proyek di [supabase.com](https://supabase.com), lalu jalankan migrasi lewat
 | 0008 | `0008_tanggal_zona_waktu.sql` | Batas tanggal mengikuti WIB |
 | 0009 | `0009_status_gizi_lebih.sql` | Enum status gizi lebih dan obesitas |
 | 0010 | `0010_alergi_anak.sql` | Kolom alergi untuk penyaringan menu |
+| 0011 | `0011_riwayat_saran_menu.sql` | Riwayat saran menu |
+| 0012 | `0012_tindak_lanjut.sql` | Catatan tindak lanjut bidan |
 
 Empat di antaranya sering terlewat dan akibatnya tidak kelihatan langsung:
 
@@ -289,7 +291,7 @@ Peran menentukan cakupan data, dan penugasannya diwajibkan di tingkat basis data
 npm test
 ```
 
-**355 pengujian pada 20 berkas**, seluruhnya lulus.
+**371 pengujian pada 21 berkas**, seluruhnya lulus.
 
 <details open>
 <summary><b>Cakupan tiap berkas uji</b></summary>
@@ -410,7 +412,7 @@ src/
 │   └── validasi.ts                  skema Zod
 └── middleware.ts                    penjagaan rute menurut peran
 
-supabase/migrations/                 0001–0010, skema dan RLS
+supabase/migrations/                 0001–0012, skema dan RLS
 scripts/
 ├── seed.mjs                         data contoh sintetis
 ├── buat-akun-demo.mjs               tiga akun demo
