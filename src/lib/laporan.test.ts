@@ -67,7 +67,20 @@ describe("susunLaporanCsv — keterangan dan rekapitulasi", () => {
   it("menyertakan nama wilayah dan tanggal cetak", () => {
     const csv = susunLaporanCsv(ringkasan(), KONTEKS);
     expect(csv).toContain("Desa Sukamakmur");
-    expect(csv).toContain("2026-07-26");
+    /*
+     * Tanggal ditulis "26 Jul 2026", bukan bentuk ISO. Excel menafsirkan
+     * "2026-07-26" tidak menentu, dan pada setelan wilayah tertentu menukar
+     * bulan dengan harinya.
+     */
+    expect(csv).toContain("26 Jul 2026");
+  });
+
+  it("dimulai dengan BOM agar Excel membacanya sebagai UTF-8", () => {
+    // Tanpa BOM, Excel di Windows memakai penyandian lokal sehingga tanda pisah
+    // dan huruf beraksen rusak. Laporan yang berpindah ke dinas kesehatan akan
+    // tampak seperti berkas yang korup.
+    const csv = susunLaporanCsv(ringkasan(), KONTEKS);
+    expect(csv.startsWith("\uFEFF")).toBe(true);
   });
 
   it("menyertakan penafian bukan alat diagnosis di dalam berkas", () => {
@@ -88,19 +101,84 @@ describe("susunLaporanCsv — keterangan dan rekapitulasi", () => {
       KONTEKS,
     );
 
+    // Kolom ketiga adalah persentase terhadap total anak terdaftar.
     expect(csv).toContain("Total anak terdaftar,10");
-    expect(csv).toContain("Sudah ditimbang,8");
-    expect(csv).toContain("Belum pernah ditimbang,2");
-    expect(csv).toContain("Status normal,5");
-    expect(csv).toContain("Status perlu perhatian,2");
-    expect(csv).toContain("Status perlu segera diperiksa,1");
+    expect(csv).toContain("Sudah ditimbang,8,80%");
+    expect(csv).toContain("Belum pernah ditimbang,2,20%");
+    expect(csv).toContain("Normal,5,50%");
+    expect(csv).toContain("Perlu perhatian,2,20%");
+    expect(csv).toContain("Perlu segera diperiksa,1,10%");
   });
 
-  it("meletakkan rekapitulasi sebelum rincian", () => {
-    // Rekapitulasi yang dibutuhkan untuk pelaporan ke atas harus terbaca
-    // lebih dulu, tanpa menggulir seluruh daftar anak.
+  it("memakai koma sebagai pemisah desimal persen", () => {
+    /*
+     * Pemisah desimal Indonesia adalah koma. Menulis 83.3% pada laporan yang
+     * dibaca staf dinas kesehatan salah menurut kaidah, dan pada Excel bersetelan
+     * Indonesia angka itu tidak dikenali sebagai bilangan.
+     *
+     * Bidang berkoma dikutip oleh bidangCsv, sehingga kolomnya tetap utuh.
+     */
+    const csv = susunLaporanCsv(
+      ringkasan({
+        totalAnak: 6,
+        sudahDiukur: 5,
+        belumDinilai: 1,
+        distribusi: { normal: 2, risiko: 2, berat: 1, lebih: 0, obesitas: 0 },
+      }),
+      KONTEKS,
+    );
+    expect(csv).toContain('"83,3%"');
+    expect(csv).not.toContain("83.3%");
+  });
+
+  it("tidak membagi dengan nol ketika belum ada anak terdaftar", () => {
+    const csv = susunLaporanCsv(
+      ringkasan({
+        totalAnak: 0,
+        sudahDiukur: 0,
+        belumDinilai: 0,
+        distribusi: { normal: 0, risiko: 0, berat: 0, lebih: 0, obesitas: 0 },
+      }),
+      KONTEKS,
+    );
+    expect(csv).not.toContain("NaN");
+    expect(csv).not.toContain("Infinity");
+  });
+
+  it("meletakkan daftar tindak lanjut sebelum rekapitulasi", () => {
+    /*
+     * Susunannya dibalik dari versi terdahulu, dan itu perubahan yang sengaja.
+     *
+     * Rekapitulasi dibutuhkan untuk pelaporan ke atas, tetapi bidan yang membuka
+     * berkas ini pertama-tama mencari siapa yang harus ditangani. Pertanyaan itu
+     * tidak terjawab oleh angka rekapitulasi, dan meletakkannya di atas memaksa
+     * pembaca menggulir melewatinya setiap kali.
+     */
     const csv = susunLaporanCsv(ringkasan(), KONTEKS);
-    expect(csv.indexOf("REKAPITULASI")).toBeLessThan(csv.indexOf("RINCIAN PER ANAK"));
+    expect(csv.indexOf("BAGIAN 1")).toBeLessThan(csv.indexOf("BAGIAN 3: REKAPITULASI"));
+  });
+
+  it("menyusun keempat bagian secara berurutan", () => {
+    const csv = susunLaporanCsv(ringkasan(), KONTEKS);
+    const urutan = [
+      "BAGIAN 1: ANAK YANG PERLU DITINDAKLANJUTI",
+      "BAGIAN 2: BERHENTI DATANG MENIMBANG",
+      "BAGIAN 3: REKAPITULASI",
+      "BAGIAN 4: SELURUH ANAK TERDAFTAR",
+    ].map((b) => csv.indexOf(b));
+
+    expect(urutan.every((i) => i >= 0)).toBe(true);
+    for (let i = 1; i < urutan.length; i += 1) {
+      expect(urutan[i - 1]).toBeLessThan(urutan[i]);
+    }
+  });
+
+  it("menjelaskan istilah yang dipakai di dalam berkas", () => {
+    // Berkas dibaca staf dinas kesehatan yang tidak membuka aplikasinya, sehingga
+    // istilahnya tidak dapat mengandalkan penjelasan di antarmuka.
+    const csv = susunLaporanCsv(ringkasan(), KONTEKS);
+    expect(csv).toContain("Keterangan istilah");
+    expect(csv).toMatch(/Z-score di bawah -3/);
   });
 });
 
@@ -158,6 +236,24 @@ describe("susunLaporanCsv — rincian per anak", () => {
     expect(csv).toContain("081234567890");
   });
 
+  it("melindungi nol di depan nomor telepon dari Excel", () => {
+    /*
+     * Excel membuang nol di depan bila bidangnya terbaca sebagai bilangan,
+     * sehingga 081234567890 tersimpan menjadi 81234567890. Nomor yang salah satu
+     * angka membuat seluruh kolom ini tidak dapat dipercaya, dan justru kolom
+     * inilah yang dipakai menghubungi keluarga.
+     *
+     * Kutip tunggal adalah penanda baku Excel untuk "perlakukan sebagai teks".
+     */
+    const csv = susunLaporanCsv(
+      ringkasan({
+        semuaAnak: [entri("Dimas", "risiko", { telepon: "081234567890" })],
+      }),
+      KONTEKS,
+    );
+    expect(csv).toContain("'081234567890");
+  });
+
   it("menggabungkan beberapa alasan dalam satu bidang", () => {
     const csv = susunLaporanCsv(
       ringkasan({
@@ -183,8 +279,41 @@ describe("susunLaporanCsv — rincian per anak", () => {
 
   it("tetap menghasilkan berkas yang sah ketika belum ada anak", () => {
     const csv = susunLaporanCsv(ringkasan({ totalAnak: 0, semuaAnak: [] }), KONTEKS);
-    expect(csv).toContain("RINCIAN PER ANAK");
+    expect(csv).toContain("BAGIAN 4: SELURUH ANAK TERDAFTAR");
     expect(csv).toContain("Total anak terdaftar,0");
+  });
+
+  it("menyatakan secara tegas bila tidak ada yang perlu ditindaklanjuti", () => {
+    /*
+     * Bagian kosong tanpa keterangan tidak dapat dibedakan dari bagian yang gagal
+     * terisi. Pembaca yang menemukan judul tanpa baris di bawahnya akan menduga
+     * laporannya rusak, dan keraguan itu menular ke seluruh berkas.
+     */
+    const csv = susunLaporanCsv(
+      ringkasan({ prioritas: [], hilangDariPemantauan: [] }),
+      KONTEKS,
+    );
+    expect(csv).toContain("Tidak ada anak yang perlu ditindaklanjuti.");
+    expect(csv).toContain("Semua anak rutin menimbang.");
+  });
+
+  it("mendahulukan anak berstatus paling berat pada daftar seluruh anak", () => {
+    // Laporan dibaca dari atas, sehingga temuan yang paling perlu ditangani
+    // harus berada di baris pertama, bukan tersebar menurut abjad.
+    const csv = susunLaporanCsv(
+      ringkasan({
+        semuaAnak: [
+          entri("Aisyah", "normal"),
+          entri("Zulfa", "berat"),
+          entri("Bagas", "risiko"),
+        ],
+      }),
+      KONTEKS,
+    );
+
+    const bagian4 = csv.slice(csv.indexOf("BAGIAN 4"));
+    expect(bagian4.indexOf("Zulfa")).toBeLessThan(bagian4.indexOf("Bagas"));
+    expect(bagian4.indexOf("Bagas")).toBeLessThan(bagian4.indexOf("Aisyah"));
   });
 
   it("mengakhiri berkas dengan baris baru", () => {

@@ -118,7 +118,7 @@ export function FormAnakBaru() {
 
   if (!terbuka) {
     return (
-      <div className="kartu p-5">
+      <div className="kartu p-5 flex flex-col items-center justify-center text-center">
         <button
           onClick={() => setTerbuka(true)}
           className="min-h-touch rounded-xl border-2 border-brand-500 px-6 text-base font-semibold text-brand-700 hover:bg-brand-50"
