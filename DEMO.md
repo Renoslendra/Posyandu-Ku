@@ -22,6 +22,13 @@ Rekam sebagai cadangan meskipun lingkungan produksi berjalan baik. Bila jaringan
       percobaan sebelum rekaman.
 
 - [ ] Kesiapan diperiksa: `npm run cek` menampilkan "Lingkungan siap"
+- [ ] Rekam dari URL produksi, bukan localhost: **https://posyandu-ku.vercel.app**
+
+      Merekam dari alamat produksi menjawab keraguan yang paling wajar muncul,
+      yaitu apakah ini benar-benar berjalan atau hanya berjalan di komputer
+      pembuatnya. Bilah alamat yang terlihat di rekaman menjawabnya tanpa perlu
+      satu kata pun.
+
 - [ ] Ketiga akun sudah dicoba masuk (tombol pengisi cepat ada di halaman masuk)
 - [ ] Satu foto halaman buku tulis (boleh tulisan tangan sendiri, berisi nama dan angka)
 - [ ] Terminal terbuka di direktori proyek, siap menjalankan `npm test`
@@ -185,7 +192,15 @@ Matikan mode pesawat. Tunggu penanda sinkronisasi.
 npm test
 ```
 
-> "241 pengujian. Yang paling penting: nilai tabel WHO diperiksa terhadap angka terbitan resmi WHO. Pengujian ini menemukan empat kesalahan nyata selama pembangunan — salah satunya tabel panjang badan dan tinggi badan yang tercampur, yang membuat median di usia 24 bulan salah."
+> "355 pengujian. Yang paling penting bukan jumlahnya, melainkan bahwa sebagian besar ditulis setelah menemukan cacatnya.
+>
+> Menjelang akhir saya berhenti menambah fitur dan memeriksa seluruh proyek. Pengujian yang ada lolos semuanya, tapi pengujian hanya menegakkan hal yang terpikirkan saat menulisnya. Pemeriksaan itu menemukan dua belas cacat, dan yang paling berbahaya punya pola sama: semuanya melaporkan keadaan lebih baik daripada kenyataannya.
+>
+> Stunting tidak dihitung sama sekali untuk anak di atas dua tahun yang diukur telentang, sebab tabelnya dipilih menurut cara ukur padahal tabel itu hanya memuat nol sampai dua puluh empat bulan. Anak pendek yang beratnya proporsional keluar sebagai normal.
+>
+> Dan pencocokan nama membandingkan potongan huruf, bukan kata, sehingga anak terdaftar bernama Ani tercocok dengan bacaan Handayani. Berat seorang anak tertulis ke rekam anak lain, tanpa jejak apa pun di layar.
+>
+> Semuanya tercatat di DECISIONS.md, termasuk yang belum saya perbaiki."
 
 ```bash
 node scripts/uji-rls.mjs
@@ -195,7 +210,9 @@ node scripts/uji-rls.mjs
 >
 > Ada lima skrip seperti ini yang menguji terhadap database sungguhan, bukan mock. Enam puluh satu pemeriksaan. Salah satunya menemukan bug yang tidak akan pernah ketemu dari membaca kode: pengukuran ganda lolos karena batasan unik lama tidak berlaku saat kolomnya bernilai null. Postgres menganggap tiap null berbeda."
 
-**Menjawab:** penguasaan kompetensi role (30%).
+> "Satu hal terakhir, dan ini saya ukur, bukan saya kira-kira. Usia dulu dibulatkan ke bawah, sehingga bayi dua puluh tujuh hari dinilai terhadap referensi usia nol bulan. Pada bayi 3,6 kilogram dan 52 sentimeter, panjang menurut umurnya berubah dari plus 1,12 menjadi minus 1,08 setelah diperbaiki. Selisih 2,2 simpangan baku, dan arahnya selalu membuat anak tampak lebih sehat daripada keadaannya. Untuk alat penapisan, itu arah yang paling merugikan."
+
+**Menjawab:** penguasaan kompetensi role (30%), dan kejelasan (15%) lewat kejujuran atas cacat yang ditemukan sendiri.
 
 ---
 
