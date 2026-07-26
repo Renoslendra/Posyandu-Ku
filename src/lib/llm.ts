@@ -14,22 +14,28 @@
  */
 
 /*
- * Batas waktu dipasang di bawah batas durasi fungsi pada peladen, bukan di atasnya.
+ * Batas waktu dipasang di bawah batas durasi fungsi peladen, tetapi di atas waktu
+ * jawab penyedia model yang sebenarnya. Keduanya syarat, bukan salah satu.
  *
- * Sebelumnya nilainya 20 detik, sementara batas bawaan fungsi tanpa peladen pada
- * paket gratis adalah 10 detik. Urutannya keliru: platform mematikan fungsi lebih
- * dahulu, sehingga pembatal waktu di dalam aplikasi tidak pernah menyala dan
- * seluruh jalur cadangan yang dibangun untuk keadaan ini tidak pernah dijalankan.
- * Bidan menerima galat gerbang, bukan ringkasan berbasis templat yang seharusnya
- * muncul.
+ * Nilainya pernah 20 detik sementara batas bawaan fungsi tanpa peladen hanya 10
+ * detik. Urutan itu keliru: platform mematikan fungsi lebih dahulu, sehingga
+ * pembatal waktu di dalam aplikasi tidak pernah menyala dan seluruh jalur cadangan
+ * yang dibangun untuk keadaan ini tidak pernah dijalankan. Bidan menerima galat
+ * gerbang alih-alih ringkasan berbasis templat.
  *
- * Delapan detik menyisakan ruang bagi pekerjaan lain di dalam permintaan yang
- * sama, yaitu pemeriksaan batas laju dan dua kueri tabel, sekaligus menjamin
- * jalur cadangan aplikasi selalu mendahului batas platform. Setiap rute yang
- * memanggil model juga menyatakan `maxDuration` lebih longgar, sehingga batas ini
- * berlaku sebagai pengaman berlapis, bukan satu-satunya penjaga.
+ * Perbaikan pertama menurunkannya ke delapan detik, dan itu terlalu jauh.
+ * Diukur langsung terhadap penyedia yang dipakai: satu panggilan penyusunan narasi
+ * memerlukan 6,5 sampai 8,3 detik. Delapan detik berarti hampir setiap panggilan
+ * terpotong di ambang, sehingga narasi selalu jatuh ke templat, dan kegagalan itu
+ * tidak terlihat sebagai galat, hanya sebagai keluaran yang lebih datar.
+ *
+ * Dua puluh lima detik memberi kelegaan terhadap waktu jawab yang terukur,
+ * sekaligus tetap jauh di bawah `maxDuration` enam puluh detik yang dinyatakan
+ * setiap rute pemanggil model. Dengan begitu pembatal waktu aplikasi selalu
+ * menyala lebih dahulu daripada pemutusan platform, dan jalur cadangan benar-benar
+ * dapat dijalankan ketika memang dibutuhkan.
  */
-const BATAS_WAKTU_MS = 8_000;
+const BATAS_WAKTU_MS = 25_000;
 
 export interface HasilLLM {
   ok: boolean;
