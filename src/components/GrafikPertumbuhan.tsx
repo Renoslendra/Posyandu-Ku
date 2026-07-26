@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  ARTI_GARIS,
   GARIS_SD,
   LABEL_GARIS,
   WARNA_GARIS,
@@ -129,7 +130,7 @@ export function GrafikPertumbuhan({
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-dasar-600">
         <li className="flex items-center gap-2">
           <span className="inline-block h-1 w-5 rounded bg-brand-500" />
-          Anak ini
+          <span className="font-semibold text-dasar-800">Anak ini</span>
         </li>
         {GARIS_SD.map((sd) => {
           const kunci = sd === 0 ? "sd_0" : `sd_${Math.abs(sd)}${sd < 0 ? "n" : "p"}`;
@@ -139,16 +140,57 @@ export function GrafikPertumbuhan({
                 className="inline-block h-1 w-5 rounded"
                 style={{ backgroundColor: WARNA_GARIS[kunci] }}
               />
-              {LABEL_GARIS[kunci]}
+              {ARTI_GARIS[kunci] ?? LABEL_GARIS[kunci]}
             </li>
           );
         })}
       </ul>
 
-      <p className="mt-3 text-sm text-dasar-600">
-        Garis putus-putus adalah rentang normal menurut standar WHO. Anak yang berada
-        di bawah garis -2 SD perlu diperiksa bidan.
-      </p>
+      <div className="mt-4 rounded-lg bg-dasar-50 p-4 text-sm leading-relaxed text-dasar-700">
+        <p className="font-semibold text-dasar-900">Cara membaca grafik ini</p>
+
+        <p className="mt-2">
+          Garis <span className="font-semibold text-brand-600">hijau tebal</span> adalah
+          anak ini. Garis-garis lain adalah pembanding: angka pertumbuhan anak sehat
+          seusianya, menurut standar WHO.
+        </p>
+
+        <p className="mt-2">
+          Yang perlu diperhatikan bukan letak titiknya, melainkan{" "}
+          <span className="font-semibold">arah garis hijaunya</span>. Selama garis itu
+          menanjak sejajar dengan garis pembanding, anak tumbuh baik meskipun ia berada
+          di garis bawah. Garis yang mendatar atau menurun perlu ditanyakan ke bidan,
+          bahkan bila anak masih berada di tengah.
+        </p>
+
+        <ul className="mt-3 flex flex-col gap-1.5">
+          <li>
+            <span className="font-semibold">Di atas garis tengah</span> — pertumbuhan di
+            atas rata-rata anak seusianya.
+          </li>
+          <li>
+            <span className="font-semibold">Antara garis tengah dan batas bawah</span> —
+            wajar, tidak perlu dikhawatirkan.
+          </li>
+          <li>
+            <span className="font-semibold text-status-risiko">
+              Di bawah batas bawah
+            </span>{" "}
+            — perlu diperiksa bidan.
+          </li>
+          <li>
+            <span className="font-semibold text-status-berat">
+              Di bawah batas bahaya
+            </span>{" "}
+            — perlu segera diperiksa.
+          </li>
+        </ul>
+
+        <p className="mt-3 text-dasar-600">
+          Istilah teknisnya: garis tengah disebut median, batas bawah -2 SD, batas bahaya
+          -3 SD, dan batas atas +2 SD.
+        </p>
+      </div>
     </div>
   );
 }

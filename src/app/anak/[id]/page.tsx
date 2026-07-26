@@ -15,6 +15,7 @@ import {
   type JenisKelamin,
 } from "@/lib/gizi/zscore";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
+import { tanggalIndonesiaSingkat } from "@/lib/tanggal";
 import type { StatusGizi } from "@/lib/gizi/zscore";
 
 /**
@@ -106,6 +107,45 @@ export default async function HalamanAnak({
   // Hanya nilai terkonfirmasi yang digambarkan, sejalan dengan statistik.
   const terkonfirmasi = riwayat.filter((p) => p.dikonfirmasi);
   const terakhir = terkonfirmasi.at(-1);
+
+  /*
+   * Riwayat saran menu yang pernah disusun untuk anak ini.
+   *
+   * Dibatasi lima terakhir. Anjuran makan yang lebih lama dari itu sudah tidak
+   * berlaku karena usia dan status gizi anaknya berubah, dan menampilkan
+   * daftar panjang membuat yang terbaru justru sukar ditemukan.
+   *
+   * Kegagalan kueri diperlakukan sebagai daftar kosong, bukan galat halaman.
+   * Tabelnya diperkenalkan pada migrasi 0011, sehingga pemasangan yang belum
+   * menjalankannya akan mengembalikan galat di sini. Halaman ini masih berguna
+   * seluruhnya tanpa bagian tersebut, dan menggagalkannya akan menghilangkan
+   * grafik beserta riwayat penimbangan hanya karena satu migrasi terlewat.
+   */
+  const { data: menuTersimpan } = await supabase
+    .from("saran_menu")
+    .select("id, status, usia_bulan, isi, dari_fallback, dibuat_pada")
+    .eq("anak_id", id)
+    .order("dibuat_pada", { ascending: false })
+    .limit(5);
+
+  const riwayatMenu = (menuTersimpan ?? []).map((m) => {
+    const isi = (m.isi ?? {}) as {
+      narasi?: string;
+      totalBiayaRp?: number;
+      menu?: unknown[];
+    };
+
+    return {
+      id: m.id,
+      status: m.status as StatusGizi,
+      usiaBulan: m.usia_bulan,
+      dibuatPada: m.dibuat_pada as string,
+      dariFallback: m.dari_fallback as boolean,
+      narasi: typeof isi.narasi === "string" ? isi.narasi : "",
+      totalBiayaRp: typeof isi.totalBiayaRp === "number" ? isi.totalBiayaRp : null,
+      jumlahHidangan: Array.isArray(isi.menu) ? isi.menu.length : 0,
+    };
+  });
 
   const jk = anak.jenis_kelamin as JenisKelamin;
   const telentangTerakhir = Boolean(terakhir?.diukur_telentang);
@@ -228,6 +268,48 @@ export default async function HalamanAnak({
         <div className="mt-10">
           <SaranMenu anakId={anak.id} />
         </div>
+      )}
+
+      {riwayatMenu.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-xl font-bold text-dasar-900">Saran menu sebelumnya</h2>
+          <p className="mt-1 text-base text-dasar-600">
+            Anjuran yang pernah disusun untuk anak ini. Tersimpan agar dapat dibaca
+            kembali tanpa menyusun ulang.
+          </p>
+
+          <ul className="mt-4 flex flex-col gap-3">
+            {riwayatMenu.map((m) => (
+              <li key={m.id} className="kartu p-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="font-semibold text-dasar-900">
+                    {tanggalIndonesiaSingkat(m.dibuatPada.slice(0, 10))}
+                  </span>
+
+                  <span className="text-sm text-dasar-600">
+                    usia {m.usiaBulan} bulan
+                    {m.jumlahHidangan > 0 && ` · ${m.jumlahHidangan} hidangan`}
+                    {m.totalBiayaRp !== null &&
+                      ` · Rp${m.totalBiayaRp.toLocaleString("id-ID")}`}
+                  </span>
+                </div>
+
+                {m.narasi && (
+                  <p className="mt-2 text-base leading-relaxed text-dasar-700">
+                    {m.narasi}
+                  </p>
+                )}
+
+                {m.dariFallback && (
+                  <p className="mt-2 text-sm text-dasar-500">
+                    Disusun tanpa bantuan model bahasa. Isi anjurannya tetap dihitung
+                    kode yang sama.
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {bolehSunting && (

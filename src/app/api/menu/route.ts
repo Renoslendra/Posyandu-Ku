@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { BATAS, periksaBatas } from "@/lib/batas-laju";
 import { daftarBelanja, susunSaranMenu } from "@/lib/menu";
-import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
+import { klienAdmin, klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import type { StatusGizi } from "@/lib/gizi/zscore";
 
 /*
@@ -123,7 +123,7 @@ export async function POST(permintaan: Request) {
     );
   }
 
-  return NextResponse.json({
+  const hasil = {
     ok: true,
     namaAnak: anak.nama,
     status: terakhir.status,
@@ -134,5 +134,45 @@ export async function POST(permintaan: Request) {
     catatanGizi: saran.catatanGizi,
     narasi: saran.narasi,
     dariFallback: saran.dariFallback,
-  });
+  };
+
+  /*
+   * Menyimpan hasilnya sebagai riwayat.
+   *
+   * Ditulis memakai klien peladen biasa, bukan service role. Kebijakan RLS pada
+   * tabel ini tidak memberi hak tulis kepada peran authenticated, sehingga
+   * penulisan ini akan gagal bila dijalankan dengan hak pengguna. Karena itu
+   * dipakai klien layanan, setelah wewenang atas anaknya sudah dipastikan oleh
+   * kueri di atas yang tunduk pada RLS.
+   *
+   * Kegagalan penyimpanan sengaja tidak membatalkan tanggapan. Anjuran makannya
+   * sudah tersusun dan berguna bagi orang tua yang sedang menunggu; menolak
+   * mengirimkannya karena pencatatan riwayat gagal akan menukar sesuatu yang
+   * dibutuhkan sekarang dengan sesuatu yang berguna nanti. Galatnya dicatat ke
+   * log peladen agar tidak lenyap tanpa jejak.
+   */
+  try {
+    const layanan = klienAdmin();
+    const { error } = await layanan.from("saran_menu").insert({
+      anak_id: anak.id,
+      status: terakhir.status,
+      usia_bulan: terakhir.usia_bulan,
+      isi: {
+        menu: hasil.menu,
+        belanja: hasil.belanja,
+        totalBiayaRp: hasil.totalBiayaRp,
+        catatanGizi: hasil.catatanGizi,
+        narasi: hasil.narasi,
+      },
+      dari_fallback: saran.dariFallback,
+    });
+
+    if (error) {
+      console.error("Gagal menyimpan riwayat saran menu:", error.message);
+    }
+  } catch (galat) {
+    console.error("Gagal menyimpan riwayat saran menu:", galat);
+  }
+
+  return NextResponse.json(hasil);
 }

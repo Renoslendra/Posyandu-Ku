@@ -69,3 +69,46 @@ export function keTanggalIsoIndonesia(d: Date): string {
     day: "2-digit",
   }).format(d);
 }
+
+/**
+ * Mengubah tanggal ISO menjadi bentuk singkat yang lazim dibaca, misalnya
+ * "12 Mar 2025".
+ *
+ * Dipakai pada tabel riwayat, tempat lebar kolom terbatas dan bentuk ISO sukar
+ * dibaca cepat. Orang tua yang membandingkan penimbangan bulan ini dengan bulan
+ * lalu membaca nama bulan jauh lebih cepat daripada angka.
+ *
+ * Diurai sebagai bagian-bagian angka, bukan diserahkan ke `new Date()`. Alasannya
+ * sama seperti di berkas ini pada umumnya: `new Date("2025-03-12")` diartikan
+ * sebagai tengah malam UTC, yang di Indonesia sudah pukul tujuh pagi tanggal yang
+ * sama, tetapi di zona waktu negatif menjadi tanggal sebelumnya. Menguraikannya
+ * sendiri menghilangkan seluruh kemungkinan itu.
+ *
+ * Masukan yang tidak dikenali dikembalikan apa adanya. Mengembalikan "Invalid
+ * Date" pada tabel riwayat lebih buruk daripada memperlihatkan nilai aslinya:
+ * yang pertama menyembunyikan datanya, yang kedua masih dapat ditelusuri.
+ */
+const NAMA_BULAN_SINGKAT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+] as const;
+
+export function tanggalIndonesiaSingkat(iso: string): string {
+  const cocok = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!cocok) return iso;
+
+  const bulan = Number(cocok[2]);
+  if (bulan < 1 || bulan > 12) return iso;
+
+  return `${Number(cocok[3])} ${NAMA_BULAN_SINGKAT[bulan - 1]} ${cocok[1]}`;
+}

@@ -4,6 +4,7 @@ import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { TombolRingkasan } from "@/components/TombolRingkasan";
+import { TombolTindakLanjut } from "@/components/TombolTindakLanjut";
 import { wajibPeran } from "@/lib/sesi";
 import {
   IkonBahaya,
@@ -13,7 +14,6 @@ import {
   IkonKelompok,
   IkonPanahKanan,
   IkonPeringatan,
-  IkonTelepon,
   IkonTimbangan,
   IkonTugasTerlambat,
   IkonUnduh,
@@ -89,6 +89,34 @@ export default async function HalamanBidan() {
 
   const ringkasan = susunRingkasan(anak.baris, pengukuran.baris);
   const dataTerpotong = anak.terpotong || pengukuran.terpotong;
+
+  /*
+   * Tindak lanjut terakhir per anak.
+   *
+   * Dibatasi tiga puluh hari terakhir. Penanda tanpa batas waktu akan membuat
+   * anak yang dihubungi setahun lalu tampak sudah ditangani, dan itu justru
+   * kekeliruan yang paling merugikan: keluarga yang benar-benar terlewat akan
+   * dianggap selesai.
+   *
+   * Kegagalan kueri diperlakukan sebagai daftar kosong. Tabelnya diperkenalkan
+   * pada migrasi 0012, sehingga pemasangan yang belum menjalankannya tetap dapat
+   * memakai seluruh dashboard tanpa penanda ini.
+   */
+  const batasPenanda = new Date();
+  batasPenanda.setDate(batasPenanda.getDate() - 30);
+
+  const { data: catatanTindakLanjut } = await supabase
+    .from("tindak_lanjut")
+    .select("anak_id, dibuat_pada")
+    .gte("dibuat_pada", batasPenanda.toISOString())
+    .order("dibuat_pada", { ascending: false });
+
+  const tindakLanjutTerakhir = new Map<string, string>();
+  for (const t of catatanTindakLanjut ?? []) {
+    if (!tindakLanjutTerakhir.has(t.anak_id)) {
+      tindakLanjutTerakhir.set(t.anak_id, t.dibuat_pada as string);
+    }
+  }
 
   /*
    * Kartu ringkasan.
@@ -319,12 +347,11 @@ export default async function HalamanBidan() {
                         </div>
                       </div>
                       
-                      {a.telepon && (
-                        <a href={`tel:${a.telepon}`} className="w-10 h-10 rounded-full bg-primary-container/10 text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center transition-colors shadow-sm shrink-0 ml-2" title={`Hubungi ${a.telepon}`}>
-                          <IkonTelepon className="h-5 w-5" />
-                          <span className="sr-only">Hubungi {a.telepon}</span>
-                        </a>
-                      )}
+                      <TombolTindakLanjut
+                        anakId={a.id}
+                        sudah={tindakLanjutTerakhir.get(a.id) ?? null}
+                        telepon={a.telepon}
+                      />
                     </li>
                   ))}
                 </ul>

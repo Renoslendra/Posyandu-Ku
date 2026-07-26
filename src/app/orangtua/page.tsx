@@ -6,6 +6,7 @@ import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
 import { wajibPeran } from "@/lib/sesi";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
 import { statusPemantauan } from "@/lib/gizi/pola";
+import { tanggalIndonesiaSingkat } from "@/lib/tanggal";
 import type { StatusGizi } from "@/lib/gizi/zscore";
 
 /**
@@ -71,13 +72,33 @@ export default async function HalamanOrangTua() {
    */
   const { data: pengukuran } = await supabase
     .from("pengukuran")
-    .select("anak_id, tanggal, status, usia_bulan, dikonfirmasi")
+    .select("anak_id, tanggal, status, usia_bulan, berat_kg, tinggi_cm, dikonfirmasi")
     .eq("dikonfirmasi", true)
     .order("tanggal", { ascending: false });
 
   const terakhirPerAnak = new Map<string, NonNullable<typeof pengukuran>[number]>();
   for (const p of pengukuran ?? []) {
     if (!terakhirPerAnak.has(p.anak_id)) terakhirPerAnak.set(p.anak_id, p);
+  }
+
+  /*
+   * Riwayat penimbangan per anak, terbaru dahulu.
+   *
+   * Sebelumnya kueri di atas tidak mengambil berat maupun tinggi, sehingga
+   * halaman ini hanya dapat menyebut status dan usia. Angkanya memang tersedia di
+   * halaman tiap anak, tetapi orang tua harus menemukan tautan "Lihat grafik
+   * pertumbuhan" lebih dahulu, dan tautan itu berada di bawah seluruh anjuran.
+   *
+   * Yang paling sering ditanyakan orang tua setelah menimbang adalah pertanyaan
+   * paling sederhana: bulan lalu berapa, sekarang berapa, naik berapa. Pertanyaan
+   * itu tidak terjawab oleh lencana status, dan tidak semestinya memerlukan
+   * perpindahan halaman.
+   */
+  const riwayatPerAnak = new Map<string, NonNullable<typeof pengukuran>>();
+  for (const p of pengukuran ?? []) {
+    const kumpulan = riwayatPerAnak.get(p.anak_id) ?? [];
+    kumpulan.push(p);
+    riwayatPerAnak.set(p.anak_id, kumpulan);
   }
 
   return (
@@ -160,6 +181,98 @@ export default async function HalamanOrangTua() {
                     berikutnya.
                   </p>
                 )}
+
+                {(() => {
+                  const riwayat = (riwayatPerAnak.get(a.id) ?? []).slice(0, 6);
+                  if (riwayat.length === 0) return null;
+
+                  return (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold text-dasar-900">
+                        Riwayat penimbangan
+                      </h3>
+
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="text-dasar-600">
+                              <th scope="col" className="py-1.5 pr-3 font-medium">
+                                Tanggal
+                              </th>
+                              <th scope="col" className="py-1.5 pr-3 font-medium">
+                                Berat
+                              </th>
+                              <th scope="col" className="py-1.5 pr-3 font-medium">
+                                Tinggi
+                              </th>
+                              <th scope="col" className="py-1.5 font-medium">
+                                Naik
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {riwayat.map((p, i) => {
+                              /*
+                               * Selisih terhadap penimbangan sebelumnya. Karena
+                               * daftar diurutkan terbaru dahulu, pembandingnya
+                               * adalah baris berikutnya, bukan sebelumnya.
+                               *
+                               * Kolom ini yang paling dicari orang tua, dan
+                               * sebelumnya tidak ada di mana pun pada aplikasi:
+                               * kenaikan berat harus dihitung sendiri dari dua
+                               * angka di halaman berbeda.
+                               */
+                              const sebelumnya = riwayat[i + 1];
+                              const selisih = sebelumnya
+                                ? Math.round((p.berat_kg - sebelumnya.berat_kg) * 10) / 10
+                                : null;
+
+                              return (
+                                <tr
+                                  key={`${p.anak_id}-${p.tanggal}`}
+                                  className="border-t border-dasar-200"
+                                >
+                                  <td className="py-1.5 pr-3 text-dasar-700">
+                                    {tanggalIndonesiaSingkat(p.tanggal)}
+                                  </td>
+                                  <td className="py-1.5 pr-3 font-medium text-dasar-900">
+                                    {p.berat_kg} kg
+                                  </td>
+                                  <td className="py-1.5 pr-3 text-dasar-700">
+                                    {p.tinggi_cm} cm
+                                  </td>
+                                  <td className="py-1.5">
+                                    {selisih === null ? (
+                                      <span className="text-dasar-400">&mdash;</span>
+                                    ) : selisih > 0 ? (
+                                      <span className="font-semibold text-status-normal">
+                                        +{selisih} kg
+                                      </span>
+                                    ) : selisih === 0 ? (
+                                      <span className="font-semibold text-status-risiko">
+                                        tidak naik
+                                      </span>
+                                    ) : (
+                                      <span className="font-semibold text-status-berat">
+                                        {selisih} kg
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <p className="mt-2 text-sm text-dasar-600">
+                        Berat yang naik sedikit tetap lebih baik daripada berat yang
+                        tidak naik. Yang perlu ditanyakan ke bidan adalah berat yang
+                        berhenti naik dua kali berturut-turut.
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 <Link
                   href={`/anak/${a.id}`}

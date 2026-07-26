@@ -60,6 +60,26 @@ export const LABEL_GARIS: Record<string, string> = {
 };
 
 /**
+ * Label garis dalam bahasa sehari-hari.
+ *
+ * Dipakai pada keterangan grafik yang dibaca orang tua. Istilah "SD" dan
+ * "median" tidak dapat diandalkan di sana: keduanya istilah statistik, dan
+ * pembaca yang tidak mengenalnya tidak punya cara menebak artinya. Sebelumnya
+ * grafik hanya menampilkan "-2 SD" tanpa penjelasan apa pun, sehingga garis yang
+ * paling penting justru yang paling tidak terbaca.
+ *
+ * Istilah teknisnya tetap dicantumkan pada satu baris terpisah di bawah
+ * keterangan, agar pembaca yang mengenalnya tidak kehilangan rujukan dan agar
+ * yang tidak mengenalnya dapat mengaitkannya bila kelak mendengarnya dari bidan.
+ */
+export const ARTI_GARIS: Record<string, string> = {
+  sd_3n: "Batas bahaya",
+  sd_2n: "Batas bawah",
+  sd_0: "Garis tengah",
+  sd_2p: "Batas atas",
+};
+
+/**
  * Warna garis referensi.
  *
  * Garis -2 dan -3 SD memakai warna status agar sejalan dengan lencana pada

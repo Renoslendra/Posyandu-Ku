@@ -114,6 +114,7 @@ const SKENARIO = [
     jk: "L",
     usiaBulan: 26,
     orangTua: "Ibu Wati",
+    telepon: "085678901234",
     // Pendek berat: menjadi contoh utama pada demo.
     kunjungan: [
       { hariLalu: 90, zTinggi: -3.1, zBerat: -2.4 },
@@ -139,6 +140,7 @@ const SKENARIO = [
     jk: "L",
     usiaBulan: 42,
     orangTua: "Bapak Joko",
+    telepon: "081234567890",
     // Berhenti menimbang lebih dari 90 hari.
     kunjungan: [
       { hariLalu: 240, zTinggi: -1.8, zBerat: -1.9 },
@@ -295,6 +297,7 @@ async function main() {
         jenis_kelamin: s.jk,
         nama_orang_tua: s.orangTua,
         alamat: "Dusun Melati",
+        telepon: s.telepon || null,
       })
       .select("id")
       .single();

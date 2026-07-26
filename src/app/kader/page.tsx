@@ -5,8 +5,11 @@ import { ImportFoto } from "@/components/ImportFoto";
 import { BilahNavigasi } from "@/components/BilahNavigasi";
 import { Footer } from "@/components/Footer";
 import { PagarBelumMasuk, PagarBelumTerhubung } from "@/components/Pagar";
+import { RiwayatInput, type BarisRiwayatInput } from "@/components/RiwayatInput";
 import { wajibPeran } from "@/lib/sesi";
 import { klienServer, supabaseTerkonfigurasi } from "@/lib/supabase";
+import { tanggalHariIni } from "@/lib/tanggal";
+import type { StatusGizi } from "@/lib/gizi/zscore";
 
 /**
  * Halaman kader: mencatat pengukuran.
@@ -61,6 +64,39 @@ export default async function HalamanKader() {
     jenisKelamin: a.jenis_kelamin as "L" | "P",
   }));
 
+  /*
+   * Catatan yang dibuat kader ini pada tanggal hari ini.
+   *
+   * Disaring menurut `dicatat_oleh`, bukan hanya tanggal: pada posyandu dengan
+   * lebih dari satu kader, daftar seluruh catatan hari itu tidak menjawab
+   * pertanyaan yang sesungguhnya, yaitu apa yang sudah saya masukkan.
+   *
+   * Tanggalnya dihitung memakai tanggal lokal, sebab hari posyandu adalah hari
+   * menurut kader, bukan menurut UTC. Memakai tanggal basis data akan membuat
+   * catatan sebelum pukul tujuh pagi tampak sebagai catatan hari sebelumnya.
+   */
+  const hariIni = tanggalHariIni();
+
+  const { data: catatanHariIni } = await supabase
+    .from("pengukuran")
+    .select("id, anak_id, tanggal, berat_kg, tinggi_cm, status, sumber, dikonfirmasi")
+    .eq("tanggal", hariIni)
+    .eq("dicatat_oleh", sesi.id);
+
+  const namaAnak = new Map(daftarAnak.map((a) => [a.id, a.nama]));
+
+  const riwayatInput: BarisRiwayatInput[] = (catatanHariIni ?? []).map((p) => ({
+    id: p.id,
+    anakId: p.anak_id,
+    nama: namaAnak.get(p.anak_id) ?? "Anak tidak dikenali",
+    tanggal: p.tanggal,
+    beratKg: p.berat_kg,
+    tinggiCm: p.tinggi_cm,
+    status: p.status as StatusGizi,
+    dikonfirmasi: p.dikonfirmasi !== false,
+    dariFoto: p.sumber === "ocr_ai",
+  }));
+
   return (
     <>
       <BilahNavigasi />
@@ -101,6 +137,16 @@ export default async function HalamanKader() {
         */}
         <div className="animate-munculNaik" style={{ animationDelay: '0.3s' }}>
           <FormAnakBaru />
+        </div>
+
+        {/*
+          Riwayat diletakkan setelah formulir, bukan sebelumnya. Yang pertama
+          dicari kader saat membuka halaman ini adalah tempat mengisi; daftar
+          catatan berguna untuk memeriksa, dan pemeriksaan terjadi setelah
+          pengisian.
+        */}
+        <div className="animate-munculNaik" style={{ animationDelay: '0.4s' }}>
+          <RiwayatInput baris={riwayatInput} />
         </div>
       </main>
 
