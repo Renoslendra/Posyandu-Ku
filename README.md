@@ -325,7 +325,7 @@ npm test
 
 ### Pengujian terhadap basis data sungguhan
 
-Lima skrip menguji terhadap Supabase sungguhan, bukan mock. Dijalankan sekaligus dengan `npm run uji:db`, atau satu per satu:
+Tujuh skrip menguji terhadap Supabase sungguhan, bukan mock. Dijalankan sekaligus dengan `npm run uji:db`, atau satu per satu:
 
 ```bash
 node scripts/uji-rls.mjs          # isolasi data antar peran
@@ -333,6 +333,8 @@ node scripts/uji-alur.mjs         # apa yang terlihat tiap peran setelah masuk
 node scripts/uji-fitur-baru.mjs   # pendaftaran dan perbaikan data anak
 node scripts/uji-import.mjs       # penyimpanan hasil import foto dan jejak asal data
 node scripts/uji-batas-laju.mjs   # pembatasan laju bertahan dan tidak dapat dikosongkan
+node scripts/uji-akun-orangtua.mjs # pembuatan akun ortu dan batas peran endpoint
+node scripts/uji-riwayat.mjs      # riwayat saran menu & rls tindak lanjut
 ```
 
 ### Pengujian sesi terhadap server berjalan
