@@ -146,49 +146,69 @@ export function GrafikPertumbuhan({
         })}
       </ul>
 
-      <div className="mt-4 rounded-lg bg-dasar-50 p-4 text-sm leading-relaxed text-dasar-700">
+      {/*
+        Keterangan ini ditulis untuk orang tua, bukan untuk petugas.
+        Susunannya mengikuti urutan pertanyaan yang muncul di kepala pembaca:
+        garis mana anak saya, lalu apakah keadaannya baik, lalu apa yang harus
+        saya lakukan.
+
+        Versi sebelumnya memakai kalimat panjang bertingkat, dan panjang kalimat
+        adalah hambatan yang nyata di sini. Pembacanya sering membaca di layar
+        ponsel kecil sambil menggendong anak, dan kalimat yang perlu dibaca dua
+        kali akan tidak dibaca sama sekali. Setiap kalimat di bawah dibuat pendek
+        dan berisi satu gagasan.
+      */}
+      <div className="mt-4 rounded-lg bg-dasar-50 p-4 text-base leading-relaxed text-dasar-700">
         <p className="font-semibold text-dasar-900">Cara membaca grafik ini</p>
 
         <p className="mt-2">
           Garis <span className="font-semibold text-brand-600">hijau tebal</span> adalah
-          anak ini. Garis-garis lain adalah pembanding: angka pertumbuhan anak sehat
-          seusianya, menurut standar WHO.
+          anak Anda. Garis lainnya adalah pembanding: ukuran anak sehat seusianya.
         </p>
 
-        <p className="mt-2">
-          Yang perlu diperhatikan bukan letak titiknya, melainkan{" "}
-          <span className="font-semibold">arah garis hijaunya</span>. Selama garis itu
-          menanjak sejajar dengan garis pembanding, anak tumbuh baik meskipun ia berada
-          di garis bawah. Garis yang mendatar atau menurun perlu ditanyakan ke bidan,
-          bahkan bila anak masih berada di tengah.
+        <p className="mt-3 font-semibold text-dasar-900">
+          Lihat arah garisnya, bukan posisinya.
         </p>
 
-        <ul className="mt-3 flex flex-col gap-1.5">
+        <p className="mt-1">
+          Garis hijau yang <span className="font-semibold">terus naik</span> berarti anak
+          tumbuh baik. Ini tetap kabar baik walaupun garisnya ada di bawah.
+        </p>
+
+        <p className="mt-1">
+          Garis yang <span className="font-semibold">mendatar atau turun</span> perlu
+          ditanyakan ke bidan. Ini tetap perlu ditanyakan walaupun garisnya ada di
+          tengah.
+        </p>
+
+        <p className="mt-3 font-semibold text-dasar-900">Arti posisi garis</p>
+
+        <ul className="mt-1 flex flex-col gap-1">
           <li>
-            <span className="font-semibold">Di atas garis tengah</span> — pertumbuhan di
-            atas rata-rata anak seusianya.
+            <span className="font-semibold">Di atas garis tengah:</span> lebih besar dari
+            rata-rata.
           </li>
           <li>
-            <span className="font-semibold">Antara garis tengah dan batas bawah</span> —
-            wajar, tidak perlu dikhawatirkan.
+            <span className="font-semibold">Di antara garis tengah dan batas bawah:</span>{" "}
+            aman.
           </li>
           <li>
             <span className="font-semibold text-status-risiko">
-              Di bawah batas bawah
+              Di bawah batas bawah:
             </span>{" "}
-            — perlu diperiksa bidan.
+            periksakan ke bidan.
           </li>
           <li>
             <span className="font-semibold text-status-berat">
-              Di bawah batas bahaya
+              Di bawah batas bahaya:
             </span>{" "}
-            — perlu segera diperiksa.
+            periksakan sekarang.
           </li>
         </ul>
 
-        <p className="mt-3 text-dasar-600">
-          Istilah teknisnya: garis tengah disebut median, batas bawah -2 SD, batas bahaya
-          -3 SD, dan batas atas +2 SD.
+        <p className="mt-3 text-sm text-dasar-600">
+          Bidan mungkin menyebutnya dengan istilah lain. Garis tengah = median. Batas
+          bawah = &minus;2 SD. Batas bahaya = &minus;3 SD. Batas atas = +2 SD.
         </p>
       </div>
     </div>
