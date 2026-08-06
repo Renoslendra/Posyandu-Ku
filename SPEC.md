@@ -1,11 +1,13 @@
 # PosyanduKu — Technical Specification
 
-> **Dokumen ini adalah spesifikasi teknis lengkap proyek PosyanduKu.**
+> **Dokumen ini adalah spesifikasi teknis lengkap proyek PosyanduKu**, disusun
+> mengikuti pendekatan **Spec Driven Development**: spesifikasi ditulis dan
+> di-commit terlebih dahulu, menjadi kontrak yang mengikat implementasi.
+>
 > Disusun oleh **Reno Syaelendra** (Role: Hacker) untuk sesi Top 33 Hackathon
 > IndonesiaNEXT 2026.
 >
 > Live: [posyandu-ku.vercel.app](https://posyandu-ku.vercel.app)
-> Repositori: GitHub (private)
 
 ---
 
@@ -15,16 +17,22 @@
 2. [Masalah yang Diselesaikan](#2-masalah-yang-diselesaikan)
 3. [Arsitektur Sistem](#3-arsitektur-sistem)
 4. [Tech Stack](#4-tech-stack)
-5. [Skema Database](#5-skema-database)
-6. [Keamanan & Otorisasi (RLS)](#6-keamanan--otorisasi-rls)
-7. [Fitur Lengkap](#7-fitur-lengkap)
-8. [Peran AI & Pembatasannya](#8-peran-ai--pembatasannya)
-9. [Strategi Pengujian](#9-strategi-pengujian)
-10. [Offline-First Architecture](#10-offline-first-architecture)
-11. [Analisis Performa](#11-analisis-performa)
-12. [Keputusan Teknis Kunci](#12-keputusan-teknis-kunci)
-13. [Struktur Direktori](#13-struktur-direktori)
-14. [Cara Menjalankan Proyek](#14-cara-menjalankan-proyek)
+5. [Konfigurasi Lingkungan](#5-konfigurasi-lingkungan)
+6. [Skema Database](#6-skema-database)
+7. [Keamanan & Otorisasi (RLS)](#7-keamanan--otorisasi-rls)
+8. [Kontrak API (API Contracts)](#8-kontrak-api-api-contracts)
+9. [Skema Validasi (Zod)](#9-skema-validasi-zod)
+10. [Strategi Penanganan Galat](#10-strategi-penanganan-galat)
+11. [Pembatasan Laju (Rate Limiting)](#11-pembatasan-laju-rate-limiting)
+12. [Fitur Lengkap](#12-fitur-lengkap)
+13. [Peran AI & Pembatasannya](#13-peran-ai--pembatasannya)
+14. [Alur Data (Data Flow)](#14-alur-data-data-flow)
+15. [Offline-First Architecture](#15-offline-first-architecture)
+16. [Strategi Pengujian](#16-strategi-pengujian)
+17. [Analisis Performa](#17-analisis-performa)
+18. [Keputusan Teknis Kunci](#18-keputusan-teknis-kunci)
+19. [Struktur Direktori](#19-struktur-direktori)
+20. [Cara Menjalankan Proyek](#20-cara-menjalankan-proyek)
 
 ---
 
@@ -105,17 +113,21 @@ koneksi internet. Data tersinkron otomatis saat koneksi kembali.
 │  ┌────────────────────┼────────────────────────┐    │
 │  │           API Routes (/api/*)               │    │
 │  │                                             │    │
-│  │  /api/pengukuran  → Z-Score Engine (kode)   │    │
-│  │  /api/import-foto → Gemini AI Vision (OCR)  │    │
-│  │  /api/ringkasan   → LLM narasi (fallback)   │    │
-│  │  /api/menu        → LLM + kode harga        │    │
-│  │  /api/laporan     → CSV export (kode)       │    │
-│  │  /api/anak        → CRUD + Quality Guard    │    │
-│  │  /api/tindak-lanjut → Deteksi anak hilang   │    │
+│  │  POST /api/pengukuran  → Z-Score (kode)     │    │
+│  │  POST /api/anak        → CRUD + QG          │    │
+│  │  PATCH /api/anak       → Update data anak   │    │
+│  │  POST /api/import-foto → Gemini Vision OCR  │    │
+│  │  POST /api/import-simpan → Simpan hasil OCR │    │
+│  │  POST /api/ringkasan   → LLM + fallback     │    │
+│  │  POST /api/menu        → LLM + kode harga   │    │
+│  │  GET  /api/laporan     → CSV export          │    │
+│  │  POST /api/tindak-lanjut → Catat follow-up  │    │
+│  │  POST /api/akun-orangtua → Buat akun ortu   │    │
+│  │  POST /api/keluar      → Logout              │    │
 │  └─────────────────────────────────────────────┘    │
 │                       │                             │
 │  ┌────────────────────┼────────────────────────┐    │
-│  │           Middleware (sesi.ts)               │    │
+│  │           Middleware (middleware.ts)         │    │
 │  │  → Penyegaran token Supabase Auth           │    │
 │  │  → Routing berbasis peran                   │    │
 │  └─────────────────────────────────────────────┘    │
@@ -135,43 +147,65 @@ koneksi internet. Data tersinkron otomatis saat koneksi kembali.
 ```
 
 **Penjelasan Arsitektur:**
-- **Client:** Aplikasi web yang berjalan di browser kader/bidan. Menggunakan
-  React 19 untuk antarmuka, Service Worker untuk caching & sync, dan IndexedDB
-  untuk menyimpan antrean data saat offline.
-- **Server:** Next.js 15 App Router yang berjalan di Vercel. Semua logika bisnis
-  (perhitungan gizi, validasi, ekspor) berada di API Routes.
-- **Database:** Supabase (PostgreSQL) di region Singapore. Row Level Security
-  (RLS) aktif di semua tabel untuk isolasi data per posyandu.
+- **Client:** Aplikasi web di browser kader/bidan. React 19 untuk UI, Service
+  Worker untuk caching & sync, IndexedDB untuk antrean offline.
+- **Server:** Next.js 15 App Router di Vercel. Semua logika bisnis berada di
+  API Routes. Middleware menangani penyegaran token auth.
+- **Database:** Supabase (PostgreSQL) di region Singapore. RLS aktif di semua
+  tabel untuk isolasi data per posyandu.
 
 ---
 
 ## 4. Tech Stack
 
-| Lapisan      | Teknologi                | Versi  | Alasan Pemilihan                                                                                          |
-| :----------- | :----------------------- | :----- | :-------------------------------------------------------------------------------------------------------- |
-| Framework    | Next.js (App Router)     | 15.5   | Server Components untuk muat cepat di koneksi lambat; API Routes terintegrasi                             |
-| Bahasa       | TypeScript               | 5.7    | Type safety mencegah bug di kalkulasi medis                                                               |
-| UI           | React                    | 19.0   | Komponen deklaratif, ekosistem luas                                                                       |
-| Styling      | Tailwind CSS             | 3.4    | Utility-first, konsisten, cepat di-iterate                                                                |
-| Database     | Supabase (PostgreSQL)    | —      | RLS bawaan untuk isolasi data medis; Auth terintegrasi; region Singapore (dekat user Indonesia)            |
-| Auth         | Supabase Auth (GoTrue)   | —      | Cookie-based session; mendukung 3 peran (kader, bidan, orang_tua) tanpa library tambahan                  |
-| Grafik       | Recharts                 | 2.15   | Grafik pertumbuhan anak dengan garis referensi WHO                                                        |
-| Validasi     | Zod                      | 3.24   | Validasi skema input di sisi server, mencegah data kotor masuk database                                   |
-| Testing      | Vitest                   | 3.0    | Cepat, kompatibel ESM, cocok untuk unit test modul Z-Score                                                |
-| AI/LLM       | Google Gemini            | —      | Vision API untuk OCR buku tulis; teks generatif untuk ringkasan & saran menu (dengan fallback)            |
-| Hosting      | Vercel                   | —      | Deploy otomatis dari Git; edge network global                                                             |
-| Offline      | Service Worker + IndexedDB | —   | Standar web untuk caching dan penyimpanan lokal tanpa dependency tambahan                                  |
+| Lapisan      | Teknologi                | Versi  | Alasan Pemilihan                                                     |
+| :----------- | :----------------------- | :----- | :------------------------------------------------------------------- |
+| Framework    | Next.js (App Router)     | 15.5   | Server Components untuk muat cepat; API Routes terintegrasi          |
+| Bahasa       | TypeScript               | 5.7    | Type safety mencegah bug di kalkulasi medis                          |
+| UI           | React                    | 19.0   | Komponen deklaratif, ekosistem luas                                  |
+| Styling      | Tailwind CSS             | 3.4    | Utility-first, konsisten                                             |
+| Database     | Supabase (PostgreSQL)    | —      | RLS bawaan; Auth terintegrasi; region Singapore                      |
+| Auth         | Supabase Auth (GoTrue)   | —      | Cookie-based session; 3 peran tanpa library tambahan                 |
+| Grafik       | Recharts                 | 2.15   | Grafik pertumbuhan anak dengan referensi WHO                         |
+| Validasi     | Zod                      | 3.24   | Skema validasi dipakai bersama di klien dan server                   |
+| Testing      | Vitest                   | 3.0    | Cepat, kompatibel ESM                                                |
+| AI/LLM       | Google Gemini            | —      | Vision API untuk OCR; teks untuk ringkasan & menu                    |
+| Hosting      | Vercel                   | —      | Deploy otomatis dari Git                                             |
+| Offline      | Service Worker + IndexedDB | —   | Standar web tanpa dependency tambahan                                |
 
-**Total source files:** 83 file TypeScript/TSX (~577 KB kode sumber)
+**Statistik Kode:** 83 file TypeScript/TSX (~577 KB source code)
 
 ---
 
-## 5. Skema Database
+## 5. Konfigurasi Lingkungan
 
-Database terdiri dari **6 tabel utama** yang dikelola melalui **12 file migrasi
-SQL** yang terurut dan dapat direproduksi.
+Semua variabel lingkungan didefinisikan di `.env.local`. File `.env.example`
+menjadi acuan.
 
-### 5.1 Entity Relationship
+| Variabel                          | Wajib   | Sisi    | Penjelasan                                                       |
+| :-------------------------------- | :------ | :------ | :--------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`        | **Ya**  | Publik  | URL proyek Supabase (dari Project Settings > API)                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`   | **Ya**  | Publik  | Kunci anonim Supabase (dari Project Settings > API)              |
+| `SUPABASE_SERVICE_ROLE_KEY`       | **Ya**  | Server  | Kunci service role. Untuk skrip seed, uji RLS, dan riwayat menu |
+| `LLM_API_KEY`                     | Tidak   | Server  | API key penyedia LLM (Gemini/OpenAI)                            |
+| `LLM_BASE_URL`                    | Tidak   | Server  | Base URL API LLM. Default: `https://api.openai.com/v1`          |
+| `LLM_MODEL_TEXT`                  | Tidak   | Server  | Model untuk ringkasan & menu. Default: `gpt-4o-mini`            |
+| `LLM_MODEL_VISION`               | Tidak   | Server  | Model untuk OCR foto. Default: `gpt-4o-mini`                    |
+| `DEMO_SAFE_MODE`                  | Tidak   | Server  | Jika `true`, ringkasan memakai fallback tanpa memanggil LLM     |
+
+**Perilaku tanpa konfigurasi LLM:** Aplikasi tetap berfungsi penuh. Fitur yang
+memerlukan LLM (OCR, ringkasan, menu) menggunakan mode fallback/manual.
+Aplikasi tidak pernah crash karena variabel LLM kosong.
+
+**Perilaku tanpa konfigurasi Supabase:** Middleware meneruskan request tanpa
+error. Halaman menampilkan panduan pengisian variabel lingkungan. API Routes
+mengembalikan `503 Service Unavailable` dengan pesan jelas.
+
+---
+
+## 6. Skema Database
+
+### 6.1 Entity Relationship
 
 ```
 wilayah (1) ──── (*) posyandu (1) ──── (*) anak (1) ──── (*) pengukuran
@@ -187,361 +221,771 @@ anak (1) ──── (*) saran_menu
 anak (1) ──── (*) tindak_lanjut
 ```
 
-### 5.2 Tabel Utama
+### 6.2 Tabel & Kolom
 
-| Tabel                | Kolom Kunci                                                                                  | Penjelasan                                                                                 |
-| :------------------- | :------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
-| `wilayah`            | `id`, `nama`, `kecamatan`, `kabupaten`                                                       | Unit administratif. Menentukan cakupan bidan                                               |
-| `posyandu`           | `id`, `wilayah_id`, `nama`, `alamat`                                                         | Unit layanan. Menentukan cakupan kader                                                     |
-| `profil`             | `id` (→ auth.users), `peran`, `nama`, `posyandu_id`, `wilayah_id`                            | Profil pengguna. Peran menentukan izin RLS                                                 |
-| `anak`               | `id`, `posyandu_id`, `nama`, `tanggal_lahir`, `jenis_kelamin`, `orang_tua_id`, `alergi`      | Data anak. Terikat pada satu posyandu. Constraint: tanggal lahir tidak di masa depan        |
-| `pengukuran`         | `id`, `anak_id`, `tanggal`, `berat_kg`, `tinggi_cm`, `diukur_telentang`, `usia_bulan`,       | Catatan pengukuran. Menyimpan Z-score hasil perhitungan dan provenance (sumber data)       |
-|                      | `z_bb_u`, `z_tb_u`, `z_bb_tb`, `status`, `sumber`, `dikonfirmasi`, `penanda[]`, `klien_ref`  | `klien_ref` adalah idempotency key untuk sync offline                                      |
-| `ringkasan_bulanan`  | `id`, `posyandu_id`, `periode`, `isi`, `dari_fallback`                                       | Narasi bulanan dari LLM. Flag `dari_fallback` jika disusun template deterministik          |
+#### `wilayah`
+| Kolom        | Tipe           | Constraint       | Penjelasan                      |
+| :----------- | :------------- | :--------------- | :------------------------------ |
+| `id`         | `uuid`         | PK, auto         | Identifier unik                 |
+| `nama`       | `text`         | NOT NULL         | Nama wilayah                    |
+| `kecamatan`  | `text`         | NOT NULL         | Nama kecamatan                  |
+| `kabupaten`  | `text`         | NOT NULL         | Nama kabupaten                  |
+| `created_at` | `timestamptz`  | NOT NULL, default| Waktu pembuatan                 |
 
-### 5.3 Constraint Penjaga Kualitas (Quality Guard)
+#### `posyandu`
+| Kolom        | Tipe           | Constraint         | Penjelasan                    |
+| :----------- | :------------- | :----------------- | :---------------------------- |
+| `id`         | `uuid`         | PK, auto           | Identifier unik               |
+| `wilayah_id` | `uuid`         | FK → wilayah, NOT NULL | Wilayah induk             |
+| `nama`       | `text`         | NOT NULL           | Nama posyandu                 |
+| `alamat`     | `text`         | nullable           | Alamat posyandu               |
+| `created_at` | `timestamptz`  | NOT NULL, default  | Waktu pembuatan               |
 
-Constraint langsung di level database mencegah data kotor:
+#### `profil`
+| Kolom          | Tipe          | Constraint                             | Penjelasan                     |
+| :------------- | :------------ | :------------------------------------- | :----------------------------- |
+| `id`           | `uuid`        | PK, FK → auth.users                   | Terikat ke Supabase Auth       |
+| `peran`        | `user_role`   | NOT NULL                               | `kader` / `bidan` / `orang_tua`|
+| `nama`         | `text`        | NOT NULL                               | Nama lengkap                   |
+| `telepon`      | `text`        | nullable                               | Nomor telepon                  |
+| `posyandu_id`  | `uuid`        | FK → posyandu, CHECK kader wajib isi   | Posyandu tugas kader           |
+| `wilayah_id`   | `uuid`        | FK → wilayah, CHECK bidan wajib isi    | Wilayah tugas bidan            |
+| `created_at`   | `timestamptz` | NOT NULL, default                      | Waktu pembuatan                |
 
-```sql
-constraint berat_wajar   check (berat_kg  between 0.5 and 30)
-constraint tinggi_wajar  check (tinggi_cm between 30  and 130)
-constraint usia_dilayani check (usia_bulan between 0   and 60)
-constraint tanggal_tidak_di_masa_depan check (tanggal <= current_date)
-constraint tanggal_lahir_tidak_di_masa_depan check (tanggal_lahir <= current_date)
-```
+#### `anak`
+| Kolom            | Tipe          | Constraint                            | Penjelasan                    |
+| :--------------- | :------------ | :------------------------------------ | :---------------------------- |
+| `id`             | `uuid`        | PK, auto                             | Identifier unik               |
+| `posyandu_id`    | `uuid`        | FK → posyandu, NOT NULL              | Terdaftar di posyandu mana    |
+| `nama`           | `text`        | NOT NULL                             | Nama anak                     |
+| `tanggal_lahir`  | `date`        | NOT NULL, CHECK ≤ hari ini           | Tanggal lahir                 |
+| `jenis_kelamin`  | `sex`         | NOT NULL                             | `L` atau `P`                  |
+| `nama_orang_tua` | `text`        | NOT NULL                             | Nama orang tua/wali           |
+| `orang_tua_id`   | `uuid`        | FK → profil, nullable                | Link ke akun orang tua        |
+| `telepon`        | `text`        | nullable                             | Nomor telepon orang tua       |
+| `alamat`         | `text`        | nullable                             | Alamat rumah                  |
+| `alergi`         | `text[]`      | nullable                             | Daftar alergen makanan        |
+| `created_at`     | `timestamptz` | NOT NULL, default                    | Waktu pembuatan               |
 
-**Penjelasan:** Constraint ini bukan sekadar validasi form — ini adalah
-pertahanan terakhir di level database. Meskipun ada bug di frontend atau API,
-data mustahil (bayi 90 kg, tinggi 200 cm) **tidak akan pernah masuk** ke
-database.
+#### `pengukuran`
+| Kolom              | Tipe           | Constraint                            | Penjelasan                                    |
+| :----------------- | :------------- | :------------------------------------ | :-------------------------------------------- |
+| `id`               | `uuid`         | PK, auto                             | Identifier unik                               |
+| `anak_id`          | `uuid`         | FK → anak, NOT NULL                  | Anak yang diukur                               |
+| `tanggal`          | `date`         | NOT NULL, CHECK ≤ hari ini           | Tanggal pengukuran                             |
+| `berat_kg`         | `numeric(5,2)` | NOT NULL, CHECK 0.5–30               | Berat badan dalam kilogram                     |
+| `tinggi_cm`        | `numeric(5,1)` | NOT NULL, CHECK 30–130               | Tinggi/panjang badan dalam centimeter          |
+| `diukur_telentang` | `boolean`      | NOT NULL, default false              | True jika diukur dengan panjang badan          |
+| `usia_bulan`       | `integer`      | NOT NULL, CHECK 0–60                 | Usia saat diukur (dihitung server)             |
+| `z_bb_u`           | `numeric(5,2)` | nullable                             | Z-score berat menurut usia                     |
+| `z_tb_u`           | `numeric(5,2)` | nullable                             | Z-score tinggi menurut usia                    |
+| `z_bb_tb`          | `numeric(5,2)` | nullable                             | Z-score berat menurut tinggi                   |
+| `status`           | `status_gizi`  | nullable                             | Hasil klasifikasi akhir                        |
+| `sumber`           | `sumber_data`  | NOT NULL, default `manual`           | `manual` atau `ocr_ai`                         |
+| `dikonfirmasi`     | `boolean`      | NOT NULL, default true               | False sampai kader mengonfirmasi data OCR      |
+| `penanda`          | `text[]`       | NOT NULL, default `{}`               | Kode peringatan dari Quality Guard             |
+| `dicatat_oleh`     | `uuid`         | FK → profil, nullable               | Kader yang mencatat                            |
+| `klien_ref`        | `text`         | UNIQUE per anak, nullable            | Idempotency key untuk sync offline             |
+| `created_at`       | `timestamptz`  | NOT NULL, default                    | Waktu pembuatan                                |
 
-### 5.4 Daftar Migrasi
+#### `ringkasan_bulanan`
+| Kolom          | Tipe           | Constraint                    | Penjelasan                            |
+| :------------- | :------------- | :---------------------------- | :------------------------------------ |
+| `id`           | `uuid`         | PK, auto                     | Identifier unik                       |
+| `posyandu_id`  | `uuid`         | FK → posyandu, NOT NULL      | Posyandu yang diringkas               |
+| `periode`      | `date`         | NOT NULL, UNIQUE per posyandu | Bulan laporan                         |
+| `isi`          | `text`         | NOT NULL                     | Teks ringkasan                        |
+| `dari_fallback`| `boolean`      | NOT NULL, default false      | True jika disusun template            |
+| `created_at`   | `timestamptz`  | NOT NULL, default            | Waktu pembuatan                       |
 
-| No   | File                            | Isi                                                  |
-| :--- | :------------------------------ | :--------------------------------------------------- |
-| 1    | `0001_skema_awal.sql`           | 4 enum, 6 tabel, 6 indeks                            |
-| 2    | `0002_rls.sql`                  | 4 fungsi RLS, 10 policy                              |
-| 3    | `0003_grant.sql`                | Hak akses anon/authenticated                         |
-| 4    | `0004_telepon_anak.sql`         | Kolom telepon di tabel anak                          |
-| 5    | `0005_batas_panggilan.sql`      | Rate limiting untuk API                              |
-| 6    | `0006_pengukuran_unik.sql`      | Idempotency key untuk sync offline                   |
-| 7    | `0007_grant_batas_panggilan.sql`| Hak akses untuk tabel batas panggilan                |
-| 8    | `0008_tanggal_zona_waktu.sql`   | Perbaikan zona waktu ke WIB                          |
-| 9    | `0009_status_gizi_lebih.sql`    | Enum gizi lebih & obesitas                           |
-| 10   | `0010_alergi_anak.sql`          | Kolom alergi untuk saran menu                        |
-| 11   | `0011_riwayat_saran_menu.sql`   | Tabel riwayat saran menu                             |
-| 12   | `0012_tindak_lanjut.sql`        | Tabel tindak lanjut + deteksi anak hilang            |
+### 6.3 Enum Types
+
+| Enum          | Nilai                                              |
+| :------------ | :------------------------------------------------- |
+| `user_role`   | `kader`, `bidan`, `orang_tua`                      |
+| `sex`         | `L`, `P`                                           |
+| `status_gizi` | `normal`, `risiko`, `berat`, `lebih`, `obesitas`   |
+| `sumber_data` | `manual`, `ocr_ai`                                 |
+
+### 6.4 Migrasi
+
+12 file migrasi SQL di `supabase/migrations/`, dijalankan berurutan:
+
+| No | File                             | Isi                                    |
+| :- | :------------------------------- | :------------------------------------- |
+| 1  | `0001_skema_awal.sql`            | 4 enum, 6 tabel, 6 indeks             |
+| 2  | `0002_rls.sql`                   | 4 fungsi RLS, 10 policy               |
+| 3  | `0003_grant.sql`                 | Hak akses anon/authenticated           |
+| 4  | `0004_telepon_anak.sql`          | Kolom telepon di tabel anak            |
+| 5  | `0005_batas_panggilan.sql`       | Tabel & fungsi rate limiting           |
+| 6  | `0006_pengukuran_unik.sql`       | Idempotency key untuk sync offline     |
+| 7  | `0007_grant_batas_panggilan.sql` | Hak akses tabel batas panggilan        |
+| 8  | `0008_tanggal_zona_waktu.sql`    | Perbaikan zona waktu ke WIB            |
+| 9  | `0009_status_gizi_lebih.sql`     | Enum gizi lebih & obesitas             |
+| 10 | `0010_alergi_anak.sql`           | Kolom alergi untuk saran menu          |
+| 11 | `0011_riwayat_saran_menu.sql`    | Tabel riwayat saran menu               |
+| 12 | `0012_tindak_lanjut.sql`         | Tabel tindak lanjut anak hilang        |
 
 ---
 
-## 6. Keamanan & Otorisasi (RLS)
+## 7. Keamanan & Otorisasi (RLS)
 
-### 6.1 Model 3 Peran
+### 7.1 Model 3 Peran
 
-| Peran        | Cakupan Data                         | Hak Akses                                     |
-| :----------- | :----------------------------------- | :--------------------------------------------- |
-| `kader`      | Hanya posyandu tempat ia bertugas    | Baca + tulis anak & pengukuran                  |
-| `bidan`      | Semua posyandu di wilayahnya         | Baca semua data anak & pengukuran               |
-| `orang_tua`  | Hanya anak yang tertaut padanya      | Baca data anaknya sendiri saja                  |
+| Peran        | Cakupan Data                         | Hak Akses                              |
+| :----------- | :----------------------------------- | :------------------------------------- |
+| `kader`      | Hanya posyandu tempat ia bertugas    | Baca + tulis anak & pengukuran         |
+| `bidan`      | Semua posyandu di wilayahnya         | Baca semua + unduh laporan CSV         |
+| `orang_tua`  | Hanya anak yang tertaut padanya      | Baca data anaknya sendiri saja         |
 
-### 6.2 Implementasi RLS
+### 7.2 Fungsi RLS
 
-Row Level Security diaktifkan di **semua 6 tabel**. Empat fungsi SQL
-`security definer` menentukan cakupan:
+Empat fungsi SQL `security definer` (search_path dikunci ke `public`):
 
 ```sql
--- Mengembalikan peran pengguna saat ini
-auth_peran()         → user_role
-
--- Mengembalikan posyandu_id kader saat ini
-auth_posyandu_id()   → uuid
-
--- Mengembalikan wilayah_id bidan saat ini
-auth_wilayah_id()    → uuid
-
--- Mengembalikan semua posyandu yang boleh diakses
-posyandu_terjangkau() → setof uuid
+auth_peran()           → user_role    -- Peran pengguna saat ini
+auth_posyandu_id()     → uuid         -- Posyandu kader saat ini
+auth_wilayah_id()      → uuid         -- Wilayah bidan saat ini
+posyandu_terjangkau()  → setof uuid   -- Semua posyandu yang boleh diakses
 ```
 
-**Penjelasan:** Keamanan di PosyanduKu **bukan di level frontend** (yang bisa
-di-bypass), melainkan di **level database**. Sekalipun seseorang memanipulasi
-request API secara langsung, PostgreSQL RLS akan menolak akses ke data yang
-bukan haknya. Ini adalah standar keamanan tingkat enterprise untuk data medis
-sensitif.
+### 7.3 Prinsip Keamanan
 
-### 6.3 Tidak Ada Pendaftaran Mandiri
-
-Akun dibuat oleh pengelola sistem (bukan self-registration). Ini mencegah orang
-asing membuat akun dan mengakses data kesehatan anak.
+- **RLS di level database**, bukan di level frontend. Sekalipun request API
+  dimanipulasi langsung, PostgreSQL menolak akses ke data yang bukan haknya.
+- **Tidak ada pendaftaran mandiri.** Akun dibuat pengelola untuk mencegah
+  akses tidak sah ke data kesehatan anak.
+- **`posyandu_id` tidak diambil dari request body.** Diturunkan dari profil
+  kader yang login, agar kader tidak bisa mendaftarkan anak ke posyandu lain.
 
 ---
 
-## 7. Fitur Lengkap
+## 8. Kontrak API (API Contracts)
 
-### 7.1 Fitur Inti (7 Fitur)
+Seluruh endpoint mengikuti konvensi:
+- Request body: JSON
+- Response body: JSON (kecuali `/api/laporan` yang mengembalikan CSV)
+- Autentikasi: Cookie-based Supabase session
+- Otorisasi: RLS + pemeriksaan peran di handler
 
-#### F1: Input Pengukuran + Penjaga Kualitas Data
+### 8.1 `POST /api/pengukuran`
+
+Mencatat satu pengukuran anak. Z-score dihitung di server (nilai klien tidak
+dipercaya).
+
+**Request Body:**
+```json
+{
+  "anakId": "uuid",
+  "tanggal": "YYYY-MM-DD",
+  "beratKg": 8.5,
+  "tinggiCm": 72.0,
+  "diukurTelentang": false,
+  "klienRef": "opsional-idempotency-key",
+  "abaikanPenanda": false
+}
+```
+
+**Response Sukses (200):**
+```json
+{
+  "ok": true,
+  "id": "uuid",
+  "usiaBulan": 9,
+  "status": "normal",
+  "penentuStatus": "bb_u",
+  "zBeratUsia": -0.45,
+  "zTinggiUsia": 0.12,
+  "zBeratTinggi": -0.67,
+  "penanda": []
+}
+```
+
+**Response: Perlu Konfirmasi Kader (409):**
+```json
+{
+  "perluKonfirmasi": true,
+  "temuan": [{"pesan": "Tinggi menurun dari pengukuran sebelumnya", "tingkat": "tandai"}],
+  "pratinjau": {"usiaBulan": 9, "status": "normal"}
+}
+```
+
+**Status Codes:**
+| Code | Kondisi                                                    |
+| :--- | :--------------------------------------------------------- |
+| 200  | Berhasil disimpan (termasuk duplikat idempoten)             |
+| 400  | Validasi Zod gagal atau constraint database dilanggar       |
+| 401  | Belum login                                                |
+| 403  | Bukan kader                                                |
+| 404  | Anak tidak ditemukan atau di luar wewenang (RLS)            |
+| 409  | Data ditandai Quality Guard, perlu konfirmasi kader         |
+| 422  | Data ditolak Quality Guard (nilai mustahil secara medis)    |
+| 500  | Galat server                                               |
+| 503  | Supabase belum terkonfigurasi                              |
+
+---
+
+### 8.2 `POST /api/anak`
+
+Mendaftarkan anak baru. `posyandu_id` diambil dari profil kader, bukan request.
+
+**Request Body:**
+```json
+{
+  "nama": "Ahmad Faiz",
+  "tanggalLahir": "2024-03-15",
+  "jenisKelamin": "L",
+  "namaOrangTua": "Siti Aminah",
+  "telepon": "081234567890",
+  "alamat": "Jl. Mawar No.5",
+  "alergi": "susu sapi, kacang"
+}
+```
+
+**Response Sukses (200):**
+```json
+{
+  "ok": true,
+  "id": "uuid",
+  "nama": "Ahmad Faiz",
+  "peringatanNamaSerupa": null
+}
+```
+
+**Status Codes:** 200, 400, 401, 403, 500, 503
+
+---
+
+### 8.3 `PATCH /api/anak`
+
+Memperbaiki data anak yang sudah terdaftar. Tidak bisa memindahkan anak ke
+posyandu lain (`posyandu_id` tidak ikut diperbarui).
+
+**Request Body:** Sama seperti POST, ditambah `"id": "uuid"`.
+
+**Response Sukses (200):**
+```json
+{
+  "ok": true,
+  "id": "uuid",
+  "nama": "Ahmad Faiz",
+  "catatan": "Bila tanggal lahir diubah, usia pada riwayat penimbangan lama tidak dihitung ulang."
+}
+```
+
+**Status Codes:** 200, 400, 401, 403, 404, 500, 503
+
+---
+
+### 8.4 `POST /api/import-foto`
+
+Membaca satu halaman buku tulis posyandu menggunakan AI Vision. **Tidak
+menyimpan apa pun** — mengembalikan hasil bacaan sebagai usulan untuk kader.
+
+**Request Body:**
+```json
+{
+  "gambar": "data:image/jpeg;base64,/9j/4AAQ..."
+}
+```
+
+**Batasan gambar:**
+- Format: JPEG, PNG, WebP, HEIC, HEIF
+- Maks ukuran data URL: 3 MiB (~2.2 MB file asli)
+- `maxDuration`: 60 detik
+
+**Response Sukses (200):**
+```json
+{
+  "ok": true,
+  "baris": [
+    {
+      "nama": "Ahmad",
+      "beratKg": 8.5,
+      "tinggiCm": 72.0,
+      "tanggal": "2024-06-15",
+      "catatan": [],
+      "dikonfirmasi": false,
+      "sumber": "ocr_ai"
+    }
+  ],
+  "perluKonfirmasiKader": true,
+  "catatan": "Hasil pembacaan otomatis. Mohon periksa dan perbaiki sebelum disimpan."
+}
+```
+
+**Status Codes:** 200, 400, 401, 413, 429, 502, 503
+
+---
+
+### 8.5 `POST /api/import-simpan`
+
+Menyimpan baris yang sudah diperiksa kader dari hasil OCR. Z-score dihitung
+ulang di server menggunakan fungsi deterministik yang sama.
+
+**Request Body:**
+```json
+{
+  "baris": [
+    {
+      "nama": "Ahmad",
+      "beratKg": 8.5,
+      "tinggiCm": 72.0,
+      "tanggal": "2024-06-15",
+      "diukurTelentang": false,
+      "anakId": "uuid (opsional, jika dipilih manual)"
+    }
+  ]
+}
+```
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "berhasil": 3,
+  "gagal": 1,
+  "hasil": [
+    {"indeks": 0, "nama": "Ahmad", "ok": true, "namaAnakTujuan": "Ahmad Faiz", "status": "normal", "usiaBulan": 9},
+    {"indeks": 1, "nama": "Ani", "ok": false, "galat": "Ada beberapa anak dengan nama serupa.", "saranAnakId": "uuid"}
+  ]
+}
+```
+
+---
+
+### 8.6 `POST /api/menu`
+
+Menyusun saran menu harian untuk satu anak. Status gizi diambil dari database,
+bukan dari request.
+
+**Request Body:** `{"anakId": "uuid"}`
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "namaAnak": "Ahmad",
+  "status": "risiko",
+  "usiaBulan": 18,
+  "menu": [...],
+  "belanja": [...],
+  "totalBiayaRp": 15000,
+  "catatanGizi": "...",
+  "narasi": "...",
+  "dariFallback": false
+}
+```
+
+**Status Codes:** 200, 400, 401, 404, 409 (belum ada pengukuran / bayi <6 bulan), 429, 503
+
+---
+
+### 8.7 `POST /api/ringkasan`
+
+Menyusun ringkasan bulanan. Angka dihitung kode, AI menyusun kalimat. Jika AI
+gagal, template deterministik tetap tampil.
+
+**Request Body:** _(kosong)_
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "teks": "Bulan ini terdapat 6 anak terdaftar...",
+  "dariFallback": false
+}
+```
+
+**Status Codes:** 200, 401, 429, 503
+
+---
+
+### 8.8 `GET /api/laporan`
+
+Mengunduh laporan bulanan sebagai file CSV. Hanya bidan yang berhak.
+
+**Response (200):**
+- Content-Type: `text/csv; charset=utf-8`
+- Content-Disposition: `attachment; filename="Laporan_Posyandu_....csv"`
+- Cache-Control: `no-store`
+- Body: CSV file dengan BOM UTF-8
+
+**Status Codes:** 200, 401, 403 (bukan bidan), 503
+
+---
+
+### 8.9 `POST /api/tindak-lanjut`
+
+Mencatat tindakan atas anak yang hilang dari pemantauan.
+
+**Request Body:**
+```json
+{
+  "anakId": "uuid",
+  "jenis": "ditelepon",
+  "catatan": "Ibu menjawab, anak sehat. Akan datang bulan depan."
+}
+```
+
+**Jenis yang valid:** `ditelepon`, `dikunjungi`, `hadir`, `tidak_terjangkau`
+
+**Status Codes:** 200, 400, 401, 403, 500, 503
+
+---
+
+## 9. Skema Validasi (Zod)
+
+Skema validasi didefinisikan di `src/lib/validasi.ts` dan **dipakai bersama
+di klien dan server**. Satu definisi mencegah aturan terduplikasi.
+
+### 9.1 `anakBaruSchema`
+
+| Field          | Tipe                | Aturan                                             |
+| :------------- | :------------------ | :------------------------------------------------- |
+| `nama`         | `string`            | trim, min 2 huruf, max 100, harus memuat ≥2 huruf |
+| `tanggalLahir` | `string`            | format YYYY-MM-DD, tanggal valid, ≤ hari ini       |
+| `jenisKelamin` | `enum`              | `"L"` atau `"P"`                                   |
+| `namaOrangTua` | `string`            | trim, min 2, max 100                               |
+| `telepon`      | `string` (opsional) | regex: `^(\+62|62|0)8\d{7,12}$`                   |
+| `alamat`       | `string` (opsional) | trim, max 200                                      |
+| `alergi`       | `string` (opsional) | trim, max 200, dipecah dengan koma menjadi array    |
+
+### 9.2 `pengukuranBaruSchema`
+
+| Field             | Tipe                | Aturan                                           |
+| :---------------- | :------------------ | :----------------------------------------------- |
+| `anakId`          | `string`            | format UUID                                      |
+| `tanggal`         | `string`            | format YYYY-MM-DD, tanggal valid, ≤ hari ini     |
+| `beratKg`         | `number`            | min 0.5, max 30                                  |
+| `tinggiCm`        | `number`            | min 30, max 130                                  |
+| `diukurTelentang` | `boolean`           | default false                                    |
+| `klienRef`        | `string` (opsional) | trim, max 80 — idempotency key offline           |
+| `abaikanPenanda`  | `boolean`           | default false — kader menyetujui penanda         |
+
+### 9.3 Validasi Tanggal Khusus
+
+Tanggal divalidasi melampaui sekadar format regex:
+1. Tanggal harus benar-benar ada di kalender (cegah "2024-02-31").
+2. Tidak boleh melewati hari ini (dengan toleransi 1 hari untuk perbedaan zona
+   waktu perangkat kader).
+
+---
+
+## 10. Strategi Penanganan Galat
+
+### 10.1 Pola Konsisten di Seluruh API
+
+Setiap API Route mengikuti urutan penanganan yang sama:
+
+```
+1. Parse JSON body          → 400 "Isi permintaan bukan JSON"
+2. Validasi Zod             → 400 + pesan galat pertama
+3. Cek konfigurasi Supabase → 503 "Basis data belum terhubung"
+4. Cek autentikasi          → 401 "Silakan masuk terlebih dahulu"
+5. Cek peran                → 403 "Hanya [peran] yang dapat..."
+6. Logika bisnis            → 404/409/422 sesuai konteks
+7. Simpan ke database       → 400/500 dengan pembedaan error code
+```
+
+### 10.2 Pembedaan Error Database
+
+| PostgreSQL Code | HTTP Status | Penjelasan                                    |
+| :-------------- | :---------- | :-------------------------------------------- |
+| `23505`         | 200         | Duplikat idempoten (bukan error, data sudah ada) |
+| `23514`         | 400         | Constraint violation (berat/tinggi/tanggal)    |
+| `42501`         | 403         | Pelanggaran RLS (akses ditolak)                |
+| `42P01`         | 503         | Tabel belum ada (migrasi belum jalan)          |
+| Lainnya         | 500         | Galat server tak terduga                       |
+
+### 10.3 Prinsip
+
+- **Galat constraint dijawab 400, bukan 500.** Kader harus tahu datanya yang
+  salah, bukan servernya yang rusak.
+- **Duplikat idempoten dijawab 200.** Data sudah ada bukan kegagalan —
+  mencegah antrean offline menghapus data yang sebetulnya sudah tersimpan.
+- **Pelanggaran RLS dijawab 403 dengan pesan jelas**, bukan 500 misterius.
+
+---
+
+## 11. Pembatasan Laju (Rate Limiting)
+
+Pembatasan laju melindungi biaya panggilan ke penyedia LLM. Penghitungnya
+**di database** (bukan di memori proses) karena serverless memulai proses baru
+per request.
+
+| Endpoint       | Batas per Jendela | Jendela   | Alasan                                         |
+| :------------- | :---------------- | :-------- | :--------------------------------------------- |
+| `ringkasan`    | 5 panggilan       | 60 detik  | Prompt terbesar, hasil jarang berubah           |
+| `menu`         | 8 panggilan       | 60 detik  | Cukup untuk melihat beberapa anak berurutan     |
+| `import_foto`  | 12 panggilan      | 60 detik  | Kader memang memfoto beberapa halaman berurutan |
+
+**Perilaku saat pengecekan gagal:** Request DIIZINKAN. Kegagalan pembatasan
+laju tidak boleh mematikan fitur di lapangan. Risikonya terbatas pada biaya
+API.
+
+---
+
+## 12. Fitur Lengkap
+
+### 12.1 Fitur Inti (7 Fitur)
+
+#### F1: Input Pengukuran + Penjaga Kualitas Data (Quality Guard)
 - Kader memasukkan berat (kg) dan tinggi (cm) anak.
-- **Quality Guard** memvalidasi input secara real-time:
-  - Menolak nilai mustahil (bayi 90 kg, tinggi 200 cm).
-  - Menandai anomali: tinggi menurun, lonjakan berat >2 kg/bulan.
-  - Penanda disimpan di kolom `penanda[]` pada tabel pengukuran.
+- Quality Guard memvalidasi input secara real-time:
+  - **Tolak** nilai mustahil: berat < 0.5 kg atau > 30 kg, tinggi < 30 cm atau
+    > 130 cm, usia > 60 bulan.
+  - **Tandai** anomali: tinggi menurun, lonjakan berat > 2 kg/bulan, berat
+    tidak naik ≥ 2 pengukuran berturut-turut.
+- Penanda disimpan di kolom `penanda[]` pada tabel pengukuran.
 - File: `src/lib/gizi/penjaga-data.ts`, `src/components/FormPengukuran.tsx`
 
 #### F2: Mesin Z-Score WHO (Deterministik)
-- Menghitung **4 indikator antropometri**: BB/U, PB/U atau TB/U, BB/PB atau
-  BB/TB.
-- Menggunakan metode **LMS (Lambda-Mu-Sigma)** dari WHO Child Growth Standards
-  (0-5 tahun).
-- Interpolasi linear antar titik referensi untuk presisi maksimal.
+- **4 indikator**: BB/U, PB/U atau TB/U, BB/PB atau BB/TB.
+- Metode **LMS (Lambda-Mu-Sigma)** dari WHO Child Growth Standards (0-5 tahun).
+- Interpolasi linear antar titik referensi.
 - Koreksi ekor distribusi untuk Z-score di luar ±3 SD.
-- **AI tidak pernah dilibatkan** — seluruh angka dihitung kode deterministik.
-- Referensi data: `src/lib/gizi/tabel-who.json` (122 KB parameter WHO).
-- File: `src/lib/gizi/zscore.ts` (496 baris), `src/lib/gizi/tabel.ts`
+- **AI tidak pernah dilibatkan** — seluruh angka deterministik.
+- Ambang klasifikasi: normal (≥ -2 SD), risiko (-3 ≤ Z < -2), berat (< -3),
+  lebih (+2 < Z ≤ +3, hanya BB/PB|TB), obesitas (> +3).
+- Referensi data: `src/lib/gizi/tabel-who.json` (122 KB).
+- File: `src/lib/gizi/zscore.ts` (496 baris)
 
 #### F3: Dashboard Bidan & Grafik Pertumbuhan
-- Distribusi status gizi seluruh anak (normal / risiko / berat / lebih /
-  obesitas).
-- Daftar prioritas: anak dengan status gizi kritis ditampilkan paling atas.
-- Grafik pertumbuhan per anak menggunakan Recharts, dengan garis referensi WHO
-  (-3 SD, -2 SD, median, +2 SD, +3 SD).
+- Distribusi status gizi seluruh anak.
+- Daftar prioritas: anak dengan status kritis di atas.
+- Grafik per anak (Recharts) dengan garis referensi WHO (-3, -2, median, +2, +3 SD).
 - File: `src/lib/dashboard.ts`, `src/components/GrafikPertumbuhan.tsx`
 
 #### F4: Autentikasi & Isolasi Data 3 Peran (RLS)
-- Login berbasis cookie (Supabase Auth).
-- 3 peran: kader, bidan, orang_tua (lihat Bagian 6).
-- Middleware Next.js untuk penyegaran sesi otomatis.
+- Login berbasis cookie (Supabase Auth). 3 peran: kader, bidan, orang_tua.
+- Middleware penyegaran sesi otomatis (mengecualikan API Routes agar tidak ada
+  panggilan auth ganda).
 - File: `src/middleware.ts`, `src/lib/sesi.ts`, `src/lib/peran.ts`
 
 #### F5: Import Foto Buku Tulis + Provenance
 - Kader memfoto halaman buku tulis lama.
-- AI Vision (Gemini) mengekstrak nama, berat, tinggi, tanggal dari tulisan
-  tangan.
-- Hasil bacaan **wajib dikonfirmasi kader** sebelum masuk database
-  (human-in-the-loop).
-- Setiap nilai menyimpan jejak asalnya (`sumber`: `manual` atau `ocr_ai`) dan
-  status konfirmasi (`dikonfirmasi`: boolean).
-- Data yang belum dikonfirmasi **tidak dihitung ke statistik**.
-- File: `src/components/ImportFoto.tsx`, `src/app/api/import-foto/route.ts`
+- AI Vision mengekstrak nama, berat, tinggi, tanggal.
+- Hasil **wajib dikonfirmasi kader** (human-in-the-loop).
+- Setiap nilai menyimpan jejak asal (`sumber`: `manual`/`ocr_ai`) dan status
+  konfirmasi. Data belum dikonfirmasi **tidak dihitung ke statistik**.
+- File: `src/components/ImportFoto.tsx`, `src/app/api/import-foto/route.ts`,
+  `src/app/api/import-simpan/route.ts`
 
 #### F6: Deteksi Anak Hilang dari Pemantauan
-- Sistem menghitung jeda kunjungan terakhir setiap anak.
-- Anak dengan jeda >90 hari otomatis ditandai.
-- Dashboard bidan menampilkan lama absensi + kontak orang tua/bidan.
-- Tombol tindak lanjut (telepon) langsung tersedia.
+- Anak dengan jeda kunjungan > 90 hari otomatis ditandai.
+- Dashboard bidan: lama absensi + kontak orang tua.
+- Tombol tindak lanjut: `ditelepon`, `dikunjungi`, `hadir`, `tidak_terjangkau`.
 - File: `src/app/api/tindak-lanjut/route.ts`,
   `src/components/TombolTindakLanjut.tsx`
 
 #### F7: Offline-First + Sinkronisasi
-- Service Worker melakukan caching halaman dan aset statis.
-- IndexedDB menyimpan antrean pengukuran yang diinput saat offline.
-- Saat koneksi kembali, antrean dikirim secara batch ke server.
+- Service Worker untuk caching halaman dan aset statis.
+- IndexedDB menyimpan antrean pengukuran offline.
 - `klien_ref` (idempotency key) mencegah data ganda saat kirim ulang.
-- Status koneksi ditampilkan real-time di UI.
+- Status koneksi real-time di UI (🟢 Online / 🔴 Offline).
 - File: `src/lib/antrean-offline.ts`, `src/components/StatusKoneksi.tsx`
 
-### 7.2 Fitur Pendukung (5 Fitur)
+### 12.2 Fitur Pendukung (5 Fitur)
 
 #### F8: AI Saran Menu Lokal Murah
-- AI menyusun rekomendasi menu harian berbahan lokal (tempe, telur, ikan teri,
-  kangkung).
-- **Harga dihitung oleh kode** dari daftar harga tetap, bukan ditebak oleh AI.
-- Total biaya harian ditampilkan dalam rupiah.
-- Bayi <6 bulan otomatis dilewati (hanya ASI eksklusif).
-- Catatan alergi anak menyaring bahan yang berbahaya.
-- File: `src/lib/menu.ts` (24 KB — modul terbesar), `src/components/SaranMenu.tsx`
+- Rekomendasi menu berbahan lokal (tempe, telur, ikan teri, kangkung).
+- **Harga dihitung kode** dari daftar harga tetap, bukan ditebak AI.
+- Bayi < 6 bulan otomatis dilewati (hanya ASI eksklusif).
+- Alergi anak menyaring bahan berbahaya.
+- File: `src/lib/menu.ts` (24 KB), `src/components/SaranMenu.tsx`
 
 #### F9: Ringkasan Bulanan (AI + Fallback)
-- AI menyusun narasi ringkasan bulanan untuk bidan.
-- **Angka dihitung kode, AI hanya menyusun kalimatnya.**
-- Jika LLM gagal/mati, versi template deterministik tetap tampil (flag
-  `dari_fallback = true`).
-- File: `src/lib/ringkasan.ts`, `src/components/TombolRingkasan.tsx`
+- Angka dihitung kode, AI hanya menyusun kalimat.
+- Jika LLM gagal: template deterministik (flag `dari_fallback = true`).
+- File: `src/lib/ringkasan.ts`
 
 #### F10: Pendaftaran Anak Baru
-- Form input data anak lengkap (nama, tanggal lahir, jenis kelamin, nama orang
-  tua, alamat, telepon, alergi).
-- Validasi Zod di sisi server.
+- Form lengkap dengan validasi Zod. Memperingatkan jika nama serupa sudah ada.
 - File: `src/components/FormAnakBaru.tsx`, `src/app/api/anak/route.ts`
 
 #### F11: Perbaikan Data Anak
-- Kader dapat mengedit data anak yang sudah terdaftar.
-- Hanya kader di posyandu yang sama yang bisa mengedit (dijaga RLS).
+- Kader mengedit data anak (dijaga RLS). Catatan peringatan jika tanggal lahir
+  diubah (Z-score riwayat lama tidak dihitung ulang).
 - File: `src/components/FormEditAnak.tsx`
 
 #### F12: Laporan Ekspor CSV
-- Laporan diekspor ke format CSV agar staf Dinas Kesehatan bisa langsung
-  mengolah di Excel/spreadsheet.
-- **Sengaja bukan PDF** — karena angka di PDF harus diketik ulang, sedangkan CSV
-  langsung bisa diolah.
-- File: `src/lib/laporan.ts`, `src/app/api/laporan/route.ts`
+- Format CSV agar staf Dinas Kesehatan langsung olah di Excel.
+- BOM UTF-8 agar Excel mengenali encoding.
+- **Sengaja bukan PDF** — mencegah ketik ulang angka.
+- File: `src/lib/laporan.ts`
 
 ---
 
-## 8. Peran AI & Pembatasannya
+## 13. Peran AI & Pembatasannya
 
-### 8.1 Prinsip Utama
+### 13.1 Prinsip Utama
 
 > **AI tidak pernah menghitung angka klinis. Kode deterministik tetap menjadi
 > sumber kebenaran.**
 
-Ini bukan keterbatasan — ini adalah **keputusan arsitektur yang disengaja** demi
-keselamatan pasien.
+### 13.2 Pembagian Tugas
 
-### 8.2 Pembagian Tugas AI vs Kode
+| Tugas                         | Pelaksana   | Alasan                                             |
+| :---------------------------- | :---------- | :------------------------------------------------- |
+| Perhitungan Z-Score           | **Kode**    | Harus presisi & reprodusibel                       |
+| Klasifikasi status gizi       | **Kode**    | Ambang batas tetap dari WHO                        |
+| Deteksi tren pertumbuhan      | **Kode**    | Perbandingan angka sederhana                       |
+| Perhitungan harga menu        | **Kode**    | Harga dari daftar tetap                            |
+| Validasi input                | **Kode**    | Aturan bisnis pasti                                |
+| Ekstraksi foto buku tulis     | **AI**      | Pengenalan tulisan tangan                          |
+| Narasi ringkasan bulanan      | **AI**      | AI menyusun kalimat, angka dari kode               |
+| Penyusunan cara memasak       | **AI**      | Kreativitas bahasa                                 |
 
-| Tugas                         | Dikerjakan Oleh | Alasan                                                     |
-| :---------------------------- | :-------------- | :---------------------------------------------------------- |
-| Perhitungan Z-Score           | **Kode**        | Harus presisi & reprodusibel. Halusinasi AI bisa fatal      |
-| Klasifikasi status gizi       | **Kode**        | Berdasarkan ambang batas tetap dari WHO                      |
-| Deteksi tren pertumbuhan      | **Kode**        | Perbandingan angka sederhana, tidak perlu AI                 |
-| Perhitungan harga menu        | **Kode**        | Harga dari daftar tetap, bukan tebakan                       |
-| Validasi input (Quality Guard)| **Kode**        | Aturan bisnis pasti, tidak boleh ambigu                      |
-| Ekstraksi foto buku tulis     | **AI (Vision)** | Pengenalan tulisan tangan adalah kekuatan utama AI           |
-| Penyusunan narasi ringkasan   | **AI (Teks)**   | AI menyusun kalimat, angka sudah dihitung kode               |
-| Penyusunan cara memasak       | **AI (Teks)**   | Kreativitas bahasa, bukan keputusan medis                    |
+### 13.3 Fail-Safe System
 
-### 8.3 Fail-Safe System (Mode Cadangan)
-
-Jika API AI tidak tersedia (server mati, kuota habis, timeout):
-
-| Fitur             | Fallback                                                  |
-| :---------------- | :-------------------------------------------------------- |
-| Ringkasan bulanan | Template deterministik menggantikan narasi AI              |
-| Saran menu        | Bahan & harga tetap tampil utuh (hanya cara memasak hilang)|
-| Import foto       | Form manual tetap bisa dipakai (ketik sendiri)             |
-| Z-Score           | **Tidak terpengaruh** — tidak pernah pakai AI              |
-
-**Penjelasan:** Aplikasi ini dirancang agar **tidak ada satu pun halaman yang
-kosong atau error** hanya karena API AI mati. Ini krusial untuk posyandu desa
-yang mungkin menggunakan koneksi tidak stabil.
+| Fitur             | Saat AI Mati                                           |
+| :---------------- | :----------------------------------------------------- |
+| Ringkasan bulanan | Template deterministik menggantikan narasi AI           |
+| Saran menu        | Bahan & harga tetap tampil (cara memasak hilang)       |
+| Import foto       | Form manual tetap bisa dipakai                         |
+| Z-Score           | **Tidak terpengaruh** — tidak pernah pakai AI          |
 
 ---
 
-## 9. Strategi Pengujian
+## 14. Alur Data (Data Flow)
 
-### 9.1 Ringkasan
+### 14.1 Alur Pencatatan Pengukuran Manual
+
+```
+Kader                    Server                       Database
+  │                        │                            │
+  ├──── POST /api/pengukuran ─────►│                    │
+  │     {anakId, tanggal,  │       │                    │
+  │      beratKg, tinggiCm}│       │                    │
+  │                        ├─ 1. Validasi Zod           │
+  │                        ├─ 2. Cek auth + peran       │
+  │                        ├─ 3. SELECT anak ──────────►│ (RLS filter)
+  │                        │◄──────────────────────────┤
+  │                        ├─ 4. SELECT pengukuran sebelumnya ──►│
+  │                        │◄──────────────────────────┤
+  │                        ├─ 5. Quality Guard          │
+  │                        │  ├─ Tolak? → 422           │
+  │                        │  └─ Tandai? → 409 (minta konfirmasi)
+  │                        ├─ 6. Hitung Z-Score (WHO LMS)│
+  │                        ├─ 7. INSERT pengukuran ────►│
+  │◄─── 200 {ok, status, zScores} ─┤                   │
+```
+
+### 14.2 Alur Import Foto (2 Tahap)
+
+```
+Tahap 1: Membaca                          Tahap 2: Menyimpan
+Kader                                     Kader
+  │                                         │
+  ├── POST /api/import-foto ──►│            ├── POST /api/import-simpan ──►│
+  │   {gambar: data:image/...} │            │   {baris: [{nama, berat,...}]}│
+  │                            │            │                              │
+  │   ┌── Gemini Vision ──┐    │            │   ┌── Per baris: ──────────┐ │
+  │   │ Baca tulisan tangan│   │            │   │ 1. Cocokkan nama anak  │ │
+  │   │ → JSON baris       │   │            │   │ 2. Quality Guard       │ │
+  │   └────────────────────┘   │            │   │ 3. Hitung Z-Score      │ │
+  │                            │            │   │ 4. INSERT pengukuran   │ │
+  │◄── 200 {baris, perlu       │            │   │    sumber='ocr_ai'     │ │
+  │     KonfirmasiKader}       │            │   └────────────────────────┘ │
+  │                            │            │                              │
+  │  *** TIDAK ADA DATA        │            │◄── 200 {berhasil, gagal,     │
+  │      TERSIMPAN ***         │            │        hasil per baris}      │
+```
+
+---
+
+## 15. Offline-First Architecture
+
+### 15.1 Alur
+
+1. Kader membuka aplikasi → Service Worker menyajikan halaman dari cache.
+2. Kader menginput pengukuran → Data masuk ke IndexedDB (antrean lokal).
+3. Z-Score **langsung dihitung di browser** (kode deterministik tanpa server).
+4. Status gizi langsung ditampilkan ke kader.
+5. Koneksi kembali → Service Worker mengirim antrean ke server secara batch.
+6. `klien_ref` memastikan data yang dikirim ulang tidak menjadi duplikat.
+7. Server menghitung ulang Z-score sendiri (nilai klien tidak dipercaya).
+
+### 15.2 Idempotency
+
+Kolom `klien_ref` pada tabel `pengukuran` memiliki constraint `UNIQUE(anak_id,
+klien_ref)`. Jika klien mengirim ulang request dengan `klien_ref` yang sama:
+- Database menolak dengan error code `23505`
+- API mengembalikan `200 {ok: true, duplikat: true}` (bukan error)
+- Klien menganggap pengiriman berhasil dan menghapus item dari antrean
+
+---
+
+## 16. Strategi Pengujian
+
+### 16.1 Ringkasan
 
 | Jenis                | Jumlah   | Tool         | Lokasi                         |
 | :------------------- | :------- | :----------- | :----------------------------- |
 | Unit test (Vitest)   | 371 test | Vitest 3.0   | `src/**/*.test.ts` (21 file)   |
 | Integrasi (scripts)  | 8 skrip  | Node.js      | `scripts/uji-*.mjs` (8 file)  |
-| **Total**            | **371+** |              |                                |
 
-### 9.2 Apa yang Diuji
+### 16.2 Cakupan Unit Test
 
-#### Unit Test (371 test cases)
-- **Golden Test Z-Score:** Memastikan hasil perhitungan Z-Score 100% sama
-  persis dengan tabel referensi WHO untuk setiap kombinasi usia, berat, tinggi,
-  dan jenis kelamin.
-- **Koreksi Ekor Distribusi:** Memastikan Z-score di luar ±3 SD dikoreksi
-  sesuai prosedur WHO.
-- **Interpolasi LMS:** Memastikan interpolasi linear antar titik referensi
-  menghasilkan nilai yang akurat.
-- **Quality Guard:** Memastikan input mustahil ditolak dan anomali ditandai.
-- **Pencocokan Nama:** Memastikan OCR tidak salah mencocokkan nama anak
-  (mencegah "Ani" tercocok dengan "Handayani").
-- **Dashboard:** Memastikan distribusi dan prioritas dihitung benar.
-- **Laporan CSV:** Memastikan format dan isi laporan valid.
-- **Fallback LLM:** Memastikan template muncul saat AI tidak tersedia.
-- **Validasi Input (Zod):** Memastikan skema validasi menolak data tidak valid.
-- **Alergi & Menu:** Memastikan bahan alergen tersaring dari saran menu.
-- **Rate Limiter:** Memastikan pembatasan laju API berfungsi.
+| Modul                    | File Test                        | Yang Diuji                                     |
+| :----------------------- | :------------------------------- | :--------------------------------------------- |
+| Z-Score WHO              | `gizi/zscore.test.ts`            | Golden test terhadap referensi WHO              |
+| Tabel WHO                | `gizi/tabel.test.ts`             | Parsing & interpolasi parameter LMS             |
+| Koreksi ekor             | `gizi/koreksi-ekor.test.ts`      | Z di luar ±3 SD dikoreksi sesuai WHO           |
+| Quality Guard            | `gizi/penjaga-data.test.ts`      | Input mustahil ditolak, anomali ditandai        |
+| Gizi lebih               | `gizi/gizi-lebih.test.ts`        | Klasifikasi +2 SD dan +3 SD                    |
+| Pola pertumbuhan         | `gizi/pola.test.ts`              | Deteksi stagnan, lonjakan berat                 |
+| Usia                     | `gizi/usia.test.ts`              | Perhitungan usia bulan dari tanggal lahir       |
+| Kurva                    | `gizi/kurva.test.ts`             | Kurva pertumbuhan dengan garis referensi        |
+| Pencocokan nama          | `cocok-nama.test.ts`             | OCR tidak salah cocok ("Ani" ≠ "Handayani")    |
+| Dashboard                | `dashboard.test.ts`              | Distribusi dan prioritas                        |
+| Laporan CSV              | `laporan.test.ts`                | Format dan isi laporan                          |
+| Ringkasan                | `ringkasan.test.ts`              | Template fallback muncul saat AI mati           |
+| Menu                     | `menu.test.ts`                   | Alergen tersaring, harga valid                  |
+| Validasi                 | `validasi.test.ts`               | Skema Zod menolak data tidak valid              |
+| Peran                    | `peran.test.ts`                  | Penentuan peran dari profil                     |
+| Tanggal                  | `tanggal.test.ts`                | Format, zona waktu, edge cases                  |
+| Alergi                   | `alergi.test.ts`                 | Pecahan koma, batas panjang                     |
+| Rate limiter             | `batas-laju.test.ts`             | Pembatasan laju berfungsi                       |
+| Ambil semua              | `ambil-semua.test.ts`            | Paginasi otomatis PostgREST                     |
+| Proses pengukuran        | `proses-pengukuran.test.ts`      | Integrasi QG + Z-score                          |
 
-#### Integrasi Test (8 skrip)
-- `uji-rls.mjs` — Membuktikan kader desa A **gagal** mengakses data desa B.
-- `uji-alur.mjs` — Alur lengkap: daftar anak → input pengukuran → lihat hasil.
-- `uji-fitur-baru.mjs` — Fitur baru (gizi lebih, alergi, menu) berfungsi.
-- `uji-import.mjs` — Alur import foto: upload → konfirmasi → masuk database.
-- `uji-batas-laju.mjs` — Rate limiting mencegah penyalahgunaan API.
-- `uji-riwayat.mjs` — Riwayat pengukuran dan tindak lanjut konsisten.
-- `uji-sesi.mjs` — Sesi login dan penyegaran token berjalan benar.
-- `uji-akun-orangtua.mjs` — Akun orang tua hanya melihat data anaknya.
+### 16.3 Cakupan Integrasi Test
 
-### 9.3 Cara Menjalankan
+| Skrip                  | Yang Diuji                                               |
+| :--------------------- | :------------------------------------------------------- |
+| `uji-rls.mjs`          | Kader desa A **gagal** akses data desa B                 |
+| `uji-alur.mjs`         | Alur lengkap: daftar → ukur → lihat hasil                |
+| `uji-fitur-baru.mjs`   | Gizi lebih, alergi, menu berfungsi                       |
+| `uji-import.mjs`       | Upload → konfirmasi → masuk database                     |
+| `uji-batas-laju.mjs`   | Rate limiting API                                        |
+| `uji-riwayat.mjs`      | Riwayat pengukuran & tindak lanjut                       |
+| `uji-sesi.mjs`         | Login & penyegaran token                                 |
+| `uji-akun-orangtua.mjs`| Akun orang tua hanya lihat anaknya                       |
+
+### 16.4 Bug Kritis dari Audit Mandiri
+
+| # | Bug                          | Dampak                                                | Status        |
+|---|------------------------------|-------------------------------------------------------|---------------|
+| 1 | Stunting tidak terdeteksi    | Anak >2 tahun + diukur telentang → referensi salah    | ✅ Diperbaiki |
+| 2 | Pembulatan umur fatal        | 27 hari → 0 bulan. Deviasi **2.2 SD**                | ✅ Diperbaiki |
+| 3 | Pencocokan nama berbahaya    | "Ani" match "Handayani" → data masuk anak lain        | ✅ Diperbaiki |
+
+**Pola berbahaya:** Semua bug melaporkan kondisi **lebih baik** dari kenyataan.
+
+### 16.5 Cara Menjalankan
 
 ```bash
-# Unit test (371 test cases)
-npm test
-
-# Integrasi test (membutuhkan koneksi ke Supabase)
-npm run uji:db
+npm test          # 371 unit tests
+npm run uji:db    # 8 skrip integrasi (perlu koneksi Supabase)
 ```
-
-### 9.4 Bug Kritis yang Ditemukan dari Pengujian
-
-Saat audit mandiri, ditemukan **12 cacat ekstrem**. Yang paling berbahaya:
-
-| # | Bug                              | Dampak                                                          | Status      |
-|---|----------------------------------|-----------------------------------------------------------------|-------------|
-| 1 | Stunting tidak terdeteksi        | Anak >2 tahun diukur telentang memilih referensi 0-24 bulan     | ✅ Diperbaiki |
-| 2 | Pembulatan umur fatal            | Bayi 27 hari → referensi 0 bulan. Deviasi **2.2 SD**           | ✅ Diperbaiki |
-| 3 | Pencocokan nama berbahaya        | "Ani" tercocok dengan "Handayani" — data bisa masuk anak lain   | ✅ Diperbaiki |
-
-**Pola yang mengkhawatirkan:** Semua bug melaporkan kondisi **LEBIH BAIK**
-daripada kenyataan. Anak kurang gizi terlihat normal di sistem. Ini adalah jenis
-bug paling berbahaya karena tidak ada yang mengeluh — masalahnya tersembunyi.
 
 ---
 
-## 10. Offline-First Architecture
+## 17. Analisis Performa
 
-### 10.1 Komponen
-
-```
-┌─────────────────────────────────────────┐
-│              BROWSER                     │
-│                                         │
-│  ┌─────────────┐    ┌────────────────┐  │
-│  │ UI React    │◄──►│ antrean-       │  │
-│  │             │    │ offline.ts     │  │
-│  └─────┬───────┘    └───────┬────────┘  │
-│        │                    │           │
-│        │              ┌─────▼──────┐    │
-│        │              │ IndexedDB  │    │
-│        │              │ (antrean   │    │
-│        │              │  lokal)    │    │
-│        │              └─────┬──────┘    │
-│        │                    │           │
-│  ┌─────▼────────────────────▼────────┐  │
-│  │         Service Worker            │  │
-│  │  • Cache aset statis             │  │
-│  │  • Intercept fetch               │  │
-│  │  • Background sync               │  │
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
-                    │
-          ┌─────────▼─────────┐
-          │  Koneksi kembali? │
-          │  → Kirim batch    │
-          │  → klien_ref      │
-          │    mencegah ganda │
-          └───────────────────┘
-```
-
-### 10.2 Alur Offline
-
-1. Kader membuka aplikasi. Service Worker menyajikan halaman dari cache.
-2. Kader menginput pengukuran. Data masuk ke IndexedDB (antrean lokal).
-3. Z-Score **langsung dihitung di browser** (kode deterministik, tanpa server).
-4. Status gizi langsung ditampilkan ke kader.
-5. Saat koneksi internet kembali, Service Worker mengirim antrean ke server.
-6. `klien_ref` (idempotency key) memastikan data yang dikirim ulang tidak
-   menjadi duplikat di database.
-
-### 10.3 Status Koneksi UI
-
-Komponen `StatusKoneksi.tsx` menampilkan indikator real-time:
-- 🟢 Online — data tersinkron
-- 🟡 Sinkronisasi — mengirim data tertunda
-- 🔴 Offline — data disimpan lokal, akan dikirim saat online
-
----
-
-## 11. Analisis Performa
-
-### 11.1 Waktu Tanggap Produksi (Terukur)
+### 17.1 Waktu Tanggap (Terukur, 26 Juli 2026)
 
 | Halaman      | Median     | Perlu Sesi |
 | :----------- | ---------: | :--------: |
@@ -552,124 +996,62 @@ Komponen `StatusKoneksi.tsx` menampilkan indikator real-time:
 | `/kader`     | 1.981 ms   | Ya         |
 | `/bidan`     | 2.148 ms   | Ya         |
 
-### 11.2 Penyebab & Rencana Perbaikan
+### 17.2 Akar Masalah
 
-**Akar masalah:** Fungsi serverless berjalan di Washington (iad1), sementara
-database Supabase di Singapore (sin1). Setiap kueri menempuh ~230 ms pulang
-pergi.
-
-**Solusi (sudah teridentifikasi, belum diterapkan):**
-1. Tambahkan `vercel.json` dengan `regions: ["sin1"]` — estimasi penurunan dari
-   ~2.000 ms ke ~500 ms.
-2. Hilangkan pembacaan sesi ganda di middleware.
-3. Paralelkan kueri yang saling bebas (`Promise.all`).
-
-**Penjelasan:** Rencana perbaikan sudah didokumentasikan lengkap di
-`PERFORMA.md`. Prioritas saat ini adalah kebenaran data (Z-Score dan RLS),
-bukan kecepatan. Optimasi performa dijadwalkan sebagai tahap berikutnya.
+Serverless function di Washington (`iad1`), database di Singapore (`sin1`).
+Setiap kueri ~230 ms pulang pergi. Didokumentasikan lengkap di `PERFORMA.md`.
 
 ---
 
-## 12. Keputusan Teknis Kunci
+## 18. Keputusan Teknis Kunci
 
-Seluruh keputusan didokumentasikan di `DECISIONS.md` (35 entri, 53 KB).
-Berikut ringkasan keputusan yang paling menentukan:
+Seluruh 35 keputusan di `DECISIONS.md` (53 KB).
 
-### 12.1 Fitur yang Sengaja TIDAK Dibangun
+### 18.1 Fitur yang Sengaja TIDAK Dibangun
 
-| Fitur                  | Alasan Pembatalan                                                                                              |
-| :--------------------- | :------------------------------------------------------------------------------------------------------------- |
-| Chatbot Medis AI       | Permukaan jawaban tidak terbatas, tidak bisa diuji, berisiko memberikan nasihat medis yang mengancam nyawa      |
-| Tombol Darurat GPS     | Tanpa kanal penerima yang aktif 24 jam, tombol darurat menciptakan rasa aman palsu                              |
-| Notifikasi Push        | Membutuhkan infrastruktur yang tidak tersedia di scope hackathon                                                |
-| Self-Registration      | Siapa pun bisa mendaftar dan melihat data kesehatan anak orang lain                                            |
+| Fitur                  | Alasan                                                                |
+| :--------------------- | :-------------------------------------------------------------------- |
+| Chatbot Medis AI       | Jawaban tak terbatas, tak bisa diuji, berisiko nasihat medis fatal    |
+| Tombol Darurat GPS     | Tanpa penerima aktif, menciptakan rasa aman palsu                     |
+| Notifikasi Push        | Infrastruktur di luar scope hackathon                                 |
+| Self-Registration      | Siapa pun bisa akses data kesehatan anak                              |
 
-### 12.2 Keputusan Arsitektur Kunci
+### 18.2 Keputusan Arsitektur
 
-| Keputusan                                     | Alasan                                                                        |
-| :-------------------------------------------- | :---------------------------------------------------------------------------- |
-| 14 fitur dipangkas menjadi 7 inti             | Lebih baik sedikit fitur yang utuh daripada banyak fitur dengan jalan buntu    |
-| AI dibatasi ke 3 tugas bahasa saja            | Mencegah halusinasi pada data medis                                            |
-| Ekspor CSV, bukan PDF                         | Staf Dinas Kesehatan bisa langsung olah di Excel tanpa ketik ulang             |
-| RLS di level database, bukan frontend         | Tidak bisa di-bypass meskipun API dimanipulasi langsung                        |
-| Z-Score deterministik, bukan ML/AI            | Harus presisi, reprodusibel, dan dapat diaudit                                 |
-| Constraint kualitas di level database         | Pertahanan terakhir meskipun ada bug di frontend atau API                      |
-| Fallback template untuk semua fitur AI        | Tidak ada halaman kosong saat API AI mati                                      |
-| Provenance (jejak asal data) disimpan         | Data dari OCR bisa dibedakan dari input manual untuk audit                      |
+| Keputusan                              | Alasan                                                  |
+| :------------------------------------- | :------------------------------------------------------ |
+| 14 → 7 fitur inti                      | Sedikit tapi utuh > banyak tapi setengah jadi            |
+| AI dibatasi ke 3 tugas bahasa          | Mencegah halusinasi pada data medis                      |
+| CSV bukan PDF                          | Dinas Kesehatan langsung olah di Excel                   |
+| RLS di database bukan frontend         | Tidak bisa di-bypass meski API dimanipulasi              |
+| Z-Score deterministik bukan ML         | Harus presisi, reprodusibel, dan auditable               |
+| Constraint kualitas di level database  | Pertahanan terakhir meski ada bug di frontend/API        |
+| Fallback template untuk semua fitur AI | Tidak ada halaman kosong saat API AI mati                |
+| Provenance disimpan                    | Data OCR bisa dibedakan dari input manual                |
 
 ---
 
-## 13. Struktur Direktori
+## 19. Struktur Direktori
 
 ```
 posyandu-ku/
 ├── src/
 │   ├── app/                          # Next.js App Router
-│   │   ├── api/                      # 10 API Routes
-│   │   │   ├── akun-orangtua/        # Manajemen akun orang tua
-│   │   │   ├── anak/                 # CRUD data anak
-│   │   │   ├── import-foto/          # AI Vision OCR
-│   │   │   ├── import-simpan/        # Simpan hasil OCR
-│   │   │   ├── keluar/               # Logout
-│   │   │   ├── laporan/              # Ekspor CSV
-│   │   │   ├── menu/                 # AI saran menu
-│   │   │   ├── pengukuran/           # Input & hitung Z-Score
-│   │   │   ├── ringkasan/            # AI ringkasan bulanan
-│   │   │   └── tindak-lanjut/        # Deteksi anak hilang
-│   │   ├── anak/                     # Halaman detail anak
+│   │   ├── api/                      # 10 API Routes (lihat Bagian 8)
+│   │   ├── anak/[id]/                # Halaman detail anak
 │   │   ├── bidan/                    # Dashboard bidan
 │   │   ├── kader/                    # Dashboard kader
 │   │   ├── masuk/                    # Halaman login
 │   │   ├── orangtua/                 # Dashboard orang tua
 │   │   ├── layout.tsx                # Root layout
 │   │   └── page.tsx                  # Landing page
-│   │
 │   ├── components/                   # 21 Komponen React
-│   │   ├── ImportFoto.tsx            # UI import foto (23 KB — terbesar)
-│   │   ├── FormPengukuran.tsx        # Form input pengukuran (18 KB)
-│   │   ├── FormAnakBaru.tsx          # Form pendaftaran anak
-│   │   ├── FormEditAnak.tsx          # Form edit data anak
-│   │   ├── GrafikPertumbuhan.tsx     # Grafik WHO + Recharts
-│   │   ├── DaftarAnak.tsx            # Daftar anak di posyandu
-│   │   ├── StatusKoneksi.tsx         # Indikator online/offline
-│   │   ├── SaranMenu.tsx             # UI saran menu
-│   │   ├── TombolTindakLanjut.tsx    # Tombol telepon darurat
-│   │   └── ...                       # 12 komponen lainnya
-│   │
 │   ├── lib/                          # 29 Modul logika bisnis
-│   │   ├── gizi/                     # Modul perhitungan gizi
-│   │   │   ├── zscore.ts             # Mesin Z-Score (496 baris)
-│   │   │   ├── tabel.ts              # Parser tabel WHO
-│   │   │   ├── tabel-who.json        # Data referensi WHO (122 KB)
-│   │   │   ├── penjaga-data.ts       # Quality Guard
-│   │   │   ├── ambang.ts             # Ambang batas klasifikasi
-│   │   │   ├── kurva.ts              # Kurva pertumbuhan
-│   │   │   ├── pola.ts               # Deteksi pola pertumbuhan
-│   │   │   └── *.test.ts             # 8 file test
-│   │   ├── menu.ts                   # Logika saran menu (24 KB)
-│   │   ├── laporan.ts                # Logika ekspor CSV
-│   │   ├── dashboard.ts              # Logika dashboard
-│   │   ├── antrean-offline.ts        # Offline queue (12 KB)
-│   │   ├── cocok-nama.ts             # Pencocokan nama OCR
-│   │   ├── validasi.ts               # Validasi Zod
-│   │   ├── llm.ts                    # Wrapper Gemini API
-│   │   ├── ringkasan.ts              # Ringkasan bulanan
-│   │   ├── supabase.ts               # Supabase server client
-│   │   ├── supabase-browser.ts       # Supabase browser client
-│   │   └── *.test.ts                 # 13 file test
-│   │
-│   └── middleware.ts                 # Penyegaran sesi Supabase
-│
-├── supabase/
-│   └── migrations/                   # 12 file migrasi SQL
-│
+│   │   ├── gizi/                     # Mesin Z-Score WHO (16 file)
+│   │   └── *.ts + *.test.ts          # Modul + unit test
+│   └── middleware.ts                 # Penyegaran sesi
+├── supabase/migrations/              # 12 file migrasi SQL
 ├── scripts/                          # 13 skrip operasional
-│   ├── seed.mjs                      # Seed data demo
-│   ├── buat-akun-demo.mjs            # Buat akun demo
-│   ├── cek-kesiapan.mjs              # Health check
-│   ├── unduh-tabel-who.mjs           # Download tabel WHO
-│   └── uji-*.mjs                     # 8 skrip integrasi test
-│
 ├── SPEC.md                           # ← Dokumen ini
 ├── PRD.md                            # Product Requirements (64 KB)
 ├── DECISIONS.md                      # 35 Keputusan Teknis (53 KB)
@@ -680,61 +1062,42 @@ posyandu-ku/
 
 ---
 
-## 14. Cara Menjalankan Proyek
+## 20. Cara Menjalankan Proyek
 
-### 14.1 Prasyarat
+### 20.1 Prasyarat
 - Node.js 18+
-- Akun Supabase (dengan project yang sudah di-setup)
-- API Key Google Gemini (untuk fitur AI)
+- Akun Supabase (project + migrations dijalankan)
+- API Key Google Gemini (opsional, untuk fitur AI)
 
-### 14.2 Setup
+### 20.2 Setup
 
 ```bash
-# 1. Clone repository
-git clone <repo-url>
-cd posyandu-ku
-
-# 2. Install dependencies
+git clone <repo-url> && cd posyandu-ku
 npm install
-
-# 3. Setup environment variables
-cp .env.example .env.local
-# Edit .env.local dengan kredensial Supabase & Gemini
-
-# 4. Jalankan migrasi database
-# (Jalankan 12 file SQL di supabase/migrations/ secara berurutan)
-
-# 5. Seed data demo
-npm run demo:reset
-
-# 6. Cek kesiapan sistem
-npm run cek
+cp .env.example .env.local          # Edit dengan kredensial
+# Jalankan 12 file SQL di supabase/migrations/ secara berurutan
+npm run demo:reset                   # Seed data demo
+npm run cek                          # Health check
 ```
 
-### 14.3 Development
+### 20.3 Development
 
 ```bash
-# Jalankan development server
-npm run dev
-
-# Jalankan unit test (371 test cases)
-npm test
-
-# Jalankan integrasi test
-npm run uji:db
-
-# Build untuk produksi
-npm run build
+npm run dev            # Development server
+npm test               # 371 unit tests
+npm run uji:db         # Integrasi tests
+npm run build          # Production build
 ```
 
-### 14.4 URL Produksi
+### 20.4 Produksi
 - **Live:** [posyandu-ku.vercel.app](https://posyandu-ku.vercel.app)
-- **Akun Demo:** Tersedia melalui `npm run akun`
+- **Akun demo:** `npm run akun`
 
 ---
 
-> **Dokumen ini ditulis sebagai bagian dari proses pitching Top 33 Hackathon
-> IndonesiaNEXT 2026. Seluruh kode, keputusan, dan pengujian yang disebutkan
-> dapat diverifikasi langsung di repositori.**
+> **Dokumen ini ditulis mengikuti pendekatan Spec Driven Development.**
+> Seluruh kontrak API, skema validasi, strategi penanganan galat, dan
+> keputusan arsitektur yang disebutkan dapat diverifikasi langsung di
+> repositori.
 >
-> — Reno Syaelendra, Hacker
+> — Reno Syaelendra, Hacker, IndonesiaNEXT 2026
